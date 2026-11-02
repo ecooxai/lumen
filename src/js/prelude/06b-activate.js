@@ -603,7 +603,7 @@ function registerProperty(d) {
     if (iv !== undefined && (comps === '*' ? /var\(/i.test(iv) : !rpMatches(comps, iv))) throw new DOMException('The initial value provided does not parse for the given syntax.', 'SyntaxError');
     if (registeredProps.has(name)) throw new DOMException('The name provided has already been registered.', 'InvalidModificationError');
     registeredProps.set(name, { syntax, inherits: !!d.inherits, initialValue: iv });
-    if (iv !== undefined) N.registerProp(name, iv.trim());
+    N.registerProp(name, iv === undefined ? "" : iv.trim(), syntax.trim(), registeredProps.get(name).inherits ? "true" : "false", iv === undefined ? "false" : "true");
 }
 const CSS = {
     escape(s) { s = String(s); let r = ''; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); if (c === 0) r += '\uFFFD'; else if ((c >= 1 && c <= 31) || c === 127 || (i === 0 && c >= 48 && c <= 57) || (i === 1 && c >= 48 && c <= 57 && s.charCodeAt(0) === 45)) r += '\\' + c.toString(16) + ' '; else if (i === 0 && c === 45 && s.length === 1) r += '\\-'; else if (c >= 128 || c === 45 || c === 95 || (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122)) r += s[i]; else r += '\\' + s[i]; } return r; },

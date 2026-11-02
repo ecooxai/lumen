@@ -181,6 +181,7 @@ typedef struct CustomProps { int refs, depth; HMap map; struct CustomProps *pare
 const char *custom_get(const CustomProps *c, const char *name);
 /* @property registrations: initial-value used when a custom property is unset */
 void css_register_property(const char *name, const char *initial);
+void css_register_property_full(const char *name, const char *initial, const char *syntax, bool inherits);
 /* @position-try rules: a fallback's style is the box's style with the rule's (allowed) declarations applied */
 void css_register_position_try(const char *name, const char *body);
 struct ComputedStyle *css_position_try_style(const struct ComputedStyle *s, const char *name, Node *el);

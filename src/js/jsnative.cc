@@ -1484,8 +1484,8 @@ extern "C" char *css_border_parse(const char *property, const char *value);
 FN(cssBorder) { CTX; std::string p = S(0), q = S(1); char *value = css_border_parse(p.c_str(), q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
 /* the computed serialization of a CSS colour (currentcolor as black), or null when it doesn't parse */
 FN(cssColor) { CTX; (void)c; std::string q = S(0); CssColor col; if (!css_color_parse(q.c_str(), &col, NULL)) { RET(v8::Null(iso)); return; } char b[200]; css_color_serialize(&col, b, sizeof b); RET(nstr(iso, b)); }
-extern "C" void css_register_property(const char *name, const char *initial);
-FN(registerProp) { CTX; std::string n = S(0), v = S(1); css_register_property(n.c_str(), v.c_str()); if (c->doc) doc_mark_dirty(c->doc, &c->doc->node); }
+extern "C" void css_register_property_full(const char *name,const char *initial,const char *syntax,bool inherits);
+FN(registerProp){CTX;std::string n=S(0),v=S(1),syntax=S(2),inherits=S(3),has_initial=S(4);css_register_property_full(n.c_str(),has_initial=="true"?v.c_str():nullptr,syntax.c_str(),inherits=="true");if(c->doc)doc_mark_dirty(c->doc,&c->doc->node);}
 FN(encode) { CTX; v8::String::Utf8Value u(iso, a[0]); RET(mkab(iso, *u ? *u : "", *u ? (size_t)u.length() : 0)); }
 FN(decode) {
     CTX; const char *p = ""; size_t n = 0;

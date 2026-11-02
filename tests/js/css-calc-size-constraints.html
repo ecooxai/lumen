@@ -1,0 +1,132 @@
+<!doctype html><meta charset="utf-8"><title>Calculated min/max and logical sizing constraints</title>
+<style>html,body{margin:0;padding:0;border:0}</style><body><script>
+(()=>{
+ const cases=[],rows=[];const test=(name,fn)=>cases.push({name,fn});
+ const check=(value,label)=>{if(!value)throw Error(label);};
+ const near=(value,expected,label)=>{if(!Number.isFinite(value)||Math.abs(value-expected)>.04)throw Error(label+': '+value+' expected '+expected);};
+ const initial='display:block;box-sizing:content-box;width:300px;height:100px;min-width:auto;max-width:none;min-height:auto;max-height:none;margin:0;padding:0;border:0 solid;font-size:0;line-height:0;background:green;';
+ function measured(f,width,height,cssWidth=width,cssHeight=height){
+  const r=f.target.getBoundingClientRect(),s=getComputedStyle(f.target);
+  near(r.width,width,'actual border width');near(r.height,height,'actual border height');
+  check(s.width.endsWith('px')&&s.height.endsWith('px'),'resolved preferred sizes are pixels');
+  near(parseFloat(s.width),cssWidth,'resolved width');near(parseFloat(s.height),cssHeight,'resolved height');
+  check(document.elementFromPoint(r.x+1,r.y+1)===f.target,'real constrained box receives hit');
+ }
+ function animate(f,property,from,to,composite='replace',policy='allow-keywords'){
+  f.target.style.setProperty('interpolate-size',policy);
+  const key=property.replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase());
+  const a=f.target.animate([{[key]:from,composite},{[key]:to,composite}],{duration:1000,fill:'both',easing:'linear'});
+  f.animations.push(a);a.pause();return a;
+ }
+ const direct=[{"name":"maximum width uses unconstrained minimum content","decl":"max-width:calc-size(min-content, size + 10px)","property":"max-width","width":130,"height":100,"css_width":130,"css_height":100,"calculated":true},{"name":"maximum width uses unconstrained maximum content","decl":"max-width:calc-size(max-content, size / 2 + 10px)","property":"max-width","width":110,"height":100,"css_width":110,"css_height":100,"calculated":true},{"name":"minimum width grows beyond preferred width","decl":"width:40px;min-width:calc-size(min-content, size * 2)","property":"min-width","width":240,"height":100,"css_width":240,"css_height":100,"calculated":true},{"name":"minimum width calculation may shrink its intrinsic basis","decl":"width:40px;min-width:calc-size(max-content, size / 2)","property":"min-width","width":100,"height":100,"css_width":100,"css_height":100,"calculated":true},{"name":"minimum fit-content ignores own preferred width","decl":"width:40px;min-width:calc-size(fit-content, size + 20px)","property":"min-width","width":220,"height":100,"css_width":220,"css_height":100,"calculated":true},{"name":"maximum fit-content ignores own preferred width","decl":"max-width:calc-size(fit-content, size - 20px)","property":"max-width","width":180,"height":100,"css_width":180,"css_height":100,"calculated":true},{"name":"maximum width numeric percentage basis remains live","decl":"max-width:calc-size(50%, size / 2 + 10px)","property":"max-width","width":110,"height":100,"css_width":110,"css_height":100,"calculated":true},{"name":"minimum width outer percentage uses its containing block","decl":"width:20px;min-width:calc-size(any, 25% + 15px)","property":"min-width","width":115,"height":100,"css_width":115,"css_height":100,"calculated":true},{"name":"ordinary automatic minimum supplies zero basis","decl":"width:20px;min-width:calc-size(auto, size * 2 + 30px)","property":"min-width","width":30,"height":100,"css_width":30,"css_height":100,"calculated":true},{"name":"minimum width preserves a numeric basis","decl":"width:20px;min-width:calc-size(80px, size / 2 + 10px)","property":"min-width","width":50,"height":100,"css_width":50,"css_height":100,"calculated":true},{"name":"negative maximum width keeps its padding and border","decl":"padding:10px;border:2px solid;max-width:calc-size(min-content, -1 * size)","property":"max-width","width":24,"height":124,"css_width":0,"css_height":100,"calculated":true},{"name":"content-box intrinsic minimum converts its property box once","decl":"width:20px;padding:10px;border:2px solid;min-width:calc-size(min-content, size / 2 + 10px)","property":"min-width","width":94,"height":124,"css_width":70,"css_height":100,"calculated":true},{"name":"border-box intrinsic minimum includes its border basis","decl":"box-sizing:border-box;width:20px;padding:10px;border:2px solid;min-width:calc-size(min-content, size / 2 + 10px)","property":"min-width","width":82,"height":100,"css_width":82,"css_height":100,"calculated":true},{"name":"content-box intrinsic maximum converts its property box once","decl":"padding:10px;border:2px solid;max-width:calc-size(max-content, size / 2)","property":"max-width","width":124,"height":124,"css_width":100,"css_height":100,"calculated":true},{"name":"border-box intrinsic maximum includes its border basis","decl":"box-sizing:border-box;padding:10px;border:2px solid;max-width:calc-size(max-content, size / 2)","property":"max-width","width":112,"height":100,"css_width":112,"css_height":100,"calculated":true},{"name":"minimum width wins after a conflicting maximum","decl":"min-width:calc-size(min-content, size * 2);max-width:calc-size(max-content, size / 2)","property":"min-width","width":240,"height":100,"css_width":240,"css_height":100,"calculated":true},{"name":"calculated minimum wins after an ordinary maximum","decl":"min-width:calc-size(min-content, size + 20px);max-width:80px","property":"min-width","width":140,"height":100,"css_width":140,"css_height":100,"calculated":true},{"name":"logical minimum inline size maps to the actual width","decl":"width:40px;min-inline-size:calc-size(max-content, size / 2)","property":"min-inline-size","width":100,"height":100,"css_width":100,"css_height":100,"calculated":true},{"name":"logical maximum inline size maps to the actual width","decl":"max-inline-size:calc-size(min-content, size + 10px)","property":"max-inline-size","width":130,"height":100,"css_width":130,"css_height":100,"calculated":true},{"name":"nested maximum-width basis is evaluated once","decl":"max-width:calc-size(calc-size(min-content, size + 20px), size * 2)","property":"max-width","width":280,"height":100,"css_width":280,"css_height":100,"calculated":true},{"name":"constraint font lengths use the target computed font","decl":"font-size:10px;width:20px;min-width:calc-size(max-content, size * .25 + 2em)","property":"min-width","width":70,"height":100,"css_width":70,"css_height":100,"calculated":true},{"name":"absolute forced width still receives its intrinsic minimum","decl":"position:absolute;left:0;top:0;width:calc-size(stretch, size / 2);min-width:calc-size(min-content, size * 2)","property":"min-width","width":240,"height":100,"css_width":240,"css_height":100,"calculated":true},{"name":"absolute maximum uses distinct inset and percentage bases","decl":"position:absolute;left:20px;right:30px;top:0;max-width:calc-size(stretch, size / 2 + 10%)","property":"max-width","width":215,"height":100,"css_width":215,"css_height":100,"calculated":true},{"name":"ordinary width constraints preserve minimum precedence","decl":"width:150px;min-width:120px;max-width:80px","property":"min-width","width":120,"height":100,"css_width":120,"css_height":100,"calculated":false},{"name":"maximum height measures content at the used inline width","decl":"max-height:calc-size(min-content, size + 10px)","property":"max-height","width":300,"height":50,"css_width":300,"css_height":50,"calculated":true},{"name":"minimum height grows beyond preferred height","decl":"height:20px;min-height:calc-size(max-content, size * 2)","property":"min-height","width":300,"height":80,"css_width":300,"css_height":80,"calculated":true},{"name":"maximum fit-content block size measures real content","decl":"max-height:calc-size(fit-content, size / 2 + 10px)","property":"max-height","width":300,"height":30,"css_width":300,"css_height":30,"calculated":true},{"name":"ordinary automatic minimum block size supplies zero","decl":"height:20px;min-height:calc-size(auto, size + 30px)","property":"min-height","width":300,"height":30,"css_width":300,"css_height":30,"calculated":true},{"name":"maximum height resolves numeric percentage basis","decl":"max-height:calc-size(50%, size / 2 + 10px)","property":"max-height","width":300,"height":85,"css_width":300,"css_height":85,"calculated":true},{"name":"minimum height resolves calculation percentages separately","decl":"height:20px;min-height:calc-size(any, 20% + 15px)","property":"min-height","width":300,"height":75,"css_width":300,"css_height":75,"calculated":true},{"name":"minimum height preserves a numeric basis","decl":"height:20px;min-height:calc-size(80px, size / 2 + 10px)","property":"min-height","width":300,"height":50,"css_width":300,"css_height":50,"calculated":true},{"name":"content-box intrinsic block minimum converts once","decl":"height:10px;padding:10px;border:2px solid;min-height:calc-size(min-content, size / 2 + 10px)","property":"min-height","width":324,"height":54,"css_width":300,"css_height":30,"calculated":true},{"name":"border-box intrinsic block minimum includes its border basis","decl":"box-sizing:border-box;height:10px;padding:10px;border:2px solid;min-height:calc-size(min-content, size / 2 + 10px)","property":"min-height","width":300,"height":42,"css_width":300,"css_height":42,"calculated":true},{"name":"content-box intrinsic block maximum converts once","decl":"padding:10px;border:2px solid;max-height:calc-size(min-content, size / 2)","property":"max-height","width":324,"height":44,"css_width":300,"css_height":20,"calculated":true},{"name":"border-box intrinsic block maximum includes its border basis","decl":"box-sizing:border-box;padding:10px;border:2px solid;max-height:calc-size(min-content, size / 2)","property":"max-height","width":300,"height":32,"css_width":300,"css_height":32,"calculated":true},{"name":"negative maximum height keeps its padding and border","decl":"padding:10px;border:2px solid;max-height:calc-size(min-content, -1 * size)","property":"max-height","width":324,"height":24,"css_width":300,"css_height":0,"calculated":true},{"name":"minimum height wins after a conflicting maximum","decl":"min-height:calc-size(min-content, size * 2);max-height:calc-size(max-content, size / 2)","property":"min-height","width":300,"height":80,"css_width":300,"css_height":80,"calculated":true},{"name":"logical minimum block size maps to the actual height","decl":"height:20px;min-block-size:calc-size(max-content, size * 2)","property":"min-block-size","width":300,"height":80,"css_width":300,"css_height":80,"calculated":true},{"name":"logical maximum block size maps to the actual height","decl":"max-block-size:calc-size(min-content, size + 10px)","property":"max-block-size","width":300,"height":50,"css_width":300,"css_height":50,"calculated":true},{"name":"intrinsic block constraint sees wrapping at the used width","decl":"width:100px;height:20px;min-height:calc-size(min-content, size + 10px)","property":"min-height","width":100,"height":90,"css_width":100,"css_height":90,"calculated":true},{"name":"absolute forced height still receives its intrinsic minimum","decl":"position:absolute;left:0;top:0;height:calc-size(stretch, size / 3);min-height:calc-size(max-content, size * 3)","property":"min-height","width":300,"height":120,"css_width":300,"css_height":120,"calculated":true},{"name":"ordinary height constraints preserve minimum precedence","decl":"height:20px;min-height:80px;max-height:50px","property":"min-height","width":300,"height":80,"css_width":300,"css_height":80,"calculated":false}];
+ for(const c of direct)test(c.name,f=>{
+  f.set(c.decl);const authored=f.target.getAttribute('style');measured(f,c.width,c.height,c.css_width,c.css_height);
+  const value=getComputedStyle(f.target).getPropertyValue(c.property);
+  check(value.startsWith('calc-size(')===c.calculated,'computed constraint retains the calculation');
+  check(f.target.getAttribute('style')===authored,'geometry reads preserve authored declarations');
+ });
+ test('live percentage constraint follows containing-block width',f=>{
+  f.set('max-width:calc-size(50%, size / 2 + 10px)');measured(f,110,100);f.parent.style.width='600px';measured(f,160,100);
+ });
+ test('live intrinsic width constraint follows child content',f=>{
+  f.set('width:40px;min-width:calc-size(min-content, size * 2)');measured(f,240,100);f.first.style.width='90px';measured(f,180,100);
+ });
+ test('live intrinsic height constraint follows content and wrapping',f=>{
+  f.set('height:20px;min-height:calc-size(min-content, size * 2)');measured(f,300,80);f.first.style.height='70px';measured(f,300,140);f.target.style.width='100px';measured(f,100,220);
+ });
+ test('inherited constraint keeps computed parent font lengths',f=>{
+  f.set('font-size:10px;width:20px;min-width:inherit');f.parent.style.cssText+=';font-size:20px;min-width:calc-size(any, 2em)';measured(f,40,100);f.parent.style.fontSize='30px';measured(f,60,100);
+ });
+ test('calculated child minimum contributes to ancestor intrinsic width',f=>{
+  f.set('display:inline-block;width:max-content');f.first.style.cssText+=';width:40px;min-width:calc-size(50px, size * 2)';measured(f,180,100);near(f.first.getBoundingClientRect().width,100,'actual child minimum');
+ });
+ test('calculated child maximum contributes to ancestor intrinsic width',f=>{
+  f.set('display:inline-block;width:max-content');f.first.style.cssText+=';width:200px;max-width:calc-size(50px, size * 2)';measured(f,180,100);near(f.first.getBoundingClientRect().width,100,'actual child maximum');
+ });
+ test('child intrinsic constraint uses its own content basis',f=>{
+  f.set('display:inline-block;width:max-content');f.first.style.cssText+=';width:40px;min-width:calc-size(min-content, size * 4)';f.leaf.style.width='30px';f.leaf.style.height='1px';measured(f,200,100);near(f.first.getBoundingClientRect().width,120,'actual child intrinsic minimum');
+ });
+ test('intrinsic probe and final child percentages use their proper bases',f=>{
+  f.set('height:20px;min-height:calc-size(min-content, size + 10px)');f.first.style.cssText+=';display:block;height:50%';f.second.style.cssText+=';display:block;height:20px';f.leaf.style.height='100px';
+  measured(f,300,130);near(f.first.getBoundingClientRect().height,65,'definite child percentage');
+  f.target.style.height='auto';measured(f,300,130);near(f.first.getBoundingClientRect().height,100,'automatic height retains indefinite percentage');
+ });
+ const animations=[
+  ['min-width','min-content','60px','width:20px',90,100],
+  ['max-width','max-content','100px','',150,100],
+  ['min-height','min-content','100px','height:10px',300,70],
+  ['max-height','max-content','20px','',300,30],
+  ['inline-size','max-content','100px','',150,100],
+  ['block-size','max-content','100px','',300,70],
+  ['min-inline-size','min-content','60px','width:20px',90,100],
+  ['max-inline-size','max-content','100px','',150,100],
+  ['min-block-size','min-content','100px','height:10px',300,70],
+  ['max-block-size','max-content','20px','',300,30]
+ ];
+ for(const [property,from,to,decl,width,height]of animations)test(property+' samples a real intrinsic-to-length animation',f=>{
+  f.set(decl);const a=animate(f,property,from,to);a.currentTime=500;const authored=f.target.getAttribute('style');measured(f,width,height);check(f.target.getAttribute('style')===authored,'sampling leaves authored style intact');
+ });
+ test('automatic minimum interpolates from zero under allow-keywords',f=>{
+  f.set('width:20px');const a=animate(f,'min-width','auto','100px');a.currentTime=500;measured(f,50,100);a.cancel();measured(f,20,100);
+ });
+ test('none remains discrete for maximum constraints',f=>{
+  const a=animate(f,'max-height','initial','20px');a.currentTime=250;measured(f,300,100);check(getComputedStyle(f.target).maxHeight==='none','initial maximum stays none');a.currentTime=750;measured(f,300,20);
+ });
+ test('numeric-only keeps bare intrinsic constraint interpolation discrete',f=>{
+  f.set('width:20px');const a=animate(f,'min-width','min-content','60px','replace','numeric-only');a.currentTime=250;measured(f,120,100);a.currentTime=750;measured(f,60,100);
+ });
+ test('explicit calculated minimum interpolates under numeric-only',f=>{
+  f.set('width:20px');const a=animate(f,'min-width','calc-size(auto, size + 20px)','100px','replace','numeric-only');a.currentTime=500;measured(f,60,100);
+ });
+ test('additive minimum retains its intrinsic underlying basis',f=>{
+  f.set('width:20px;min-width:calc-size(min-content, size)');const a=animate(f,'min-width','20px','40px','add');a.currentTime=500;measured(f,150,100);f.first.style.width='160px';measured(f,190,100);
+ });
+ test('additive maximum retains its intrinsic underlying basis',f=>{
+  f.set('max-height:calc-size(max-content, size)');const a=animate(f,'max-height','20px','40px','add');a.currentTime=500;measured(f,300,70);f.first.style.height='60px';measured(f,300,90);
+ });
+ test('a real minimum-width transition uses computed intrinsic endpoints',f=>{
+  f.set('width:20px;min-width:min-content;interpolate-size:allow-keywords;transition:min-width 1000ms linear');measured(f,120,100);f.target.style.minWidth='60px';getComputedStyle(f.target).width;
+  const a=f.target.getAnimations().find(x=>x.transitionProperty==='min-width');check(!!a,'actual CSS transition exists');f.animations.push(a);a.pause();a.currentTime=500;measured(f,90,100);
+ });
+ function nestedFixture(f,maximum){
+  f.set('width:300px;height:auto');f.first.remove();f.second.remove();
+  const levels=[];let owner=f.target;
+  for(let i=0;i<12;i++){
+   const child=document.createElement('div');
+   child.style.cssText='display:block;margin:0;padding:0;border:0 solid;font-size:0;line-height:0;'+(maximum?'height:1000px;min-height:0;max-height:calc-size(max-content, size + 1px)':'height:0;min-height:calc-size(min-content, size + 1px)');
+   owner.appendChild(child);levels.push(child);owner=child;
+  }
+  const leaf=document.createElement('div'),left=document.createElement('span'),right=document.createElement('span');
+  leaf.style.cssText='display:block;margin:0;padding:0;border:0;font-size:0;line-height:0';
+  const atomic='display:inline-block;vertical-align:top;height:10px;margin:0;padding:0;border:0;pointer-events:none;';
+  left.style.cssText=atomic+'width:120px';right.style.cssText=atomic+'width:80px';
+  leaf.appendChild(left);leaf.appendChild(right);owner.appendChild(leaf);
+  const verify=(width,leafHeight)=>{
+   for(let i=0;i<levels.length;i++)near(levels[i].getBoundingClientRect().height,leafHeight+12-i,'nested actual constrained height');
+   near(leaf.getBoundingClientRect().height,leafHeight,'nested wrapped content height');
+   near(f.target.getBoundingClientRect().width,width,'nested actual inline width');
+   const r=levels[0].getBoundingClientRect();
+   check(document.elementFromPoint(r.left+1,r.bottom-.5)===levels[0],'nested final strip receives the actual hit');
+  };
+  return{left,right,verify};
+ }
+ test('twelve nested intrinsic minimum limits preserve live content and wrapping',f=>{
+  const n=nestedFixture(f,false);n.verify(300,10);n.left.style.height='25px';n.verify(300,25);
+  f.target.style.width='150px';n.verify(150,35);f.target.style.width='300px';n.verify(300,25);
+ });
+ test('twelve nested intrinsic maximum limits preserve live content and wrapping',f=>{
+  const n=nestedFixture(f,true);n.verify(300,10);n.left.style.height='25px';n.right.style.height='40px';
+  f.target.style.width='150px';n.verify(150,65);f.target.style.width='300px';n.verify(300,40);
+ });
+ for(const c of cases){
+  const parent=document.createElement('div'),target=document.createElement('div'),first=document.createElement('span'),second=document.createElement('span'),leaf=document.createElement('i');
+  parent.style.cssText='position:absolute;left:40px;top:30px;width:400px;height:300px;margin:0;padding:0;border:0';target.style.cssText=initial;
+  const atomic='display:inline-block;vertical-align:top;height:40px;margin:0;padding:0;border:0;font-size:0;line-height:0;pointer-events:none;';first.style.cssText=atomic+'width:120px';second.style.cssText=atomic+'width:80px';leaf.style.cssText='display:block;width:0;height:0;margin:0;padding:0;border:0;pointer-events:none';
+  first.appendChild(leaf);target.appendChild(first);target.appendChild(second);parent.appendChild(target);document.body.appendChild(parent);
+  const f={parent,target,first,second,leaf,animations:[],set:decl=>{target.style.cssText=initial+decl;}};
+  try{c.fn(f);rows.push({name:c.name,pass:true});}catch(error){rows.push({name:c.name,pass:false,error:String(error)});}finally{for(const a of f.animations)a.cancel();parent.remove();}
+ }
+ for(const row of rows)console.log('CALC_SIZE_CONSTRAINTS_ROW '+JSON.stringify(row));
+ const passed=rows.filter(x=>x.pass).length,total=rows.length,ok=total===69&&passed===69;document.documentElement.setAttribute('data-css-calc-size-constraints',ok?'PASS':'FAIL');console.log('RESULTS css-calc-size-constraints:'+(ok?'PASS':'FAIL')+' '+JSON.stringify({passed,total}));
+})();
+</script>

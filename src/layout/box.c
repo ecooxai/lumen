@@ -27,7 +27,7 @@ typedef struct { Layout *L; bool last_space; } BState;
 
 static Box *new_box(Layout *L, uint8_t kind, Node *n, ComputedStyle *st) {
     Box *b = arena_alloc(&L->arena, sizeof *b);
-    b->kind = kind; b->node = n; b->st = st; L->nboxes++;
+    b->kind = kind; b->node = n; b->st = st; b->content_height_style = st; L->nboxes++;
     return b;
 }
 static void append(Box *p, Box *c) { c->parent = p; c->prev = p->last; if (p->last) p->last->next = c; else p->first = c; p->last = c; }
@@ -603,12 +603,28 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
             mn = LMAX(mn, a); mx = LMAX(mx, z);
         }
     }
-    float stretch = resolve_own && cbw >= 0 && (st->min_width.kind == LK_STRETCH || st->max_width.kind == LK_STRETCH) ?
-        layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true) - bp : -1;
-    if (st->max_width.kind == LK_LEN && (resolve_own ? len_def(st->max_width, cbw) : !st->max_width.pct)) { float v = (resolve_own ? res(st->max_width, cbw) : st->max_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
-    else if (st->max_width.kind == LK_STRETCH && stretch >= 0) { mx = LMIN(mx, stretch); mn = LMIN(mn, stretch); }
-    if (st->min_width.kind == LK_LEN && (resolve_own ? len_def(st->min_width, cbw) : !st->min_width.pct)) { float v = (resolve_own ? res(st->min_width, cbw) : st->min_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
-    else if (st->min_width.kind == LK_STRETCH && stretch >= 0) { mx = LMAX(mx, stretch); mn = LMAX(mn, stretch); }
+    if (len_calc_size(st->min_width) || len_calc_size(st->max_width)) {
+        float reference = resolve_own ? cbw : -1, content_min = 0, content_max = 0, limit;
+        if (!st->writing_mode && (intrinsic_width_keyword(st->min_width) ||
+                                  intrinsic_width_keyword(st->max_width)))
+            intrinsic_content_width(L, b, reference, &content_min, &content_max);
+        if (layout_width_constraint(b, st->max_width, false, reference, bp,
+                reference, resolve_own && cbw >= 0, content_min, content_max, &limit)) {
+            mx = LMIN(mx, limit - bp); mn = LMIN(mn, limit - bp);
+        }
+        if (layout_width_constraint(b, st->min_width, true, reference, bp,
+                reference, resolve_own && cbw >= 0, content_min, content_max, &limit)) {
+            mx = LMAX(mx, limit - bp); mn = LMAX(mn, limit - bp);
+        }
+        mn = LMAX(0, mn); mx = LMAX(0, mx);
+    } else {
+        float stretch = resolve_own && cbw >= 0 && (st->min_width.kind == LK_STRETCH || st->max_width.kind == LK_STRETCH) ?
+            layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true) - bp : -1;
+        if (st->max_width.kind == LK_LEN && (resolve_own ? len_def(st->max_width, cbw) : !st->max_width.pct)) { float v = (resolve_own ? res(st->max_width, cbw) : st->max_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
+        else if (st->max_width.kind == LK_STRETCH && stretch >= 0) { mx = LMIN(mx, stretch); mn = LMIN(mn, stretch); }
+        if (st->min_width.kind == LK_LEN && (resolve_own ? len_def(st->min_width, cbw) : !st->min_width.pct)) { float v = (resolve_own ? res(st->min_width, cbw) : st->min_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
+        else if (st->min_width.kind == LK_STRETCH && stretch >= 0) { mx = LMAX(mx, stretch); mn = LMAX(mn, stretch); }
+    }
     if (resolve_own) { mn = LMAX(0, mn); mx = LMAX(0, mx); }
     if (mn > mx) mx = mn;
     *omn = mn + bp; *omx = mx + bp;

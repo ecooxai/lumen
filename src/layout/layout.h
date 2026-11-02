@@ -49,6 +49,9 @@ typedef struct Box {
     uint8_t anchor_ok;   /* bit i: inset i (top right bottom left) resolved from anchor() */
     float mk[8]; int8_t mmode; bool memo; int alo, ahi; unsigned astamp; int dcalls;   /* inputs of the last layout_box, reused when called again with the same ones */
     uint64_t ink_gen; float ink0, ink1; bool defer_in;   /* paint culling: vertical extent of the normal-flow paint, and whether it holds boxes painted later (stacking); valid while doc_box_generation() + 1 == ink_gen */
+    /* Private intrinsic block probes; arena-owned, one layout_run only. */
+    const ComputedStyle *content_height_style;
+    struct ContentHeightMemo *content_height_memo;
 } Box;
 
 /* The parentless synthetic document box is the viewport fallback. A fixed
@@ -153,6 +156,9 @@ void intrinsic(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic_with_basis(Layout *L, Box *b, float cbw, float *mn, float *mx);
 void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic_content_width(Layout *L, Box *b, float cbw, float *mn, float *mx);
+bool layout_width_constraint(Box *b, Length value, bool minimum, float cbw,
+        float bp, float available, bool definite, float intrinsic_min,
+        float intrinsic_max, float *out);
 /* These measurements and the available size are already border-box values. */
 static inline bool intrinsic_width_keyword(Length l) { return l.kind == LK_MIN_CONTENT || l.kind == LK_MAX_CONTENT || l.kind == LK_FIT_CONTENT; }
 static inline float intrinsic_width_size(Length l, float mn, float mx, float available) {
