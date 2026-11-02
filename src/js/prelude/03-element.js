@@ -161,9 +161,13 @@ function cssBorderValue(m, p, priority = false) {
     if (p === 'border') {
         if (CSS_BORDER_IMAGE.some((entry, i) => values[12 + i] !== entry[1])) return '';
         for (let k = 0; k < 3; k++) if (values.slice(k * 4, k * 4 + 4).some(v => v !== values[k * 4])) return '';
-        return [values[0], values[4], values[8] === 'currentcolor' ? '' : values[8]].filter(Boolean).join(' ');
+        const parts = [values[0] === 'medium' ? '' : values[0], values[4] === 'none' ? '' : values[4], values[8] === 'currentcolor' ? '' : values[8]].filter(Boolean);
+        return parts.length ? parts.join(' ') : values[0] + ' ' + values[4];
     }
-    if (CSS_BORDER_SIDES.includes(p.slice(7))) return [values[0], values[1], values[2] === 'currentcolor' ? '' : values[2]].filter(Boolean).join(' ');
+    if (CSS_BORDER_SIDES.includes(p.slice(7))) {
+        const parts = [values[0] === 'medium' ? '' : values[0], values[1] === 'none' ? '' : values[1], values[2] === 'currentcolor' ? '' : values[2]].filter(Boolean);
+        return parts.length ? parts.join(' ') : values[0] + ' ' + values[1];
+    }
     if (names.length === 4) {
         const [a, b, c, d] = values;
         return b === d ? a === c ? a === b ? a : a + ' ' + b : a + ' ' + b + ' ' + c : values.join(' ');
