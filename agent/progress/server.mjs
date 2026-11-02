@@ -23,7 +23,12 @@ function endpoints(){try{return JSON.parse(fs.readFileSync(path.join(runtime,'en
 function originAllowed(origin){if(!origin)return true;try{const u=new URL(origin);return ['http://127.0.0.1:4187','http://localhost:4187',endpoints().tunnel,endpoints().surge].includes(u.origin)}catch{return false}}
 function data(file,fallback){try{return JSON.parse(fs.readFileSync(path.join(base,file),'utf8'))}catch{return fallback}}
 function messages(){try{return fs.readFileSync(path.join(runtime,'messages.jsonl'),'utf8').trim().split('\n').filter(Boolean).slice(-100).map(x=>JSON.parse(x))}catch{return []}}
-function visibleMessages(isPrivate){return messages().filter(m=>isPrivate||m.public===true)}
+function visibleMessages(isPrivate,canPost=false){
+ const all=messages();if(isPrivate)return all;if(!canPost||!postingOpen())return [];
+ const status=currentStatus(),since=Date.parse(status.session_started_utc);if(!Number.isFinite(since)||status.session_id!==messageSession.session_id)return [];
+ const users=new Set(all.filter(m=>m.role==='user'&&(m.session_id===messageSession.session_id||(!m.session_id&&Date.parse(m.utc)>=since))).map(m=>m.id));
+ return all.filter(m=>users.has(m.id)||(m.role==='assistant'&&users.has(m.reply_to)));
+}
 function reviewedFinalShowcase(){
  const meta=data('runtime/final-showcase-manifest.json',null);
  if(meta?.reviewed_publication!==true||!Number.isSafeInteger(meta.bytes)||meta.bytes<=0||meta.bytes>64*1024*1024||!/^[0-9a-f]{64}$/.test(meta.sha256||''))return null;
@@ -99,7 +104,7 @@ function reviewedSourceArchive(){
 }
 function currentStatus(){return data('status.json',{})}
 
-function snapshot(isPrivate,canPost=false){return {type:'snapshot',status:currentStatus(),telemetry,messages:visibleMessages(isPrivate),access:{can_post:canPost&&postingOpen(),private_history:isPrivate}}}
+function snapshot(isPrivate,canPost=false){return {type:'snapshot',status:currentStatus(),telemetry,messages:visibleMessages(isPrivate,canPost),access:{can_post:canPost&&postingOpen(),private_history:isPrivate}}}
 function append(message){const f=path.join(runtime,'messages.jsonl');if(fs.existsSync(f)&&fs.statSync(f).size>1048576)fs.writeFileSync(f,messages().slice(-50).map(x=>JSON.stringify(x)).join('\n')+'\n',{mode:0o600});fs.appendFileSync(f,JSON.stringify(message)+'\n',{mode:0o600})}
 let previousCpu=null, telemetry={utc:new Date().toISOString(),cpu_percent:null,ram:{},disks:[]};
 function sample(){
@@ -150,7 +155,7 @@ wss.on('connection',ws=>{
    if(!ws.canPost||!postingOpen())return ws.send(JSON.stringify({type:'error',text:'A current session message key is required to post.'}));
    sent=sent.filter(t=>Date.now()-t<10000);if(sent.length>=4)return ws.send(JSON.stringify({type:'error',text:'Please wait before sending more messages.'}));
    const body=msg.text.trim().slice(0,2000);if(!body)return;sent.push(Date.now());
-   append({id:crypto.randomUUID(),utc:new Date().toISOString(),role:'user',public:!ws.isPrivate,text:body});broadcast();
+   append({id:crypto.randomUUID(),utc:new Date().toISOString(),role:'user',public:false,session_id:messageSession.session_id,scope:'session',text:body});broadcast();
   }
  });
 });
