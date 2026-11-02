@@ -1,0 +1,82 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CSS keyframes retain ordinary timeline rendering and numeric precision</title>
+<body><script>
+(() => {
+    'use strict';
+    const marker = 'css-keyframe-document-timeline-v2', rows = [];
+    const names = [
+        'unmatched named ranges preserve ordinary paused rendering',
+        'ordinary CSS animation offsets retain their parsed precision'
+    ];
+    const equal = (actual, expected) => { if (actual !== expected) throw new Error(JSON.stringify({actual, expected})); };
+    const near = (actual, expected, tolerance) => {
+        if (!Number.isFinite(actual) || Math.abs(actual - expected) > tolerance)
+            throw new Error(JSON.stringify({actual, expected, tolerance}));
+    };
+    const pending = [], styles = [], elements = []; let finished = false;
+    function done(error) {
+        if (finished) return; finished = true; clearTimeout(deadline);
+        for (const name of names) if (!rows.some(row => row.name === name)) rows.push({name, pass: false, observations: {error: String(error || 'missing result')}});
+        for (const element of elements) element.remove();
+        for (const style of styles) style.remove();
+        for (const row of rows) console.log('CSS_KEYFRAME_DOCUMENT_TIMELINE_V2_ROW ' + JSON.stringify(row));
+        const passed = rows.filter(row => row.pass).length, status = passed === names.length ? 'PASS' : 'FAIL';
+        console.log('RESULTS ' + marker + ':' + status + ' ' + JSON.stringify({passed, total: names.length}));
+        document.documentElement.setAttribute('data-' + marker, status);
+    }
+    const deadline = setTimeout(() => done('rendering sequence timed out'), 10000);
+    function setup(name, body) {
+        const style = document.createElement('style'), element = document.createElement('div');
+        styles.push(style); elements.push(element);
+        style.textContent = '@keyframes ' + name + ' { ' + body + ' }';
+        document.head.appendChild(style);
+        element.style.width = '20px'; element.style.height = '10px';
+        element.style.animationName = name; element.style.animationDuration = '1s';
+        element.style.animationTimingFunction = 'linear'; element.style.animationPlayState = 'paused';
+        element.style.animationFillMode = 'both'; document.body.appendChild(element);
+        // Observe a rendered element before checking its animation. Two frames
+        // make this fixture independent of initial stylesheet activation timing.
+        getComputedStyle(element).width;
+        return {style, element};
+    }
+    try {
+        pending.push(setup('owned-document-range-boundary-v2',
+            'from { width: 10px; } cover 50% { width: 900px; } contain 25% { width: 800px; } ' +
+            'entry 50% { width: 700px; } exit 50% { width: 600px; } ' +
+            'entry-crossing -20% { width: 500px; } exit-crossing 120% { width: 400px; } ' +
+            'to { width: 110px; }'));
+        pending.push(setup('owned-document-precision-v2',
+            'from { opacity: 0; } 12.3456789% { opacity: 0.5; } to { opacity: 1; }'));
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            for (let index = 0; index < pending.length; index++) {
+                const {style, element} = pending[index], observations = {};
+                try {
+                    const animations = element.getAnimations(); observations.animationCount = animations.length;
+                    equal(animations.length, 1);
+                    const animation = animations[0]; equal(animation.timeline, document.timeline);
+                    animation.pause(); animation.currentTime = 500;
+                    const frames = animation.effect.getKeyframes();
+                    observations.effectKeyframes = frames;
+                    observations.cssomSelectors = Array.from(style.sheet.cssRules[0].cssRules, rule => rule.keyText);
+                    if (index === 0) {
+                        observations.computedWidth = getComputedStyle(element).width;
+                        observations.rectWidth = element.getBoundingClientRect().width;
+                        equal(observations.computedWidth, '60px'); equal(observations.rectWidth, 60);
+                        // Named metadata is intentionally recorded, not asserted
+                        // absent: the pinned reference preserves unresolved keys.
+                    } else {
+                        const precise = frames.filter(frame => frame.opacity === '0.5');
+                        equal(precise.length, 1); near(precise[0].offset, 12.3456789 / 100, 1e-14);
+                    }
+                    rows.push({name: names[index], pass: true, observations});
+                } catch (error) {
+                    observations.error = String(error && error.stack || error);
+                    rows.push({name: names[index], pass: false, observations});
+                }
+            }
+            done();
+        }));
+    } catch (error) { done(error && error.stack || error); }
+})();
+</script></body>

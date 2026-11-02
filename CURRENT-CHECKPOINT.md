@@ -1,8 +1,8 @@
-# Lumen Linux source checkpoint 1701
+# Lumen Linux source checkpoint 1703
 
 Prepared with GPT-6 Astra Pro, built-in agents and RubyWebTerm on 2026-11-02.
 
-This tree reproduces the recorded inputs from tested working source `bcdefe495f5c0f975204731ebd609cd4494cf2d0`.
+This tree reproduces the recorded inputs from tested working source `70d99dc0d8e9646f0a256bc3cf68aa47235b92c9`.
 The public commit has separate, previously approved public ancestry. Private task
 history, profiles, credentials, inbox records and guarded validation machinery
 are excluded. Existing older validation documents are historical snapshots;

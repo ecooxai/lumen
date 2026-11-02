@@ -1,12 +1,12 @@
 {
-  "candidate": 1701,
-  "tested_source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
-  "tested_binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
-  "recorded_input_digest": "2c75e05834c127e4dc4f19b5b559e43fd6080118df146e427eb9cbb9779d9458",
-  "recorded_input_count": 734,
-  "source_manifest_file_sha256": "173a7179ba3807a64a1bceaf78814ac4a4228df372dbbafcb6ff6f699ac9896d",
-  "public_parent": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1701-20261102",
+  "candidate": 1703,
+  "tested_source_commit": "70d99dc0d8e9646f0a256bc3cf68aa47235b92c9",
+  "tested_binary_sha256": "38f8185c73bf17b3ec625bc30945216a19950a2bf7d9f597afb53519f11122ba",
+  "recorded_input_digest": "0ed85c68a9944a34e4ab8351a8c536348b2c5d21c97b31a06b4b63e512f41825",
+  "recorded_input_count": 738,
+  "source_manifest_file_sha256": "0e6d2eaa0fc74fc2829e5de0ceb9880f117b85ed3c05161488470979219e8b52",
+  "public_parent": "2ec6af183597791985b48c6a9c2689c4a8ef3cf2",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1703-20261102",
   "recorded_inputs": {
     "CMakeLists.txt": {
       "sha256": "39135ade2090484ca003089b98004a8e28ed3aad5bc244c0921df7cc8798190b",
@@ -397,7 +397,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06b-activate.js": {
-      "sha256": "1b6655ff43ad462dd7d3c1254079a927395e32175688640436a06e12bb0ea915",
+      "sha256": "051f1262d9827c0b04e3890d08554630cedc1fdbffbdba10745805275edb204c",
       "mode": "100644"
     },
     "src/js/prelude/06c-traversal.js": {
@@ -405,7 +405,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06d-anim.js": {
-      "sha256": "6c02453962b0e33c5f046dd737fe8d0924513a3b2504d625f0842a5d84755d77",
+      "sha256": "7ceb5a821cf6ec7e4571fa463c6dcd7cb87107835eda3f75b5864c88c729759b",
       "mode": "100644"
     },
     "src/js/prelude/07-web.js": {
@@ -1506,6 +1506,22 @@
     },
     "tests/js/css-interpolate-size-keywords-v2.html": {
       "sha256": "f2eb3a2083e9b427ab0cdf7162f698e9013be21112bd0edb717a1af67187c3d1",
+      "mode": "100644"
+    },
+    "tests/js/css-keyframe-document-timeline-v2.html": {
+      "sha256": "40f0c6c2c4d895607ce60aaeaa6f35905cce37f6cadfb25c1e04b453ffedc952",
+      "mode": "100644"
+    },
+    "tests/js/css-keyframe-eof-numeric.html": {
+      "sha256": "160148aa32560bc7dd00a6eb2cfbfc9bc8213a83987fdb9b9cd0048c4c590ce5",
+      "mode": "100644"
+    },
+    "tests/js/css-keyframe-selector-cssom.html": {
+      "sha256": "850106aa7d7ec4b502239e42044a74b3b4842745ab176d7ccccb3a93295f15d2",
+      "mode": "100644"
+    },
+    "tests/js/css-keyframe-string-conversion.html": {
+      "sha256": "92f7e741c40e84ab89ee322842a04f5375bd1c77a5d71a059fccda2ffcaa9b05",
       "mode": "100644"
     },
     "tests/js/css-math-serialization-core.html": {

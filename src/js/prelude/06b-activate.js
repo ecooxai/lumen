@@ -172,7 +172,7 @@ function submitForm(form, submitter) {
         else navigatePost(u.href, urlencoded(pairs()), 'application/x-www-form-urlencoded');
     }
 }
-function cssSplit(s) {
+function cssSplit(s, rawPrelude = false) {
     const out = []; const n = s.length; let i = 0, pre = '', start = 0;
     const skipStr = (j, q) => { j++; while (j < n && s[j] !== q) { if (s[j] === '\\') j++; j++; } return j; };
     while (i < n) {
@@ -187,7 +187,11 @@ function cssSplit(s) {
                original prelude: comment removal and whitespace folding would
                otherwise change escaped identifiers or invent separators. */
             const text = pre.trim(), pagePre = /^@page(?:\s|:|$)/i.test(text) ? s.slice(start, i) : null;
-            out.push({ pre: text, pagePre, body: s.slice(i + 1, d ? j : j - 1) }); pre = ''; i = j; start = j; continue;
+            const item = { pre: text, pagePre, body: s.slice(i + 1, d ? j : j - 1) };
+            /* Keyframe selectors need original token boundaries; appendRule
+             * also needs to reject anything outside its single parsed block. */
+            if (rawPrelude) { item.rawPre = s.slice(start, i); item.start = start; item.end = Math.min(j, n); }
+            out.push(item); pre = ''; i = j; start = j; continue;
         }
         if (c === ';' && pre.trim()[0] === '@') { out.push({ pre: pre.trim(), body: null }); pre = ''; i++; start = i; continue; }
         if (c === '}') { pre = ''; i++; start = i; continue; }
@@ -482,17 +486,101 @@ class CSSPageRule extends CSSRule {
     get style() { return ruleStyle(this); }
     get cssText() { return `@page ${this._sel ? this._sel + ' ' : ''}${blockText(this)}`; }
 }
-class CSSKeyframeRule extends CSSRule { get type() { return 8; } get keyText() { return this._key; } set keyText(v) { this._key = String(v); this._changed(); } get style() { return ruleStyle(this); } get cssText() { return `${this._key} ${blockText(this)}`; } }
+/* One selector parser is shared by stylesheet parsing, keyText mutation and
+ * keyframes lookup. Comments remain token boundaries; percentages are CSS
+ * number tokens, including exponents, and are normalized only after validation. */
+/* Numeric offsets remain separate from their CSSOM display representation.
+ * Lookup and animation sampling must not use the rounded keyText string. */
+const cssKeyframeValues = new WeakMap();
+const cssKeyframeGet = Function.prototype.call.bind(WeakMap.prototype.get, cssKeyframeValues);
+const cssKeyframeSet = Function.prototype.call.bind(WeakMap.prototype.set, cssKeyframeValues);
+const cssKeyframePrecision = Function.prototype.call.bind(Number.prototype.toPrecision);
+const cssKeyframeNumber = number => {
+    const text = cssKeyframePrecision(number, 6);
+    return text.includes('e') ? text : text.includes('.') ? text.replace(/0+$/, '').replace(/\.$/, '') : text;
+};
+function cssKeyframeSkipTrivia(text, offset) {
+    while (offset < text.length) {
+        if (/[\t\n\f\r ]/.test(text[offset])) { offset++; continue; }
+        if (text[offset] === '/' && text[offset + 1] === '*') {
+            const end = text.indexOf('*/', offset + 2); offset = end < 0 ? text.length : end + 2; continue;
+        }
+        break;
+    }
+    return offset;
+}
+function cssKeyframeString(value) {
+    if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol to a CSSOMString.');
+    return String(value);
+}
+function cssKeyframeSelectorData(input) {
+    const text = cssKeyframeString(input), parts = []; let start = 0;
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] === '\\') { i++; continue; }
+        if (text[i] === '/' && text[i + 1] === '*') {
+            const end = text.indexOf('*/', i + 2); i = end < 0 ? text.length : end + 1;
+        } else if (text[i] === ',') { parts.push(text.slice(start, i)); start = i + 1; }
+    }
+    parts.push(text.slice(start));
+    const values = [], offsets = [];
+    for (const part of parts) {
+        const first = cssKeyframeSkipTrivia(part, 0), match = /^[+-]?(?:\d*\.\d+|\d+)(?:[eE][+-]?\d+)?%/.exec(part.slice(first));
+        if (match && cssKeyframeSkipTrivia(part, first + match[0].length) === part.length) {
+            const number = Number(match[0].slice(0, -1));
+            if (!Number.isFinite(number) || number < 0 || number > 100) return null;
+            const offset = number / 100;
+            offsets.push(offset); values.push(cssKeyframeNumber(offset * 100) + '%');
+        } else {
+            const keyword = N.cssPropertyIdentifier(part);
+            if (keyword === null || !/^(from|to)$/i.test(keyword)) return null;
+            const offset = /^from$/i.test(keyword) ? 0 : 1;
+            offsets.push(offset); values.push(offset ? '100%' : '0%');
+        }
+    }
+    return {text: values.join(', '), offsets};
+}
+function cssKeyframeIndex(list, input) {
+    const selector = cssKeyframeSelectorData(input);
+    if (selector !== null) for (let i = list.length - 1; i >= 0; i--) {
+        const offsets = cssKeyframeGet(list[i]).offsets;
+        if (offsets.length === selector.offsets.length && offsets.every((offset, index) => offset === selector.offsets[index])) return i;
+    }
+    return -1;
+}
+class CSSKeyframeRule extends CSSRule {
+    get type() { return 8; }
+    get keyText() { return cssKeyframeGet(this).text; }
+    set keyText(value) {
+        const selector = cssKeyframeSelectorData(value);
+        if (selector === null) throw new DOMException('Invalid keyframe selector.', 'SyntaxError');
+        cssKeyframeSet(this, selector); this._changed();
+    }
+    get style() { return ruleStyle(this); } set style(value) { this.style.cssText = value; }
+    get cssText() { return `${cssKeyframeGet(this).text} ${blockText(this)}`; }
+}
 class CSSKeyframesRule extends CSSRule {
     get type() { return 7; } get name() { return this._name; } set name(v) { this._name = String(v); this._changed(); }
     get cssRules() { return this._list; } get length() { return this._list.length; }
-    appendRule(t) { const it = cssSplit(String(t)); const r = it.length === 1 && cssMkKeyframe(it[0], cssRuleSheet(this), this); if (r) { this._list.push(r); this._changed(); } }
-    deleteRule(k) {
-        const key = String(k).trim();
-        const i = this._list.findIndex(r => r._key === key);
-        if (i >= 0) { cssDelete(this._list, i); this._changed(); }
+    appendRule(value) {
+        if (!arguments.length) throw new TypeError('appendRule requires a rule.');
+        const text = cssKeyframeString(value), items = cssSplit(text, true);
+        if (items.length !== 1) return;
+        const item = items[0];
+        if (item.body === null || cssKeyframeSkipTrivia(text.slice(0, item.start), 0) !== item.start ||
+            cssKeyframeSkipTrivia(text, item.end) !== text.length) return;
+        const rule = cssMkKeyframe(item, cssRuleSheet(this), this);
+        if (rule) { this._list.push(rule); this._changed(); }
     }
-    findRule(k) { return this._list.find(r => r._key === String(k).trim()) || null; }
+    deleteRule(selector) {
+        if (!arguments.length) throw new TypeError('deleteRule requires a selector.');
+        const index = cssKeyframeIndex(this._list, selector);
+        if (index >= 0) { cssDelete(this._list, index); this._changed(); }
+    }
+    findRule(selector) {
+        if (!arguments.length) throw new TypeError('findRule requires a selector.');
+        const index = cssKeyframeIndex(this._list, selector);
+        return index < 0 ? null : this._list[index];
+    }
     get cssText() { return `@keyframes ${this._name} ${CSSGroupingRule.prototype._inner.call(this)}`; }
 }
 function cssMk(C, props) {
@@ -505,10 +593,11 @@ function cssMk(C, props) {
     def(r, '_text', null); return r;
 }
 function cssMkKeyframe(it, sheet, parent) {
-    if (it.body == null || !it.pre) return null;
-    const key = it.pre.split(',').map(k => { k = k.trim().toLowerCase(); return k === 'from' ? '0%' : k === 'to' ? '100%' : k; });
-    if (!key.every(k => /^[+-]?(\d+\.?\d*|\.\d+)%$/.test(k))) return null;
-    return cssMk(CSSKeyframeRule, { _key: key.join(', '), _body: it.body, _style: null, _sheet: sheet, _parent: parent });
+    if (it.body == null) return null;
+    const key = cssKeyframeSelectorData(it.rawPre === undefined ? it.pre : it.rawPre);
+    if (key === null) return null;
+    const rule = cssMk(CSSKeyframeRule, { _body: it.body, _style: null, _sheet: sheet, _parent: parent });
+    cssKeyframeSet(rule, key); return rule;
 }
 function cssMkRule(it, sheet, parent) {
     const p = it.pre, base = { _sheet: sheet, _parent: parent };
@@ -537,7 +626,7 @@ function cssMkRule(it, sheet, parent) {
         if (selector === null) return null;
         return cssMk(CSSPageRule, { ...base, _sel: selector, _body: it.body, _style: null });
     }
-    else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { r = cssMk(CSSKeyframesRule, { ...base, _name: rest, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
+    else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { r = cssMk(CSSKeyframesRule, { ...base, _name: rest, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body, true)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
     else return null;
     def(r, '_list', cssParseList(it.body, sheet, r));
     return r;
