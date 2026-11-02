@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><title>Animation sampling at native layout read boundaries</title>
+<style>html,body{margin:0;padding:0;border:0}</style><body><script>
+(()=>{
+ const rows=[],owned=[],animations=[];
+ const eq=(a,b,label)=>{if(a!==b)throw Error(label+': '+JSON.stringify(a)+' expected '+JSON.stringify(b));};
+ const near=(a,b,label)=>{if(!Number.isFinite(a)||Math.abs(a-b)>.02)throw Error(label+': '+a+' expected '+b);};
+ const check=(name,fn)=>{try{fn();rows.push({name,pass:true});}catch(error){rows.push({name,pass:false,error:String(error)});}finally{while(animations.length)animations.pop().cancel();while(owned.length)owned.pop().remove();}};
+ const make=(left=40)=>{const p=document.createElement('div'),t=document.createElement('div');p.style.cssText='position:absolute;left:'+left+'px;top:30px;width:200px;height:100px';t.style.cssText='display:block;width:30px;height:20px;margin:0;padding:0;border:0;background:green';p.appendChild(t);document.body.appendChild(p);owned.push(p);return{p,t};};
+ const animate=(t,from,to,time)=>{const a=t.animate({width:[from+'px',to+'px']},{duration:1000,fill:'both',easing:'linear'});animations.push(a);a.pause();a.currentTime=time;return a;};
+ check('bounding geometry samples a fresh numeric seek before any computed read',()=>{const{t}=make();animate(t,10,90,500);near(t.getBoundingClientRect().width,50,'first BCR');eq(getComputedStyle(t).width,'50px','same native used width');});
+ check('offset width samples a fresh seek into the native layout',()=>{const{t}=make();animate(t,20,100,250);eq(t.offsetWidth,40,'first offsetWidth');near(t.getBoundingClientRect().width,40,'same BCR');});
+ check('client width samples a fresh seek into the native padding box',()=>{const{t}=make();animate(t,20,100,500);eq(t.clientWidth,60,'first clientWidth');near(t.getBoundingClientRect().width,60,'same BCR');});
+ check('scroll width reads the freshly sampled real scroll box',()=>{const{t}=make();t.style.overflow='hidden';animate(t,20,100,750);eq(t.scrollWidth,80,'first scrollWidth');near(t.getBoundingClientRect().width,80,'same BCR');});
+ check('client rect list samples before testing box existence',()=>{const{t}=make();animate(t,20,100,500);const r=t.getClientRects();eq(r.length,1,'one actual rect');near(r[0].width,60,'first client rect');});
+ check('hit testing samples the layer and observes cancellation without another read',()=>{const{p,t}=make();const a=animate(t,20,100,750);eq(document.elementFromPoint(110,35),t,'first hit uses80px box');eq(document.elementFromPoint(125,35),p,'outside sampled box');a.cancel();eq(document.elementFromPoint(110,35),p,'cancel restores30px underlying box');near(t.getBoundingClientRect().width,30,'restored actual width');});
+ check('first geometry read discovers and samples a paused CSS animation',()=>{const{t}=make();const s=document.createElement('style');s.textContent='@keyframes read-sync-paused{from{width:20px}to{width:100px}}';document.head.appendChild(s);owned.push(s);t.style.animationName='read-sync-paused';t.style.animationDuration='1000ms';t.style.animationDelay='-500ms';t.style.animationTimingFunction='linear';t.style.animationPlayState='paused';t.style.animationFillMode='both';near(t.getBoundingClientRect().width,60,'first paused CSS sample');eq(document.elementFromPoint(95,35),t,'paint geometry reaches native hit');});
+ check('one synchronous read applies all pending element layers consistently',()=>{const a=make(40),b=make(300);animate(a.t,10,90,500);animate(b.t,20,120,500);near(a.t.getBoundingClientRect().width,50,'first element sample');eq(document.elementFromPoint(365,35),b.t,'second element sampled by same flush');near(b.t.getBoundingClientRect().width,70,'second actual width');});
+ for(const row of rows)console.log('ANIMATION_READ_SYNC_ROW '+JSON.stringify(row));
+ const passed=rows.filter(r=>r.pass).length,ok=rows.length===8&&passed===8;
+ document.documentElement.setAttribute('data-css-animation-read-sync',ok?'PASS':'FAIL');console.log('RESULTS css-animation-read-sync:'+(ok?'PASS':'FAIL')+' '+JSON.stringify({passed,total:rows.length}));
+})();
+</script>

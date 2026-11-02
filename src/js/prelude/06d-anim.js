@@ -669,6 +669,7 @@ function waEffectValue(eff, prop, under, c) {
 }
 /* ---- timeline and frame loop ---- */
 let waFrameTime = null, waInFrame = false, waSeqN = 0, waLoop = false, waDirty = false;
+let waFlushing = false, waReading = false;
 const waAll = new SSet(), waApplied = new SMap(), waEvents = [];
 const waNow = () => { if (waInFrame && waFrameTime !== null) return waFrameTime; if (!waLoop) waKick(); return waFrameTime === null ? performance.now() : Math.max(waFrameTime, performance.now() - 1000 / 60); };
 function waInvalidate() { waDirty = true; waKick(); }
@@ -692,7 +693,9 @@ function trSuppressCss(el, a, b) {
     for (const css of [a || '', b || '']) for (const m of css.matchAll(/(?:^|; )([-a-z]+):/g)) { if (!s) trSuppress.set(el, s = new SSet()); s.add(m[1]); }
 }
 function waFlush() {
-    if (!waDirty) return; waDirty = false;
+    if (!waDirty || waFlushing) return;
+    waFlushing = true; waDirty = false;
+    try {
     const byEl = new SMap();
     for (const a of [...waAll].sort((x, y) => x._seq - y._seq)) {
         const e = a._effect;
@@ -714,6 +717,21 @@ function waFlush() {
         }
         if (waApplied.get(el) !== css) { trSuppressCss(el, waApplied.get(el), css); N.setAnimStyle(el, css); waApplied.set(el, css); }
     }
+    } finally { waFlushing = false; }
+}
+/* Native read synchronization enters this realm before and after its actual
+   style/layout flush. Sampling writes the normal animation declaration layer;
+   geometry, hit testing and the subsequent paint use those same native boxes.
+   Internal computed reads made while sampling must not poll partially applied
+   layers or recurse into another animation sample. */
+function waSyncRead(afterStyle) {
+    if (waFlushing || waReading) return false;
+    waReading = true;
+    try {
+        const pending = waDirty;
+        if (pending) waFlush();
+        return (afterStyle && trPoll()) || pending;
+    } finally { waReading = false; }
 }
 function waRemoveReplaced() {
     const list = [...waAll].filter(a => a._replaceable()).sort((x, y) => x._seq - y._seq);

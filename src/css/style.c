@@ -3280,6 +3280,7 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
  * slots. Scope the projection to the same style so recursive substitution
  * retains normal all validation and nested other-style work is unaffected. */
 static _Thread_local const ComputedStyle *contain_intrinsic_projection_style;
+static _Thread_local const ComputedStyle *interpolate_size_projection_style;
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
         char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
@@ -3665,9 +3666,13 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "all")) {
             /* Preserve authored all ordering for these native families. The
                CSS-wide branch has already validated the reset keyword. */
-            css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
-            if (contain_intrinsic_projection_style != st)
-                css_apply_decl(st, par, "border", val, e, el);
+            if (interpolate_size_projection_style == st)
+                css_apply_decl(st, par, "interpolate-size", val, e, el);
+            else {
+                css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
+                if (contain_intrinsic_projection_style != st)
+                    css_apply_decl(st, par, "border", val, e, el);
+            }
         }
         else if (!inherit && !(unset && gp && gp->inherited) && gp && gp->native && gp->initial && *gp->initial) {
             /* other natively modelled properties: apply the textual initial value */
@@ -5856,12 +5861,14 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
     for (int i = 0; i < n; i++) if (flow_basis_prop(v[i].d->prop)) css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
     apply_font_declarations(st, par, v, n, e, el, author);
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
-    bool intrinsic_family = false;
+    bool intrinsic_family = false, interpolation_policy = false;
     for (int i = 0; i < n; i++) {
         const char *p = v[i].d->prop;
         if ((p[0] == '-' && p[1] == '-') || flow_basis_prop(p) || font_basis_prop(p) || !strcmp(p, "color")) continue;
+        if (!strcmp(p, "interpolate-size")) { interpolation_policy = true; continue; }
         if (contain_intrinsic_family(p)) {
             intrinsic_family = true;
+            if (!strcmp(p, "all")) interpolation_policy = true;
             if (strcmp(p, "all")) continue;
         }
         if (author && unitless_invalid(p, v[i].d->value, el)) continue;
@@ -5871,6 +5878,20 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
         css_apply_decl(st, par, p, v[i].d->value, e, el);
     }
     if (intrinsic_family) apply_contain_intrinsic_declarations(st, par, v, n, e, el);
+    /* Preserve source order and importance, including validated all resets.
+       The scoped all projection changes only this policy during the replay;
+       unrelated fields keep the results of the ordinary declaration pass. */
+    if (interpolation_policy) {
+        const ComputedStyle *previous_projection = interpolate_size_projection_style;
+        interpolate_size_projection_style = st;
+        for (int phase = 0; phase < 3; phase++) for (int i = 0; i < n; i++) {
+            const Decl *d = v[i].d;
+            if (strcmp(d->prop, "interpolate-size") && strcmp(d->prop, "all")) continue;
+            int priority = (v[i].key >> 62) == 3 ? 2 : !v[i].key && d->important ? 1 : 0;
+            if (priority == phase) css_apply_decl(st, par, d->prop, d->value, e, el);
+        }
+        interpolate_size_projection_style = previous_projection;
+    }
     bg_position_resolve_logical(st);
 }
 
@@ -6127,6 +6148,10 @@ static unsigned inherited_diff(const ComputedStyle *a, const ComputedStyle *b) {
         const GenProp *orientation = gen_prop("text-orientation");
         if (!str_same(gen_value(a, orientation), gen_value(b, orientation))) {
             g_inh_field = "text-orientation"; return INH_OTHER;
+        }
+        const GenProp *policy = gen_prop("interpolate-size");
+        if (!str_same(gen_value(a, policy), gen_value(b, policy))) {
+            g_inh_field = "interpolate-size"; return INH_OTHER;
         }
     }
 #undef INHERITED_EQ
