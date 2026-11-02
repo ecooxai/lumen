@@ -29,6 +29,60 @@ static void refresh(StyleEngine *engine, Layout *layout, Document *doc) {
 static void set_style(Node *node, const char *style, StyleEngine *engine, Layout *layout, Document *doc) {
     node_set_attr(node, "style", style); refresh(engine, layout, doc);
 }
+/* Keep ordinary declaration-axis tracking distinct from a visited query's
+ * established conservative viewport invalidation. All consumers use the same
+ * actual style/layout path, including a cached registered value read twice. */
+static void viewport_dependency_consumers(void) {
+    Document *doc = doc_new("https://viewport-dependencies.test/");
+    const char *html = "<!doctype html><html><body><div id='target'></div></body></html>";
+    html_parse(doc, html, strlen(html));
+    StyleEngine *engine = style_engine_new(doc);
+    engine->media = (MediaCtx){400, 200, 1, false};
+    const char *sheet = "html,body{margin:0;padding:0}#target{position:absolute;left:0;top:0;height:10px}";
+    style_engine_add_sheet(engine, css_parse_sheet(sheet, strlen(sheet), doc->url, 1, &engine->media));
+    css_register_property_full("--viewport313", "0px", "<length>", false);
+    Layout *layout = layout_new(); refresh(engine, layout, doc);
+    Node *target = doc_get_element_by_id(doc, "target"); assert(target && target->style && target->box);
+    static const struct {
+        const char *unit, *mode;
+        float before, after;
+        bool height_dependency;
+    } cases[] = {
+        {"25vw", "horizontal-tb", 100, 100, false},
+        {"25vh", "horizontal-tb", 50, 75, true},
+        {"25dvi", "vertical-rl", 50, 75, true},
+        {"25lvb", "vertical-lr", 100, 100, false}
+    };
+    for (unsigned form = 0; form < 4; form++) for (unsigned i = 0; i < 4; i++) {
+        char declaration[512], label[192];
+        const char *unit = cases[i].unit, *mode = cases[i].mode;
+        if (form == 0)
+            snprintf(declaration, sizeof declaration, "width:calc(%s + 5px);writing-mode:%s", unit, mode);
+        else if (form == 1)
+            snprintf(declaration, sizeof declaration, "--raw313:%s;width:calc(var(--raw313) + 5px);writing-mode:%s", unit, mode);
+        else if (form == 2)
+            snprintf(declaration, sizeof declaration, "width:if(style(%s > 60px):105px;else:55px);writing-mode:%s", unit, mode);
+        else
+            snprintf(declaration, sizeof declaration, "--viewport313:%s;width:calc(var(--viewport313) + 5px);min-width:var(--viewport313);writing-mode:%s", unit, mode);
+        engine->media.vh = 200;
+        set_style(target, declaration, engine, layout, doc);
+        uint64_t version = doc->dom_version;
+        for (unsigned resized = 0; resized < 2; resized++) {
+            if (resized) { engine->media.vh = 300; refresh(engine, layout, doc); }
+            float basis = resized ? cases[i].after : cases[i].before;
+            float expected = form == 2 ? (basis > 60 ? 105 : 55) : basis + 5;
+            snprintf(label, sizeof label, "viewport consumer %u %s state%u computed", form, unit, resized);
+            near(label, target->style->width.px, expected);
+            snprintf(label, sizeof label, "viewport consumer %u %s state%u actual box", form, unit, resized);
+            near(label, ((Box *)target->box)->w, expected);
+            snprintf(label, sizeof label, "viewport consumer %u %s state%u precise ordinary or conservative query dependency", form, unit, resized);
+            yes(label, target->style->uses_vh == (form >= 2 || cases[i].height_dependency));
+        }
+        yes("height-only resize preserves DOM version across ordinary and query consumers", doc->dom_version == version);
+    }
+    layout_free(layout); style_engine_free(engine); doc_free(doc);
+}
+
 int main(void) {
     dom_init(); font_init();
     Document *doc = doc_new("https://viewport-units.test/");
@@ -129,6 +183,7 @@ int main(void) {
     set_style(target, "width:10vb;writing-mode:sideways-lr", engine, layout, doc);
     near("sideways computed block axis", target->style->width.px, 40);
 
+    viewport_dependency_consumers();
     layout_free(layout); style_engine_free(engine); doc_free(doc);
     printf("PASS css_viewport_units %u native checks\n", checks);
     return 0;

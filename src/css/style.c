@@ -761,7 +761,8 @@ enum {
     QD_LINE = 1u << QB_LINE, QD_FLOW = 1u << QB_FLOW,
     QD_DIRECTION = 1u << QB_DIRECTION, QD_ORIENTATION = 1u << QB_ORIENTATION,
     QD_COLOR = 1u << QB_COLOR, QD_ROOT_SIZE = 1u << 16,
-    QD_VIEWPORT = 1u << 17, QD_ROOT_METRICS = 1u << 18, QD_ROOT_LINE = 1u << 19
+    QD_VIEWPORT = 1u << 17, QD_ROOT_METRICS = 1u << 18, QD_ROOT_LINE = 1u << 19,
+    QD_VIEWPORT_QUERY = 1u << 20
 };
 #define QD_ROOT_FONT (QD_ROOT_SIZE | QD_ROOT_METRICS | QD_ROOT_LINE)
 #define QD_FONT_METRICS (QD_SIZE | QD_FAMILY | QD_WEIGHT | QD_STYLE | QD_ORIENTATION | QD_FLOW)
@@ -1081,8 +1082,13 @@ static unsigned query_unit_dependencies_mode(const char *text, bool parent_font,
     return dependencies;
 }
 static unsigned query_unit_dependencies(const char *text) {
-    /* Style-query operands always retain their actual own/root edges. */
-    return query_unit_dependencies_mode(text, false, false, false);
+    /* Style-query and registered-value reads keep the established conservative
+     * viewport invalidation, including when a typed result is replayed from
+     * the per-style cache. Ordinary declaration scans use the mode helper
+     * directly and let actual length evaluation record the physical axis. */
+    unsigned dependencies = query_unit_dependencies_mode(text, false, false, false);
+    if (dependencies & QD_VIEWPORT) dependencies |= QD_VIEWPORT_QUERY;
+    return dependencies;
 }
 static bool query_root_element(const VarResolver *r) {
     return !r->is_pseudo && r->element && r->element->doc && r->element == r->element->doc->html;
@@ -1118,7 +1124,8 @@ static bool query_dependencies(VarResolver *r, VarEntry *owner, unsigned depende
     }
     if (r->ensure_basis && !r->ensure_basis(r, own)) return false;
     if (dependencies & QD_ROOT_FONT) r->style->inherited_dynamic = true;
-    if (dependencies & QD_VIEWPORT) { g_vh_used = true; r->style->inherited_dynamic = true; }
+    if (dependencies & QD_VIEWPORT) r->style->inherited_dynamic = true;
+    if (dependencies & QD_VIEWPORT_QUERY) g_vh_used = true;
     return !(owner && owner->cycle);
 }
 static LCtx query_number_context(VarResolver *r, bool *root_used) {
