@@ -99,7 +99,7 @@ function parseDecls(s, fontFace = false) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
     return m;
 }
 /* Physical border declarations are stored as real longhands. The native
@@ -1116,6 +1116,27 @@ function shapeLenPx(el) {
         return +(n * f).toPrecision(6) + 'px';
     };
 }
+/* Raw declaration reads share the setters' scalar serialization. Normalize
+ * only complete length/percentage literals (or line-height numbers), after
+ * the property's existing parser has seen its original token spelling. */
+function cssScalarSpecified(property, value) {
+    if (!CSS_PROP_NAMES.has(property) || !(TOM_LENGTH_PROPS.test(property) ||
+        property === 'baseline-shift' || property === 'border-spacing')) return value;
+    const scalar = /^([+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?)([a-z]+|%)?$/i.exec(value);
+    if (!scalar || !Number.isFinite(Number(scalar[1]))) return value;
+    const unit = (scalar[2] || '').toLowerCase();
+    if (!TOM_LEN_UNITS.has(unit)) return value;
+    /* Keep unitless tokens on their existing property grammar path. In
+       particular, underflow must not manufacture a valid zero length, and
+       number-valued border-image widths must not become px values. */
+    if (!unit && property !== 'line-height') return value;
+    const canonical = specNormalize(property, value);
+    if (canonical === value || !mathValid(property, value)) return value;
+    if (N.cssSupports('(' + property + ':initial)') &&
+        !N.cssSupports('(' + property + ':' + value + ')')) return value;
+    return canonical;
+}
+
 function specNormalize(p, v) {
     if ((p === 'shape-outside' || p === 'clip-path') && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, null);
     if ((p === 'shape-outside' || p === 'clip-path') && /inset\(/i.test(v)) v = insetNorm(v, null);

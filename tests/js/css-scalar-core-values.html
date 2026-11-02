@@ -1,0 +1,119 @@
+<!doctype html><meta charset="utf-8"><title>Finite scalar CSSOM values and native consumers</title><body>
+<script>
+/* Independent finite-length/percentage/line-height scope. The earlier strict
+ * 64-row scalar fixture remains byte-for-byte retained in the held timing lane.
+ * This fixture makes no timing-function grammar or animation claim. */
+(() => {
+    const rows = [], equal = (actual, expected, message) => {
+        if (actual !== expected) throw new Error(message + ': ' + JSON.stringify(actual) + ' != ' + JSON.stringify(expected));
+    };
+    const yes = (value, message) => { if (!value) throw new Error(message); };
+    const near = (actual, expected, message) => { if (!Number.isFinite(actual) || Math.abs(actual - expected) > .02) throw new Error(message + ': ' + actual + ' != ' + expected); };
+    function test(name, callback) {
+        try { callback(); rows.push({name, pass:true}); }
+        catch (error) { rows.push({name, pass:false, error:String(error)}); }
+    }
+    function declaration(mode, text, callback) {
+        const owner = document.createElement(mode === 'inline' ? 'div' : 'style');
+        if (mode === 'inline') owner.setAttribute('style', text);
+        else owner.textContent = '#scalar-specified-fixture {' + text + '}';
+        document.body.appendChild(owner);
+        try {
+            const style = mode === 'inline' ? owner.style : owner.sheet.cssRules[0].style;
+            const source = mode === 'inline' ? owner.getAttribute('style') : owner.textContent;
+            callback(style, () => mode === 'inline' ? owner.getAttribute('style') : owner.textContent, source);
+        } finally { owner.remove(); }
+    }
+    const valid = [
+        ['width', '.1em', '0.1em'], ['height', '.5%', '0.5%'],
+        ['max-width', '+.50em', '0.5em'], ['min-height', '1e-1em', '0.1em'],
+        ['margin-left', '-.125em', '-0.125em'], ['padding-right', '.250%', '0.25%'],
+        ['top', '-0.0px', '0px'], ['left', '+.5em', '0.5em'],
+        ['inset-inline-start', '.25em', '0.25em'], ['font-size', '.125em', '0.125em'],
+        ['line-height', '-.0', '0'], ['line-height', '+.50', '0.5'],
+        ['letter-spacing', '-.25em', '-0.25em'], ['word-spacing', '.25em', '0.25em'],
+        ['text-indent', '.5%', '0.5%'], ['vertical-align', '.5%', '0.5%'],
+        ['outline-offset', '.5em', '0.5em'], ['scroll-margin-left', '.5em', '0.5em'],
+        ['baseline-shift', '.5%', '0.5%'], ['border-spacing', '.1em', '0.1em'],
+        ['width', '1E-1PX', '0.1px'], ['height', '1e+1px', '10px'],
+        ['letter-spacing', '-0.0em', '0em'], ['line-height', '1e-1', '0.1']
+    ];
+    for (const [property, input, expected] of valid) for (const mode of ['inline', 'rule'])
+        test(mode + ' scalar ' + property + ':' + input, () => declaration(mode, property + ':' + input, (style, raw, before) => {
+            equal(style.getPropertyValue(property), expected, 'canonical value');
+            yes(style.cssText.includes(property + ': ' + expected + ';'), 'canonical declaration text');
+            equal(raw(), before, 'reading CSSOM preserves source text');
+        }));
+    for (const mode of ['inline', 'rule']) {
+        test(mode + ' important scalar survives unrelated setter', () => declaration(mode, 'width:.5em!important', (style, raw, before) => {
+            equal(style.width, '0.5em', 'canonical important width');
+            equal(style.getPropertyPriority('width'), 'important', 'priority');
+            equal(raw(), before, 'read leaves source intact');
+            style.setProperty('opacity', '.75');
+            equal(style.width, '0.5em', 'width retained');
+            equal(style.getPropertyPriority('width'), 'important', 'priority retained');
+        }));
+        test(mode + ' invalid negative size retains valid declaration', () => declaration(mode, 'width:10px;width:-.1em', style => {
+            equal(style.width, '10px', 'invalid negative width is ignored');
+        }));
+        test(mode + ' pending substitution preserves its token stream', () => declaration(mode, 'width:var(--size,.1em);--size:.5em', (style, raw, before) => {
+            equal(style.width, 'var(--size,.1em)', 'pending width stream');
+            equal(style.getPropertyValue('--size'), '.5em', 'custom token stream');
+            equal(raw(), before, 'reading pending value preserves source');
+        }));
+    }
+    for (const token of ['.1em', '1e1', '-0', '"font .1em"'])
+        test('custom property token stream ' + token, () => declaration('inline', '--token:' + token + ';width:.1em', (style, raw, before) => {
+            equal(style.getPropertyValue('--token'), token, 'custom value remains unnormalized');
+            equal(style.width, '0.1em', 'ordinary length canonicalized');
+            style.cssText;
+            equal(raw(), before, 'custom source unchanged by reads');
+        }));
+    for (const source of ['unicode-range:u+00a?;', 'unicode-range:U+41;unicode-range:U+43-41;'])
+        test('font face context stays separate ' + source, () => {
+            const owner = document.createElement('style');
+            owner.textContent = '@font-face {font-family:"Scalar .1em";src:local("Scalar .1em");' + source + '}';
+            document.head.appendChild(owner);
+            try {
+                const raw = owner.textContent, style = owner.sheet.cssRules[0].style;
+                equal(style.getPropertyValue('font-family'), '"Scalar .1em"', 'quoted descriptor is untouched');
+                equal(style.getPropertyValue('unicode-range'), source.includes('00a') ? 'U+A0-AF' : 'U+41', 'descriptor parser remains contextual');
+                style.cssText;
+                equal(owner.textContent, raw, 'descriptor reads preserve source');
+            } finally { owner.remove(); }
+        });
+    function rendered(text, callback) {
+        const parent = document.createElement('div'), child = document.createElement('div');
+        parent.style.cssText = 'position:relative;width:400px;font-size:20px;margin:0;padding:0;border:0;';
+        child.setAttribute('style', 'margin:0;padding:0;border:0;box-sizing:content-box;' + text);
+        child.textContent = 'X'; parent.appendChild(child); document.body.appendChild(parent);
+        try { callback(child, parent); } finally { parent.remove(); }
+    }
+    function preserveBox(name, text, property, expected, measure, expectedSize) {
+        test(name, () => rendered(text, (child, parent) => {
+            near(measure(child, parent), expectedSize, 'geometry before serialization');
+            equal(child.style.getPropertyValue(property), expected, 'canonical specified value');
+            child.style.setProperty('opacity', '.75');
+            near(measure(child, parent), expectedSize, 'geometry after unrelated CSSOM setter');
+        }));
+    }
+    preserveBox('em width keeps actual parent-font geometry', 'width:.5em;height:10px;', 'width', '0.5em', child => child.getBoundingClientRect().width, 10);
+    preserveBox('percentage width keeps actual containing-block basis', 'width:.5%;height:10px;', 'width', '0.5%', child => child.getBoundingClientRect().width, 2);
+    preserveBox('negative inset keeps actual relative positioning', 'position:relative;left:-.5em;width:10px;height:10px;', 'left', '-0.5em', (child, parent) => child.getBoundingClientRect().left - parent.getBoundingClientRect().left, -10);
+    preserveBox('unitless line height retains actual line box', 'width:100px;line-height:+.50;', 'line-height', '0.5', child => child.getBoundingClientRect().height, 10);
+    preserveBox('padding scalar keeps actual border-box width', 'width:10px;height:10px;padding-left:.5em;padding-right:.5em;', 'padding-left', '0.5em', child => child.getBoundingClientRect().width, 30);
+    test('raw CSSOM scalar reads produce no attribute mutation', () => rendered('width:.5em;height:10px;', child => {
+        const observer = new MutationObserver(() => {}); observer.observe(child, {attributes:true, attributeFilter:['style']});
+        try {
+            const before = child.getAttribute('style');
+            equal(child.style.width, '0.5em', 'value'); child.style.cssText; child.style.length;
+            equal(child.getAttribute('style'), before, 'raw attribute unchanged');
+            equal(observer.takeRecords().length, 0, 'read-only CSSOM generated no mutation');
+        } finally { observer.disconnect(); }
+    }));
+    const passed = rows.filter(row => row.pass).length, ok = rows.length === 66 && passed === 66;
+    for (const row of rows) console.log('SCALAR_CORE_ROW ' + JSON.stringify(row));
+    console.log('RESULTS css-scalar-core-values:' + (ok ? 'PASS' : 'FAIL') + ' ' + JSON.stringify({passed, total:rows.length}));
+    document.documentElement.setAttribute('data-css-scalar-core-values', ok ? 'PASS' : 'FAIL');
+})();
+</script>
