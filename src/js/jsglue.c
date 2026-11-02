@@ -109,7 +109,7 @@ bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y) {
         box_sticky_offset(a, scroll_x, scroll_y, &sticky_x, &sticky_y);
         m = affine_multiply(box_transform_matrix(a), m);
         m = affine_multiply(affine_translation(sticky_x, sticky_y), m);
-        if (a->fixed) { fixed = true; break; }
+        if (box_fixed_to_viewport(a)) { fixed = true; break; }
         struct Box *up = a->abs && a->cb ? a->cb : a->parent;
         if (up && up->scroller && up->node && up->st && (up->st->overflow_x != OV_VISIBLE || up->st->overflow_y != OV_VISIBLE))
             m = affine_multiply(affine_translation(-box_scroll_left(up), -box_scroll_y(up)), m);
@@ -130,7 +130,7 @@ bool jsg_vclip(Node *n, Node *stop, float c[4], float scroll_x, float scroll_y) 
     struct Box *b = n->box;
     if (!b) return false;
     c[0] = c[1] = -INFINITY; c[2] = c[3] = INFINITY;
-    for (struct Box *a = b; a && !a->fixed; ) {
+    for (struct Box *a = b; a && !box_fixed_to_viewport(a); ) {
         struct Box *up = a->abs && a->cb ? a->cb : a->parent;
         if (!up || (stop && up->node == stop)) break;
         const ComputedStyle *s = up->st;

@@ -550,7 +550,7 @@ static int def_cmp(const void *a, const void *b) {
 static void paint_deferred(PB *p, Deferred *d) {
     PB saved = *p;
     *p = d->state; p->order = saved.order;
-    if (d->b->fixed) {
+    if (box_fixed_to_viewport(d->b)) {
         p->dx = -0.0f; p->dy = 0; p->clip = false; p->fixed = true; p->sticky = false;
         p->mv = p->mv_out = NULL; p->sb = NULL; p->outer = NULL;
     } else if (d->b->abs && d->b->cb == p->L->root) p->clip = false;

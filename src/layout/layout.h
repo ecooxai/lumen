@@ -51,6 +51,13 @@ typedef struct Box {
     uint64_t ink_gen; float ink0, ink1; bool defer_in;   /* paint culling: vertical extent of the normal-flow paint, and whether it holds boxes painted later (stacking); valid while doc_box_generation() + 1 == ink_gen */
 } Box;
 
+/* The parentless synthetic document box is the viewport fallback. A fixed
+ * descendant of an actual element containing block keeps that element's
+ * transforms, scrolling and clips; only the fallback uses viewport state. */
+static inline bool box_fixed_to_viewport(const Box *b) {
+    return b && b->fixed && (!b->cb || !b->cb->parent);
+}
+
 /* Shared by viewport geometry, inverse hit testing, and the paint group.
  * Coordinates remain in the box tree's document frame. Sticky translation and
  * scrolling are separate operations outside this CSS transform. */

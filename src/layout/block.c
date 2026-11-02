@@ -60,7 +60,7 @@ float fc_bottom(FloatCtx *fc) { return fc ? fc_clear(fc, CLEAR_BOTH) : -1e30f; }
 /* ---------------- translate ---------------- */
 static bool within(Box *x, Box *root) { for (; x; x = x->parent) if (x == root) return true; return false; }
 static bool abs_outside_translation(Box *box, Box *root) {
-    if (box->fixed && (!box->cb || !box->cb->parent)) return true;
+    if (box_fixed_to_viewport(box)) return true;
     return box->cb && !within(box->cb, root);
 }
 static void tr(Box *root, Box *b, float dx, float dy) {
@@ -1357,7 +1357,8 @@ static void hit_layers(Box *b, float x, float y, float ox, float oy, float vx, f
        Each layer is tested at most once, and a lower layer cannot replace a hit. */
     for (Box *c = b->last; c; c = c->prev) {
         bool outside = c->abs && b->scroller && !box_within(c->cb, b);
-        float cx = c->fixed ? vx : outside ? ox : cox, cy = c->fixed ? vy : outside ? oy : coy;
+        bool viewport_fixed = box_fixed_to_viewport(c);
+        float cx = viewport_fixed ? vx : outside ? ox : cox, cy = viewport_fixed ? vy : outside ? oy : coy;
         if (hit_layer(c) == 2) { hit_layers(c, x, y, cx, cy, vx, vy, sx, sy, best); continue; }
         int z = c->st->z_auto ? 0 : c->st->z_index;
         if ((z < 0) != best->negative || (best->box && z <= best->z)) continue;
