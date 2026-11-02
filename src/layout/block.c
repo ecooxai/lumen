@@ -360,6 +360,17 @@ static float clamph(Box *b, float h, float cbh, float bp);
    memo keys include mode, cbw and fw, so the two inputs remain independent. */
 enum { SZ_ABS_SHRINK = SZ_FORCED + 1 };
 
+/* abs_place resolves these auto/stretch bases as border-box sizes before
+ * passing them through SZ_FORCED/fh. Evaluate the sizing calculation here,
+ * once, in the property's box; general forced sizes are already resolved. */
+static float abs_calc_size_border(Length value, float border_basis, float bp,
+                                  bool border_box, float percentage_basis) {
+    double extra = border_box ? 0 : bp;
+    double basis = fmax((double)bp, border_basis) - extra;
+    double result = (double)len_calc_size_apply(value, basis, percentage_basis) + extra;
+    return (float)fmax((double)bp, fmin((double)FLT_MAX, result));
+}
+
 static float g_imcb[2];   /* the last abs_place's inset-modified containing block size */
 static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int src[4], const int kwm[4]) {
     float px, py, pw, ph;
@@ -431,7 +442,15 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
 #undef FI
     int mode = SZ_SHRINK; float fw = 0, fh = -1;
     bool wdef = len_def(s->width, pw) || s->width.kind == LK_STRETCH;
-    if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) { mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */ fw = pw - l - r - a->m[1] - a->m[3]; }
+    if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) {
+        mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */
+        fw = pw - l - r - a->m[1] - a->m[3];
+        if (len_calc_size(s->width) && a->fmt != FMT_TABLE) {
+            float bp = hbp(a);
+            fw = abs_calc_size_border(s->width, fw, bp, s->box_sizing == BOX_BORDER, pw);
+            fw = LMAX(bp, clampw_basis(L, a, fw, pw, bp, g_imcb[0], true));
+        }
+    }
     float avail = sizing_x ? g_imcb[0] : pw - (lA ? 0 : l) - (rA ? 0 : r);
     if (!len_def(s->height, ph) && !tA && !bA) {
         fh = ph - t - bt - a->m[0] - a->m[2];
@@ -440,8 +459,15 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
         bool stretch_height = (!cb->st || !cb->st->writing_mode) &&
             (s->align_self == AL_AUTO || s->align_self == AL_NORMAL ||
              s->align_self == AL_STRETCH);
-        if (stretch_height && s->height.kind == LK_AUTO && s->aspect_ratio <= 0 &&
+        if (len_calc_size(s->height) && s->height.kind == LK_AUTO &&
             a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE) {
+            /* The inset-resolved basis may be negative before its border-box
+               floor. Calculate before the element's final size constraints. */
+            float bp = vbp(a);
+            fh = abs_calc_size_border(s->height, fh, bp, s->box_sizing == BOX_BORDER, ph);
+            fh = LMAX(bp, clamph_basis(a, fh, ph, bp, g_imcb[1], true));
+        } else if (stretch_height && s->height.kind == LK_AUTO && s->aspect_ratio <= 0 &&
+                   a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE) {
             /* An inset-resolved auto height stays definite at its border-box
                floor. Apply min/max before positioning and preserve the
                existing intrinsic, ratio and table sizing paths. */
@@ -454,10 +480,14 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
     if (s->width.kind == LK_STRETCH) {
         mode = SZ_FORCED;
         fw = layout_stretch_border_size(a, cb, true, avail, true);
+        if (len_calc_size(s->width) && a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE)
+            fw = abs_calc_size_border(s->width, fw, hbp(a), s->box_sizing == BOX_BORDER, pw);
         fw = clampw_basis(L, a, fw, pw, hbp(a), avail, true);
     }
     if (s->height.kind == LK_STRETCH) {
         fh = layout_stretch_border_size(a, cb, false, stretch_avail_h, true);
+        if (len_calc_size(s->height) && a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE)
+            fh = abs_calc_size_border(s->height, fh, vbp(a), s->box_sizing == BOX_BORDER, ph);
         fh = clamph_basis(a, fh, ph, vbp(a), stretch_avail_h, true);
     }
     if (s->anchor_sz[0] || s->anchor_sz[1]) {   /* anchor-size() widths and heights are border-box sizes here */
