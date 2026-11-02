@@ -500,6 +500,7 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     *out = l; *pp = p; return true;
 }
 static bool calc_scale(Length *value, float scale) {
+    if (len_calc_size(*value)) return false; /* sizing values are not ordinary lengths */
     /* Homogeneity is exact for a finite nonzero multiplier. Zero and
        nonfinite multipliers require a full expression tree; never turn
        a finite rounded result times zero into round(0,0). */
@@ -519,6 +520,7 @@ static bool calc_scale(Length *value, float scale) {
     return true;
 }
 static bool calc_add_linear(Length *value, float px, float pct, bool pctu) {
+    if (len_calc_size(*value)) return false;
     if ((value->math_pct_mask & LEN_MATH_EXACT_PROGRESS) && (!isfinite(px) || !isfinite(pct))) return false;
     if (len_math_stepped(value->mm)) {
         value->px3 += px; value->pct3 += pct;
@@ -1354,7 +1356,9 @@ static bool bg_position_item(ACtx *c, const char *text, int axis, Length out[2])
     }
     free_toks(t, n); return ok;
 }
+static void calc_size_flat_text(SB *out, Length value);
 static void bg_length_str(SB *b, Length value) {
+    if (len_calc_size(value)) { calc_size_flat_text(b, value); return; }
     if (len_math_stepped(value.mm)) {
         Length a = L_px(value.px), z = L_px(value.px2), offset = L_px(value.px3);
         a.pct = value.pct; a.pctu = !!(value.math_pct_mask & 1);
@@ -2110,6 +2114,276 @@ bool css_min_size_valid(const char *prop, const char *value) {
     if (!min_size_property(prop)) return true;
     char *parsed = css_min_size_parse(value); bool valid = parsed != NULL;
     free(parsed); return valid;
+}
+
+/* Prototype fragment: finite affine calc-size(), evaluated in the declaration's
+ * font/viewport context. The size symbol survives until native layout. This
+ * parser is intentionally separate from ordinary Length arithmetic: calc-size
+ * is a sizing value, never a <length> accepted by unrelated properties. */
+typedef struct {
+    double size, px, pct;
+    MathType type;
+    bool percentage, mentions_size;
+} SizeCalculation;
+typedef struct {
+    LCtx lengths;
+    unsigned depth;
+    bool allow_size;
+} SizeCalculationParser;
+static bool size_calculation_sum(const char **cursor, SizeCalculationParser *parser,
+                                 SizeCalculation *out);
+static void size_calculation_space(const char **cursor) {
+    while (is_ws((unsigned char)**cursor)) (*cursor)++;
+}
+static bool size_calculation_finite(const SizeCalculation *value) {
+    return isfinite(value->size) && isfinite(value->px) && isfinite(value->pct) &&
+        fabs(value->size) <= 3.4028234663852886e38 &&
+        fabs(value->px) <= 3.4028234663852886e38 &&
+        fabs(value->pct) <= 3.4028234663852886e38;
+}
+static bool size_calculation_factor(const char **cursor, SizeCalculationParser *parser,
+                                    SizeCalculation *out) {
+    if (++parser->depth > 256) { parser->depth--; return false; }
+    const char *p = *cursor;
+    size_calculation_space(&p);
+    bool ok = false;
+    memset(out, 0, sizeof *out);
+    if (*p == '(' || str_istarts(p, "calc(") || str_istarts(p, "-webkit-calc(")) {
+        p = strchr(p, '(') + 1;
+        ok = size_calculation_sum(&p, parser, out);
+        size_calculation_space(&p);
+        ok = ok && *p == ')';
+        if (ok) p++;
+    } else if (str_istarts(p, "size") && !isalnum((unsigned char)p[4]) && p[4] != '-' && p[4] != '_') {
+        ok = parser->allow_size;
+        out->size = 1;
+        out->mentions_size = true;
+        out->type = math_type_unit(MATH_LENGTH);
+        p += 4;
+    } else {
+        Length length;
+        ok = parse_dim(&p, &length, &parser->lengths) && length.kind == LK_LEN && !length.mm;
+        if (ok) {
+            out->px = length.px;
+            out->pct = length.pct;
+            out->percentage = length.pctu;
+            out->type = parser->lengths.math_type;
+        }
+    }
+    parser->depth--;
+    if (!ok || !size_calculation_finite(out)) return false;
+    *cursor = p;
+    return true;
+}
+static bool size_calculation_product(const char **cursor, SizeCalculationParser *parser,
+                                     SizeCalculation *out) {
+    if (!size_calculation_factor(cursor, parser, out)) return false;
+    for (;;) {
+        const char *p = *cursor;
+        size_calculation_space(&p);
+        if (*p != '*' && *p != '/') break;
+        char operation = *p++;
+        SizeCalculation right;
+        MathType result;
+        if (!size_calculation_factor(&p, parser, &right) ||
+            !math_type_product(out->type, right.type, operation == '*' ? 1 : -1, &result)) return false;
+        /* There may be only one symbolic/percentage operand in a product.
+         * Never estimate coefficients by evaluating a nonlinear function at
+         * sample points. Unit cancellation of constant operands remains typed. */
+        bool left_variable = out->size != 0 || out->pct != 0 || out->percentage;
+        bool right_variable = right.size != 0 || right.pct != 0 || right.percentage;
+        bool mentioned = out->mentions_size || right.mentions_size;
+        if (operation == '/') {
+            if (right_variable || right.px == 0) return false;
+            out->size /= right.px;
+            out->px /= right.px;
+            out->pct /= right.px;
+        } else {
+            if (left_variable && right_variable) return false;
+            if (right_variable) {
+                double scale = out->px;
+                *out = right;
+                out->size *= scale; out->px *= scale; out->pct *= scale;
+            } else {
+                out->size *= right.px; out->px *= right.px; out->pct *= right.px;
+            }
+        }
+        out->type = result;
+        out->mentions_size = mentioned;
+        if (!size_calculation_finite(out)) return false;
+        *cursor = p;
+    }
+    return true;
+}
+static bool size_calculation_sum(const char **cursor, SizeCalculationParser *parser,
+                                 SizeCalculation *out) {
+    if (!size_calculation_product(cursor, parser, out)) return false;
+    for (;;) {
+        const char *end = *cursor, *p = end;
+        size_calculation_space(&p);
+        if (*p != '+' && *p != '-') break;
+        /* A numeric token with an attached sign is not a binary operator.
+         * The caller also validates original math spacing before normalization. */
+        if (p == end || !is_ws((unsigned char)p[1])) return false;
+        double sign = *p++ == '-' ? -1 : 1;
+        SizeCalculation right;
+        if (!size_calculation_product(&p, parser, &right) ||
+            !math_type_equal(out->type, right.type)) return false;
+        out->size += sign * right.size;
+        out->px += sign * right.px;
+        out->pct += sign * right.pct;
+        out->percentage |= right.percentage;
+        out->mentions_size |= right.mentions_size;
+        if (!size_calculation_finite(out)) return false;
+        *cursor = p;
+    }
+    return true;
+}
+static void size_calculation_text(SB *out, SizeCalculation value) {
+    unsigned terms = (value.percentage || value.pct != 0) + (value.px != 0) + (value.size != 0);
+    bool wrote = false;
+    if (value.percentage || value.pct != 0) {
+        sb_printf(out, "%g%%", value.pct == 0 ? 0.0 : value.pct);
+        wrote = true;
+    }
+    if (value.px != 0 || !terms) {
+        if (wrote) sb_puts(out, value.px < 0 ? " - " : " + ");
+        sb_printf(out, "%gpx", wrote ? fabs(value.px) : value.px == 0 ? 0.0 : value.px);
+        wrote = true;
+    }
+    if (value.size != 0) {
+        if (wrote) sb_puts(out, value.size < 0 ? " - " : " + ");
+        double coefficient = wrote ? fabs(value.size) : value.size;
+        bool product = coefficient != 1;
+        if (wrote && product) sb_putc(out, '(');
+        if (product) sb_printf(out, "%g * ", coefficient);
+        sb_puts(out, "size");
+        if (wrote && product) sb_putc(out, ')');
+    }
+}
+static bool calc_size_affine_value(const char **cursor, SizeCalculationParser *parser,
+                                   Length *out, SB *computed, unsigned nesting) {
+    if (nesting > 256) return false;
+    const char *p = *cursor;
+    size_calculation_space(&p);
+    if (!str_istarts(p, "calc-size(")) return false;
+    p += 10;
+    size_calculation_space(&p);
+    Length basis = L_px(0);
+    bool nested = false, any = false;
+    SB basis_text = {0};
+    static const struct { const char *name; uint8_t kind; } keywords[] = {
+        { "auto", LK_AUTO }, { "min-content", LK_MIN_CONTENT },
+        { "max-content", LK_MAX_CONTENT }, { "fit-content", LK_FIT_CONTENT },
+        { "stretch", LK_STRETCH }, { "any", LK_LEN }
+    };
+    bool keyword = false, ok = true;
+    if (str_istarts(p, "calc-size(")) {
+        nested = true;
+        ok = calc_size_affine_value(&p, parser, &basis, &basis_text, nesting + 1);
+    } else {
+        for (unsigned i = 0; i < sizeof keywords / sizeof *keywords; i++) {
+            size_t length = strlen(keywords[i].name);
+            if (!str_ieqn(p, keywords[i].name, length) ||
+                !(p[length] == ',' || is_ws((unsigned char)p[length]))) continue;
+            basis.kind = keywords[i].kind;
+            any = !strcmp(keywords[i].name, "any");
+            sb_puts(&basis_text, keywords[i].name);
+            p += length; keyword = true; break;
+        }
+        if (!keyword) {
+            SizeCalculation value;
+            parser->allow_size = false;
+            ok = size_calculation_sum(&p, parser, &value) &&
+                math_type_equal(value.type, math_type_unit(MATH_LENGTH));
+            if (ok) {
+                basis.px = (float)value.px; basis.pct = (float)value.pct;
+                basis.pctu = value.percentage;
+                size_calculation_text(&basis_text, value);
+            }
+        }
+    }
+    size_calculation_space(&p);
+    if (!ok || *p != ',') { sb_free(&basis_text); return false; }
+    p++;
+    parser->allow_size = !any;
+    SizeCalculation calculation;
+    ok = size_calculation_sum(&p, parser, &calculation) &&
+        math_type_equal(calculation.type, math_type_unit(MATH_LENGTH));
+    size_calculation_space(&p);
+    if (!ok || *p != ')') { sb_free(&basis_text); return false; }
+    p++;
+    sb_puts(computed, "calc-size("); sb_puts(computed, basis_text.s);
+    sb_puts(computed, ", "); size_calculation_text(computed, calculation); sb_putc(computed, ')');
+    sb_free(&basis_text);
+    if (nested) {
+        /* Flatten only the private used-value representation. The separately
+         * stored computed text above retains the nested calc-size structure. */
+        double factor = calculation.size;
+        calculation.size = factor * basis.px2;
+        calculation.px += factor * basis.pct2;
+        calculation.pct += factor * basis.px3;
+        calculation.percentage |= calculation.mentions_size && !!(basis.math_pct_mask & LEN_CALC_SIZE_PERCENT);
+        any = !!(basis.math_pct_mask & LEN_CALC_SIZE_ANY);
+    }
+    if (!size_calculation_finite(&calculation)) return false;
+    basis.mm = LEN_CALC_SIZE;
+    basis.px2 = (float)calculation.size;
+    basis.pct2 = (float)calculation.px;
+    basis.px3 = (float)calculation.pct;
+    basis.pct3 = 0;
+    basis.math_pct_mask = (any ? LEN_CALC_SIZE_ANY : 0) |
+        (calculation.percentage ? LEN_CALC_SIZE_PERCENT : 0);
+    *out = basis; *cursor = p;
+    return true;
+}
+static bool calc_size_function(const char *value) {
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    CTok first;
+    do { first = clex_next(&lexer); if (first.type == CT_WS) free(first.str); } while (first.type == CT_WS);
+    bool function = first.type == CT_FUNC && first.str && str_ieq(first.str, "calc-size");
+    free(first.str);
+    return function;
+}
+static bool calc_size_preferred_value(ACtx *context, const char *value, Length *out,
+                                      char **computed_value) {
+    if (!css_math_spacing_valid(value)) return false;
+    char *normalized = min_size_parser_text(value);
+    if (!normalized) return false;
+    bool root_used = false;
+    SizeCalculationParser parser = { .lengths = application_scalar_context(context, &root_used) };
+    parser.lengths.flow_basis = context->st;
+    SB computed = {0}; Length result;
+    const char *cursor = normalized;
+    bool ok = calc_size_affine_value(&cursor, &parser, &result, &computed, 0);
+    size_calculation_space(&cursor);
+    ok = ok && !*cursor;
+    if (root_used && context->st) context->st->inherited_dynamic = true;
+    if (ok) {
+        *out = result; *computed_value = sb_take(&computed);
+        memset(&computed, 0, sizeof computed);
+    }
+    sb_free(&computed); free(normalized);
+    return ok;
+}
+
+/* The compact layout form is already prepared for evaluation. Prefer the
+ * separately stored computed text for authored values so nested bases remain
+ * nested before used-value time. This fallback serves synthesized snapshots. */
+static void calc_size_flat_text(SB *out, Length value) {
+    sb_puts(out, "calc-size(");
+    if (value.math_pct_mask & LEN_CALC_SIZE_ANY) sb_puts(out, "any");
+    else if (value.kind == LK_LEN) {
+        SizeCalculation basis = { .px = value.px, .pct = value.pct, .percentage = value.pctu };
+        size_calculation_text(out, basis);
+    } else {
+        static const char *const names[] = { "", "auto", "none", "min-content", "max-content", "fit-content", "content", "stretch" };
+        sb_puts(out, names[value.kind]);
+    }
+    sb_puts(out, ", ");
+    SizeCalculation calculation = { .size = value.px2, .px = value.pct2, .pct = value.px3,
+        .percentage = !!(value.math_pct_mask & LEN_CALC_SIZE_PERCENT) };
+    size_calculation_text(out, calculation); sb_putc(out, ')');
 }
 
 /* Pure lengths and times do not acquire the length-percentage hint used by
@@ -3097,6 +3371,20 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     }
     bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
     GridTrack *prepared_tracks = NULL; int prepared_count = 0;
+    if ((!strcmp(P, "width") || !strcmp(P, "height")) && !inherit && !initial && !unset &&
+        calc_size_function(val)) {
+        /* Commit native and generic computed state together. Unsupported or
+         * malformed calculation syntax cannot replace only half a declaration.
+         * A pending declaration already took unset before this final parse. */
+        Length value; char *computed = NULL;
+        if (calc_size_preferred_value(&c, val, &value, &computed)) {
+            int axis = !strcmp(P, "height");
+            if (axis) st->height = value; else st->width = value;
+            free(st->anchor_sz[axis]); st->anchor_sz[axis] = NULL;
+            gen_put(&st->gen_n, P, computed);
+        }
+        goto out;
+    }
     if (!inherit && !initial && !unset) {
         if (grid_tracks && !str_ieq(val, "none")) {
             prepared_count = parse_grid_tracks(&c, val, &prepared_tracks);
@@ -3260,6 +3548,11 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
                 !strcmp(P, "min-width") ? &st->min_width : !strcmp(P, "min-height") ? &st->min_height :
                 !strcmp(P, "max-width") ? &st->max_width : &st->max_height;
             *dst = *v; if (inherit) st->parent_sensitive = true;
+            if ((!strcmp(P, "width") || !strcmp(P, "height")) &&
+                (len_calc_size(*dst) || custom_get(st->gen_n, P))) {
+                const char *computed = len_calc_size(*dst) ? gen_value(src, gen_prop(from)) : NULL;
+                gen_put(&st->gen_n, P, xstrdup(computed ? computed : ""));
+            }
         }
         else if (!strcmp(P, "grid-column-start")) { st->grid_column.start = src->grid_column.start; if (inherit) st->parent_sensitive = true; }
         else if (!strcmp(P, "grid-column-end")) { st->grid_column.end = src->grid_column.end; if (inherit) st->parent_sensitive = true; }
@@ -6572,6 +6865,7 @@ ComputedStyle *style_for_text(Node *t) { Node *p = t->parent; while (p && p->typ
 static double alpha_round(unsigned a8) { double r = round(a8 / 2.55) / 100; return (unsigned)lround(r * 255) == a8 ? r : round(a8 / 0.255) / 1000; }
 static void color_str(SB *b, Color c) { if (COLOR_A(c) == 255) sb_printf(b, "rgb(%u, %u, %u)", COLOR_R(c), COLOR_G(c), COLOR_B(c)); else sb_printf(b, "rgba(%u, %u, %u, %g)", COLOR_R(c), COLOR_G(c), COLOR_B(c), alpha_round(COLOR_A(c))); }
 static void len_str(SB *b, Length l, const char *au) {
+    if (len_calc_size(l)) { calc_size_flat_text(b, l); return; }
     if (l.kind == LK_AUTO) sb_puts(b, au);
     else if (l.kind == LK_NONE) sb_puts(b, "none");
     else if (l.kind == LK_MIN_CONTENT) sb_puts(b, "min-content");
@@ -6803,6 +7097,10 @@ static char *animation_value_of(Node *n, const ComputedStyle *s, const char *pro
         int axis = !strcmp(size, "width") ? 0 : !strcmp(size, "height") ? 1 : -1;
         if (axis >= 0 && !s->anchor_sz[axis]) {
             Length value = axis ? s->height : s->width;
+            if (len_calc_size(value)) {
+                const char *computed = gen_value(s, gen_prop(size));
+                if (computed) return xstrdup(computed);
+            }
             bool finite = isfinite(value.px) && isfinite(value.pct) &&
                 (!value.mm || (isfinite(value.px2) && isfinite(value.pct2) &&
                                isfinite(value.px3) && isfinite(value.pct3)));
@@ -7154,7 +7452,11 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
             float v = W ? bx->w : bx->h;
             if (!s->box_sizing) v -= W ? bx->p[1] + bx->p[3] + bx->b[1] + bx->b[3] : bx->p[0] + bx->p[2] + bx->b[0] + bx->b[2];
             sb_printf(&b, "%gpx", v > 0 ? v : 0);
-        } else len_str(&b, W ? s->width : s->height, "auto");
+        } else {
+            Length value = W ? s->width : s->height;
+            const char *computed = len_calc_size(value) ? gen_value(s, gen_prop(prop)) : NULL;
+            if (computed) sb_puts(&b, computed); else len_str(&b, value, "auto");
+        }
     }
     else if (!strcmp(prop, "min-width") || !strcmp(prop, "min-height")) {
         /* The resolved automatic minimum is zero for ordinary boxes; flex and

@@ -1,6 +1,7 @@
 #ifndef LUMEN_CSS_H
 #define LUMEN_CSS_H
 #include "../dom/dom.h"
+#include <float.h>
 #include <math.h>
 
 /* ---------------- values ---------------- */
@@ -46,6 +47,40 @@ static inline double len_stepped_value(double a, double b, uint8_t mm) {
 }
 static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
 static inline Length L_auto(void) { Length l = { 0, 0, LK_AUTO }; return l; }
+/* Proposed additions to css.h. This is an integration fragment, not a second
+ * standalone Length type. LEN_CALC_SIZE uses the existing operation byte;
+ * kind/px/pct/pctu retain the basis classification and numeric basis. */
+enum { LEN_CALC_SIZE = 128 };
+enum { LEN_CALC_SIZE_ANY = 1, LEN_CALC_SIZE_PERCENT = 2 };
+static inline bool len_calc_size(Length value) { return value.mm == LEN_CALC_SIZE; }
+static inline Length len_calc_size_basis(Length value) {
+    if (len_calc_size(value)) {
+        value.mm = value.math_pct_mask = 0;
+        value.px2 = value.pct2 = value.px3 = value.pct3 = 0;
+    }
+    return value;
+}
+static inline bool len_calc_size_has_percent(Length value) {
+    return len_calc_size(value) &&
+        (value.pctu || value.pct != 0 || (value.math_pct_mask & LEN_CALC_SIZE_PERCENT));
+}
+static inline float len_calc_size_apply(Length value, double basis, float percent_reference) {
+    /* Calculation percentages are zero for an indefinite containing block.
+     * The basis itself is resolved by its original sizing algorithm. */
+    double result = value.pct2;
+    if (value.px2 != 0) result += (double)value.px2 * basis;
+    if (value.px3 != 0 || (value.math_pct_mask & LEN_CALC_SIZE_PERCENT))
+        result += (double)value.px3 * (percent_reference > 0 ? percent_reference : 0) / 100;
+    /* This is the completed used sizing value. Keep the numeric basis and
+     * all multiply/add intermediates in double; only the final transfer to
+     * the layout float range is saturated. Symbolic coefficients and other
+     * Length/math evaluation paths remain unchanged. */
+    if (isnan(result)) return 0;
+    if (result > FLT_MAX) return FLT_MAX;
+    if (result < -FLT_MAX) return -FLT_MAX;
+    return (float)result;
+}
+
 static inline double len_affine_operand(float px, float pct, bool pctu, float ref) {
     if (!pctu && !pct) return px;
     double p = (double)pct * ref / 100;
@@ -53,6 +88,12 @@ static inline double len_affine_operand(float px, float pct, bool pctu, float re
     return px == 0 ? p : px + p;
 }
 static inline float len_resolve(Length l, float ref) {
+    if (len_calc_size(l)) {
+        /* Intrinsic keyword bases require their actual layout measurement.
+         * Ordinary res() only reaches this path for numeric/any bases. */
+        double basis = len_affine_operand(l.px, l.pct, l.pctu, ref);
+        return len_calc_size_apply(l, basis, ref);
+    }
     if (len_math_stepped(l.mm)) {
         double a = len_affine_operand(l.px, l.pct, l.math_pct_mask & 1, ref);
         double b = len_affine_operand(l.px2, l.pct2, l.math_pct_mask & 2, ref);
@@ -91,7 +132,10 @@ static inline uint8_t len_math_flip(uint8_t mm) {
     return mm ? (uint8_t)((mm <= 2 ? 3 : 7) - mm) : 0;
 }
 static inline bool len_is_auto(Length l) { return l.kind == LK_AUTO; }
-static inline bool len_has_pct(Length l) { return l.kind == LK_LEN && (l.pct != 0 || (l.mm && l.pct2 != 0) || (l.mm >= 3 && l.pct3 != 0)); }
+static inline bool len_has_pct(Length l) {
+    if (len_calc_size(l)) return l.kind == LK_LEN && (l.pctu || l.pct != 0);
+    return l.kind == LK_LEN && (l.pct != 0 || (l.mm && l.pct2 != 0) || (l.mm >= 3 && l.pct3 != 0));
+}
 
 typedef uint32_t Color; /* 0xAARRGGBB */
 #define COLOR_A(c) (((c) >> 24) & 0xff)

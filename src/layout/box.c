@@ -111,7 +111,8 @@ float layout_stretch_border_size(const Box *box, const Box *percentage_cb,
 /* an anonymous block wrapping an inline run shares its parent's style, but not its size: a
    height: 100% parent would otherwise give each wrapper the parent's whole height */
 static ComputedStyle *anon_block_style(Layout *L, ComputedStyle *p) {
-    if (p->width.kind == LK_AUTO && p->height.kind == LK_AUTO && p->min_width.kind == LK_AUTO && p->min_height.kind == LK_AUTO &&
+    if (p->width.kind == LK_AUTO && p->height.kind == LK_AUTO && !len_calc_size(p->width) && !len_calc_size(p->height) &&
+        p->min_width.kind == LK_AUTO && p->min_height.kind == LK_AUTO &&
         p->max_width.kind == LK_NONE && p->max_height.kind == LK_NONE && p->aspect_ratio <= 0) return p;
     ComputedStyle *s = arena_alloc(&L->arena, sizeof *s);
     *s = *p; s->refs = 1 << 20;
@@ -507,7 +508,29 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
     const ComputedStyle *st = b->st;
     float bp = hbp(b), mn = 0, mx = 0;
     bool contained = layout_size_contained(b, true);
-    if (st->width.kind == LK_STRETCH && resolve_own && cbw >= 0 && b->fmt != FMT_TABLE) {
+    if (len_calc_size(st->width)) {
+        Length value = st->width, basis = len_calc_size_basis(value);
+        float reference = resolve_own ? cbw : -1;
+        float extra = st->box_sizing == BOX_BORDER ? 0 : bp;
+        if (len_def(value, reference)) {
+            /* Numeric bases are property values, not already-floored border
+             * boxes: with 12px padding, calc-size(11px, 2 * size) remains 22px. */
+            double numeric = len_affine_operand(basis.px, basis.pct, basis.pctu, reference);
+            float result = len_calc_size_apply(value, numeric, reference) + extra;
+            mn = mx = LMAX(bp, result) - bp;
+        } else {
+            ComputedStyle measured = *st;
+            measured.width = basis.kind == LK_LEN ? L_auto() : basis;
+            measured.min_width = L_auto(); measured.max_width = (Length){ .kind = LK_NONE };
+            b->st = &measured; b->intr_ok = false;
+            intrinsic_measure(L, b, cbw, resolve_own, &mn, &mx);
+            b->st = (ComputedStyle *)st;
+            if (basis.kind == LK_MIN_CONTENT) mx = mn;
+            else if (basis.kind == LK_MAX_CONTENT) mn = mx;
+            mn = LMAX(bp, len_calc_size_apply(value, mn - extra, reference) + extra) - bp;
+            mx = LMAX(bp, len_calc_size_apply(value, mx - extra, reference) + extra) - bp;
+        }
+    } else if (st->width.kind == LK_STRETCH && resolve_own && cbw >= 0 && b->fmt != FMT_TABLE) {
         mn = mx = layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true) - bp;
     } else if (st->width.kind == LK_LEN && (resolve_own ? len_def(st->width, cbw) : st->width.pct == 0) && b->fmt != FMT_TABLE) {
         mn = mx = (resolve_own ? res(st->width, cbw) : st->width.px) - (st->box_sizing == BOX_BORDER ? bp : 0);

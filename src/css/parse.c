@@ -148,7 +148,7 @@ bool css_value_has_var(const char *value) {
 static bool css_math_function(const char *name) {
     static const char *const names[] = { "calc", "-webkit-calc", "min", "max", "clamp",
         "round", "mod", "rem", "abs", "sign", "sin", "cos", "tan", "asin", "acos",
-        "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp", "progress", NULL };
+        "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp", "progress", "calc-size", NULL };
     for (int i = 0; names[i]; i++) if (str_ieq(name, names[i])) return true;
     return false;
 }
