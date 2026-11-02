@@ -441,23 +441,119 @@ function waPreferredSpecified(el, prop, value) {
     if (/^(initial|unset)$/.test(wide)) return 'auto';
     return WA_SIZE_KEYWORD.test(wide) ? wide : value;
 }
-function waPreferredKeywordMix(a, b, progress, allowKeywords) {
-    const A = WA_SIZE_KEYWORD.test(a), B = WA_SIZE_KEYWORD.test(b);
-    if (!A && !B) return undefined; /* ordinary numeric/explicit-function path */
-    if (A && B) return a === b ? a : null;
-    if (!allowKeywords) return null;
-    const number = waGridNumeric(A ? b : a);
-    if (!number || number.has('fr')) return null;
-    const coefficient = A ? 1 - progress : progress, weight = A ? progress : 1 - progress;
-    if (!Number.isFinite(coefficient) || !Number.isFinite(weight)) return null;
-    let calculation = 'size * ' + waFmt(coefficient);
+/* A preferred-size value retains its calculation and intrinsic basis through
+ * endpoint composition. In particular, resolving the underlying keyword to
+ * pixels would make different intrinsic bases incorrectly interpolate. */
+const WA_SIZE_TEXT_LIMIT = 65536;
+function waPreferredNumericText(number) {
+    let text = '';
     for (const [unit, value] of number) {
-        const term = value * weight;
-        if (!Number.isFinite(term)) return null;
-        /* A zero percentage keeps its type and the native indefinite-basis rule. */
-        if (term !== 0 || unit === 'percent') calculation += (term < 0 ? ' - ' : ' + ') + waFmt(Math.abs(term)) + (unit === 'percent' ? '%' : unit);
+        if (value === 0 && unit !== 'percent') continue;
+        const term = waFmt(Math.abs(value)) + (unit === 'percent' ? '%' : unit);
+        text += text ? (value < 0 ? ' - ' : ' + ') + term : (value < 0 ? '-' : '') + term;
     }
-    return 'calc-size(' + (A ? a : b) + ', ' + calculation + ')';
+    return text || '0px';
+}
+/* Rewrite operands, never substrings of identifiers or dimension units. The
+ * native original-token validator runs before comment/escape normalization;
+ * this small scanner only substitutes the already balanced calculation. */
+function waPreferredCalculation(text, size, percentages = false) {
+    let out = '', usedSize = false;
+    const append = (...parts) => {
+        if (parts.reduce((length, part) => length + part.length, out.length) > WA_SIZE_TEXT_LIMIT) return false;
+        out += parts.join(''); return true;
+    };
+    const ident = c => !!c && /[-_a-zA-Z\u0080-\uffff\\]/.test(c);
+    const endIdent = start => {
+        let i = start;
+        while (i < text.length) {
+            if (text[i] === '\\') { const end = cssGridEscapeEnd(text, i); if (end < 0) return -1; i = end; }
+            else if (/[-_a-zA-Z0-9\u0080-\uffff]/.test(text[i])) i++;
+            else break;
+        }
+        return i;
+    };
+    for (let i = 0; i < text.length;) {
+        const rest = text.slice(i), number = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/i.exec(rest);
+        if (number) {
+            let end = i + number[0].length;
+            if (text[end] === '%') {
+                const value = Number(number[0]); if (!Number.isFinite(value)) return null;
+                if (!(percentages ? append('(size * ', waFmt(value / 100), ')') : append(text.slice(i, end + 1)))) return null;
+                end++;
+            } else {
+                if (ident(text[end])) { end = endIdent(end); if (end < 0) return null; }
+                if (!append(text.slice(i, end))) return null;
+            }
+            i = end;
+        } else if (ident(text[i])) {
+            const end = endIdent(i); if (end < 0) return null;
+            const token = text.slice(i, end);
+            if (text[end] !== '(' && cssGridDecode(token).toLowerCase() === 'size') {
+                usedSize = true;
+                if (size === null) return null; /* an explicit any basis forbids size */
+                if (!append('(', size, ')')) return null;
+            } else if (!append(token)) return null;
+            i = end;
+        } else {
+            if (!/[\s()+*/.,-]/.test(text[i])) return null;
+            if (!append(text[i++])) return null;
+        }
+    }
+    return {text:out, usedSize};
+}
+function waPreferredPrepared(value, depth = 0) {
+    if (typeof value !== 'string' || depth > 32 || value.length > WA_SIZE_TEXT_LIMIT) return null;
+    /* cssMathText checks raw signed tokens and binary-operator whitespace
+       before cssGridTokens replaces comment gaps. Do not reverse this order. */
+    const checked = N.cssMathText(value);
+    if (checked === null) return null;
+    const tokens = cssGridTokens(checked);
+    if (!tokens || tokens.length !== 1) return null;
+    const token = tokens[0], keyword = cssGridDecode(token).toLowerCase();
+    if (WA_SIZE_KEYWORD.test(keyword)) return {basis:keyword, calculation:'size', kind:'keyword'};
+    const number = waGridNumeric(token);
+    if (number && !number.has('fr')) return {basis:'any', calculation:waPreferredNumericText(number), number, kind:'numeric'};
+    const open = token.indexOf('(');
+    if (open < 1 || token[token.length - 1] !== ')' || cssGridDecode(token.slice(0, open)).toLowerCase() !== 'calc-size') return null;
+    const parts = tomSplitTop(token.slice(open + 1, -1), ',').map(part => part.trim());
+    if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+    const basisTokens = cssGridTokens(parts[0]);
+    if (!basisTokens || basisTokens.length !== 1) return null;
+    const basisKeyword = cssGridDecode(basisTokens[0]).toLowerCase();
+    if (basisKeyword === 'any') {
+        const calculation = waPreferredCalculation(parts[1], null);
+        return calculation && {basis:'any', calculation:calculation.text, kind:'function'};
+    }
+    const basis = waPreferredPrepared(parts[0], depth + 1);
+    if (!basis) return null;
+    let name = basis.basis, replacement = basis.calculation;
+    if (basis.kind === 'numeric' && basis.number.has('percent')) {
+        /* Normalize a percentage basis to 100%, retaining its definiteness.
+           Only that original basis is de-percentified; percentages in the
+           outer calculation retain their own indefinite-container behavior. */
+        name = '100%';
+        const numeric = waPreferredCalculation(replacement, null, true);
+        if (!numeric) return null;
+        replacement = numeric.text;
+    }
+    const calculation = waPreferredCalculation(parts[1], replacement);
+    return calculation && {basis:name, calculation:calculation.text, kind:'function'};
+}
+function waPreferredSizeMix(a, b, progress, allowKeywords, add = false) {
+    const A = waPreferredPrepared(a), B = waPreferredPrepared(b);
+    /* Leave ordinary numeric properties on the established numeric mixer. */
+    if (A && B && A.kind === 'numeric' && B.kind === 'numeric') return undefined;
+    const special = value => WA_SIZE_KEYWORD.test(value) || /calc-size\s*\(/i.test(value);
+    if (!A || !B) return special(a) || special(b) ? null : undefined;
+    if (A.kind === 'keyword' && B.kind === 'keyword') return add ? b : A.basis === B.basis ? a : null;
+    if ((A.kind === 'keyword' && B.kind === 'numeric' || B.kind === 'keyword' && A.kind === 'numeric') && !allowKeywords) return null;
+    if (A.basis !== B.basis && A.basis !== 'any' && B.basis !== 'any') return null;
+    const basis = A.basis === 'any' ? B.basis : A.basis;
+    const left = add ? 1 : 1 - progress, right = add ? 1 : progress;
+    if (!Number.isFinite(left) || !Number.isFinite(right)) return null;
+    const parts = ['calc-size(', basis, ', (', A.calculation, ') * ', waFmt(left), ' + (', B.calculation, ') * ', waFmt(right), ')'];
+    return parts.reduce((length, part) => length + part.length, 0) <= WA_SIZE_TEXT_LIMIT ? parts.join('') : null;
 }
 function waCapturePreferredPolicy(animation) {
     const effect = animation._effect;
@@ -554,7 +650,7 @@ function waTransform(a, b, p, op) {
 }
 function waInterp(prop, a, b, p, sizeKeywords = false) {
     if (WA_PREFERRED_SIZE.test(prop)) {
-        const value = waPreferredKeywordMix(a, b, p, sizeKeywords);
+        const value = waPreferredSizeMix(a, b, p, sizeKeywords);
         if (value !== undefined) return value !== null ? value : p < .5 ? a : b;
     }
     if (WA_POSITION.test(prop)) { const r = waPositionMix(prop, a, b, p, false); return r !== null ? r : p < 0.5 ? a : b; }
@@ -564,8 +660,12 @@ function waInterp(prop, a, b, p, sizeKeywords = false) {
     if (!prop.startsWith('--')) { const r = waMix(prop, a, b, p); if (r !== null) return r; }
     return p < 0.5 ? a : b;
 }
-function waCompose(prop, under, v, op) {
+function waCompose(prop, under, v, op, sizeKeywords = false) {
     if (op === 'replace' || under == null) return v;
+    if (WA_PREFERRED_SIZE.test(prop)) {
+        const value = waPreferredSizeMix(under, v, 0, sizeKeywords, true);
+        if (value !== undefined) return value !== null ? value : v;
+    }
     if (prop === 'transform') return waTransform(under, v, 0, true);
     const r = prop.startsWith('--') ? null : waMix(prop, under, v, 0, true);
     return r === null ? v : r;
@@ -641,7 +741,7 @@ function waEffectValue(eff, prop, under, c) {
         if (v != null && WA_GRID.test(prop)) v = waGridSpecified(eff._target, prop, v);
         if (v != null && WA_POSITION.test(prop)) v = waPositionSpecified(eff._target, prop, v);
         if (v != null && WA_PREFERRED_SIZE.test(prop)) v = waPreferredSpecified(eff._target, prop, v);
-        return k ? waCompose(prop, under, v, k.composite === 'auto' ? eff._comp : k.composite) : v;
+        return k ? waCompose(prop, under, v, k.composite === 'auto' ? eff._comp : k.composite, !!eff._sizeKeywords) : v;
     };
     let pts = kfs.map(k => ({ co: k.co, k }));
     if (pts[0].co !== 0) pts.unshift({ co: 0, k: null });
@@ -663,7 +763,7 @@ function waEffectValue(eff, prop, under, c) {
     }
     if (eff._icomp === 'accumulate' && c.currentIteration > 0 && isFinite(c.currentIteration)) {
         const last = pts[pts.length - 1].k, endV = last ? val(last) : under;
-        for (let i = 0; i < Math.min(c.currentIteration, 1000); i++) res = waCompose(prop, res, endV, 'accumulate');
+        for (let i = 0; i < Math.min(c.currentIteration, 1000); i++) res = waCompose(prop, res, endV, 'accumulate', !!eff._sizeKeywords);
     }
     return res;
 }
@@ -1055,7 +1155,7 @@ function trStart(el, packed) {
     if (old) { running.delete(prop); old.cancel(); }
     if (duration + delay <= 0 || !el.isConnected) return;
     const sizeKeywords = WA_PREFERRED_SIZE.test(prop) && N.computed(el, 'interpolate-size') === 'allow-keywords';
-    const sizeMix = WA_PREFERRED_SIZE.test(prop) ? waPreferredKeywordMix(from, to, .5, sizeKeywords) : undefined;
+    const sizeMix = WA_PREFERRED_SIZE.test(prop) ? waPreferredSizeMix(from, to, .5, sizeKeywords) : undefined;
     const discrete = prop !== 'transform' && prop !== 'visibility' && (sizeMix === undefined ? waMix(prop, from, to, .5) : sizeMix) === null;
     if (discrete && at('transition-behavior', 'normal') !== 'allow-discrete') return;
     const key = prop === 'float' ? 'cssFloat' : prop.replace(/^-webkit-/, 'webkit-').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
