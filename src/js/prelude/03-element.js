@@ -8,7 +8,7 @@ const camelToKebab = (p) => {
 };
 /* Pending substitution has one grammar in the native declaration parser and
  * CSSOM. Ordinary values avoid crossing into the tokenizer. */
-function cssVarSyntax(value) { return !/var|\\/i.test(value) || N.cssVarValid(value); }
+function cssVarSyntax(value) { return !/var|if|\\/i.test(value) || N.cssVarValid(value); }
 /* CSS Syntax's unicode-range token is contextual: consume original source
    only for this font-face descriptor. Comments may separate range tokens,
    but cannot splice the U+, hexadecimal digits, wildcard or range suffix.

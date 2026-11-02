@@ -33,6 +33,66 @@ static void width(Node *node, float expected) {
     char value[64]; snprintf(value, sizeof value, "%gpx", (double)expected);
     text(node, "width", value);
 }
+/* These controls supplement the unchanged original104 checks. Malformed
+ * arbitrary-substitution arguments are parse errors, including in custom
+ * properties or beside another valid pending function. */
+static void argument_retention(void) {
+    static const char *const invalid[] = {
+        "if()", "if(foo)", "var(--ok,17px) if()",
+        "if(else:30px;else:if())", "if(:30px)",
+        "if(else:30px;;else:40px)", "if(else:30px;else:value!)",
+        "if(else:30px;bad,condition:40px)"
+    };
+    for (unsigned i = 0; i < sizeof invalid / sizeof invalid[0]; i++) {
+        const char *value = invalid[i];
+        yes("shared if argument syntax rejects malformed input", !css_if_syntax_valid(value));
+        yes("common substitution syntax rejects malformed input", !css_var_syntax_valid(value));
+        ComputedStyle *style = style_new_default();
+        css_apply_decl(style, NULL, "width", "17px", NULL, NULL);
+        css_apply_decl(style, NULL, "width", value, NULL, NULL);
+        yes("direct width keeps the prior declaration", style->width.kind == LK_LEN && style->width.px == 17);
+        css_apply_decl(style, NULL, "--marker", "prior", NULL, NULL);
+        css_apply_decl(style, NULL, "--marker", value, NULL, NULL);
+        const char *marker = custom_get(style->custom, "--marker");
+        yes("direct custom property keeps the prior declaration", marker && !strcmp(marker, "prior"));
+        char declarations[512];
+        snprintf(declarations, sizeof declarations, "width:17px;width:%s", value);
+        DeclList *parsed = css_parse_decls(declarations, strlen(declarations));
+        yes("raw width parser discards malformed if declaration", parsed && parsed->n == 1 && !strcmp(parsed->v[0].value, "17px"));
+        css_decls_free(parsed);
+        snprintf(declarations, sizeof declarations, "--marker:prior;--marker:%s", value);
+        parsed = css_parse_decls(declarations, strlen(declarations));
+        yes("raw custom parser discards malformed if declaration", parsed && parsed->n == 1 && !strcmp(parsed->v[0].value, "prior"));
+        css_decls_free(parsed); style_free(style);
+    }
+    static const char *const valid[] = {
+        "if(else:)", "if(else:var(--missing))",
+        "if(var(--condition):29px;else:30px)",
+        "if(else:31px;future(foo):var(--bad))",
+        "if({bad,condition}:{a,b})", "if(else:\"if()\")"
+    };
+    for (unsigned i = 0; i < sizeof valid / sizeof valid[0]; i++)
+        yes("argument grammar does not eagerly parse or substitute branches", css_var_syntax_valid(valid[i]));
+    ComputedStyle *style = style_new_default();
+    css_apply_decl(style, NULL, "width", "17px", NULL, NULL);
+    css_apply_decl(style, NULL, "width", "if(else:var(--missing))", NULL, NULL);
+    yes("valid selected missing variable still takes unset", style->width.kind == LK_AUTO);
+    css_apply_decl(style, NULL, "--marker", "prior", NULL, NULL);
+    css_apply_decl(style, NULL, "--marker", "if(else:var(--missing))", NULL, NULL);
+    const char *marker = custom_get(style->custom, "--marker");
+    yes("valid custom substitution failure keeps the invalid sentinel", marker && !*marker);
+    css_apply_decl(style, NULL, "width", "if(style(--missing):bad;else:29px)", NULL, NULL);
+    yes("unmatched branch values remain lazy", style->width.kind == LK_LEN && style->width.px == 29);
+    css_apply_decl(style, NULL, "width", "if(style(--missing) and invalid:bad;else:31px)", NULL, NULL);
+    yes("post-substitution condition parse failure proceeds to else", style->width.kind == LK_LEN && style->width.px == 31);
+    css_apply_decl(style, NULL, "width", "var(--missing)", NULL, NULL);
+    yes("ordinary variable IACVT remains unchanged", style->width.kind == LK_AUTO);
+    css_apply_decl(style, NULL, "width", "17px", NULL, NULL);
+    css_apply_decl(style, NULL, "width", "if(else:)", NULL, NULL);
+    yes("valid empty result still takes the property grammar fallback", style->width.kind == LK_AUTO);
+    style_free(style);
+}
+
 int main(void) {
     dom_init(); font_init();
     Document *doc = doc_new("https://native-if-unregistered.test/");
@@ -133,6 +193,8 @@ int main(void) {
 
     layout_free(layout); style_engine_free(engine); doc_free(doc);
     assert(checks == 104);
+    argument_retention();
+    assert(checks == 164);
     printf("PASS css_if_unregistered %u native checks\n",checks);
     return 0;
 }

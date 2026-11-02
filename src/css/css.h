@@ -499,6 +499,7 @@ char *css_var_argument(const char *source, size_t length, bool fallback); /* cal
 bool css_var_syntax_valid(const char *value);
 bool css_value_has_var(const char *value);
 bool css_value_has_if(const char *value);
+bool css_if_syntax_valid(const char *value);
 bool css_math_spacing_valid(const char *value);
 char *css_math_value_text(const char *value); /* caller owns balanced component text; NULL if invalid */
 #endif

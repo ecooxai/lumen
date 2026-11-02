@@ -1010,6 +1010,50 @@ static char *if_argument(const IfInput *in, int begin, int end, size_t stop, boo
 static char *if_branch_value(const IfInput *in, const IfBranch *branch) {
     return if_argument(in, branch->value_begin, branch->value_end, branch->value_stop, false);
 }
+/* Shared argument grammar: syntax is checked before a declaration becomes
+ * pending. Conditions and result values are still substituted only when the
+ * lazy resolver visits them. CSS Values 5 section 8.3 and Appendix A. */
+static bool if_collect_branches(const IfInput *in, int begin, int end, IfBranches *branches) {
+    int colon = -1;
+    for (int at = begin; at <= end;) {
+        bool last = at == end;
+        int type = last ? CT_EOF : in->tokens.v[at].token.type;
+        if (last || type == CT_SEMI) {
+            int first = if_skip_ws(in, begin, at);
+            if (first != at) {
+                if (colon < first) return false;
+                IfBranch branch = {first, colon, colon + 1, at, if_offset(in, at)};
+                char *condition = if_argument(in, first, colon, if_offset(in, colon), true);
+                char *value = if_branch_value(in, &branch);
+                bool valid = condition && value;
+                free(condition); free(value);
+                if (!valid) return false;
+                vec_push(*branches, branch);
+            } else if (!last) return false;
+            begin = at + 1; colon = -1;
+            if (last) break;
+            at++; continue;
+        }
+        if (colon < 0 && type == CT_COLON) colon = at;
+        at = if_after_component(in, at);
+    }
+    return branches->n != 0;
+}
+bool css_if_syntax_valid(const char *value) {
+    if (!css_value_has_if(value)) return true;
+    IfInput in; bool valid = if_input_init(&in, value, strlen(value));
+    /* Walk tokens, not resolved values: a malformed nested if() is a parse
+     * error even inside an unselected result or another pending function. */
+    for (int at = 0; valid && at < in.tokens.n; at++) {
+        const IfToken *item = &in.tokens.v[at];
+        if (item->token.type != CT_FUNC || !item->token.str || !str_ieq(item->token.str, "if")) continue;
+        IfBranches branches = {0};
+        valid = item->close >= at + 1 && if_collect_branches(&in, at + 1, item->close, &branches);
+        vec_free(branches);
+    }
+    if_input_free(&in); return valid;
+}
+
 static IfTruth if_condition(VarResolver *r, VarEntry *owner, const IfInput *in,
                             const IfBranch *branch, unsigned depth) {
     char *raw = if_argument(in, branch->condition_begin, branch->condition_end,
@@ -1044,31 +1088,8 @@ static char *var_substitute_if(VarResolver *r, VarEntry *owner, CLexer *lexer, u
     }
     if (!complete || depth > VAR_RECURSION_LIMIT) return NULL;
     IfInput in; bool valid = if_input_init(&in, lexer->s + start, stop - start);
-    IfBranches branches = {0}; int begin = 0, colon = -1;
-    for (int at = 0; valid && at <= in.tokens.n;) {
-        bool end = at == in.tokens.n;
-        int type = end ? CT_EOF : in.tokens.v[at].token.type;
-        if (end || type == CT_SEMI) {
-            int first = if_skip_ws(&in, begin, at);
-            if (first != at) {
-                if (colon < first) { valid = false; break; }
-                IfBranch branch = {first, colon, colon + 1, at, if_offset(&in, at)};
-                /* Validate every branch's argument grammar, but do not
-                 * resolve unselected arbitrary substitutions. */
-                char *condition = if_argument(&in, first, colon, if_offset(&in, colon), true);
-                char *value = if_branch_value(&in, &branch);
-                if (!condition || !value) valid = false;
-                free(condition); free(value);
-                if (!valid) break;
-                vec_push(branches, branch);
-            } else if (!end) { valid = false; break; }
-            begin = at + 1; colon = -1;
-            if (end) break;
-            at++; continue;
-        }
-        if (colon < 0 && type == CT_COLON) colon = at;
-        at = if_after_component(&in, at);
-    }
+    IfBranches branches = {0};
+    if (valid) valid = if_collect_branches(&in, 0, in.tokens.n, &branches);
     char *result = NULL;
     if (valid && branches.n) {
         result = xstrdup("");
@@ -3276,6 +3297,9 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
  * retains normal all validation and nested other-style work is unaffected. */
 static _Thread_local const ComputedStyle *contain_intrinsic_projection_style;
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
+    /* Invalid argument grammar is discarded before pending substitution can
+       unset a normal property or replace a custom property's prior tokens. */
+    if (css_value_has_if(value_in) && !css_var_syntax_valid(value_in)) return;
     if (prop[0] == '-' && prop[1] == '-') {
         char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
         /* CSS-wide keywords: "" is the guaranteed-invalid value */

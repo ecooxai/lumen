@@ -271,6 +271,7 @@ static bool css_string_closed(const CTok *token) {
     return !(slashes & 1);
 }
 bool css_var_syntax_valid(const char *value) {
+    if (!css_if_syntax_valid(value)) return false;
     CLexer l; clex_init(&l, value, strlen(value));
     int closes[256], depth = 0;
     for (;;) {
@@ -1099,6 +1100,7 @@ bool css_supports(const char *cond) {
                            !strcmp(p, "min-inline-size") || !strcmp(p, "min-block-size");
             r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) &&
                 (minimum || !strcmp(p, "transition-property") || !strstr(v, "-webkit-")) && !strstr(p, "-webkit-"));
+            if (r && css_value_has_if(v)) r = css_var_syntax_valid(v);
             if (r && minimum) r = css_min_size_valid(p, v);
             if (r) r = css_numeric_dimension_valid(p, v);
             if (r) r = css_transition_property_valid(p, v);
