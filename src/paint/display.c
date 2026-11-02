@@ -298,10 +298,14 @@ static void paint_replaced(PB *p, Box *b) {
     if (needclip) emit(p, DO_POP_CLIP);
 }
 
-static bool positioned(const Box *b) { return b->st && b->node && (b->st->position != P_STATIC || (!b->st->z_auto && b->parent && b->parent->st && (b->parent->fmt == FMT_FLEX || b->parent->fmt == FMT_GRID))); }
-static bool makes_layer(const Box *b) { return b->st && b->node && (b->st->opacity < 1 || b->st->has_transform || b->st->isolation || b->st->position != P_STATIC || layout_contents_hidden(b)); }
+/* Text boxes share their parent's complete style for shaping, but they do
+ * not own its positioning/layer phase. Pseudo boxes retain their originating
+ * element node and remain real owners; node-null wrappers stay in flow. */
+static bool paint_element_owner(const Box *b) { return b && b->st && b->node && b->node->type == NODE_ELEMENT; }
+static bool positioned(const Box *b) { return paint_element_owner(b) && (b->st->position != P_STATIC || (!b->st->z_auto && b->parent && b->parent->st && (b->parent->fmt == FMT_FLEX || b->parent->fmt == FMT_GRID))); }
+static bool makes_layer(const Box *b) { return paint_element_owner(b) && (b->st->opacity < 1 || b->st->has_transform || b->st->isolation || b->st->position != P_STATIC || layout_contents_hidden(b)); }
 static bool makes_context(const Box *b) {
-    if (!b->st || !b->node) return false;
+    if (!paint_element_owner(b)) return false;
     const ComputedStyle *s = b->st;
     return layout_contents_hidden(b) || s->opacity < 1 || s->has_transform || s->isolation ||
            s->position == P_FIXED || s->position == P_STICKY ||
