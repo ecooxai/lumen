@@ -1706,7 +1706,10 @@ static bool transform_angle(ACtx *c, const char *text, float *out) {
         if (end == text || *end || zero != 0) return false;
         *out = 0;
     }
-    if (isnan(*out)) *out = 0;
+    /* Only completed angles reach this matrix boundary. Out-of-range angles
+       clamp to a supported full turn; nested IEEE math is left untouched.
+       Reduce finite turns before converting to radians to avoid overflow. */
+    *out = isfinite(*out) ? (float)fmod((double)*out, 360.0) : 0;
     return true;
 }
 static void parse_transform(ACtx *c, const char *v) {
