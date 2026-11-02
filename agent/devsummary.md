@@ -82,3 +82,71 @@ nor focused100% fixtures means Chromium parity or a95/100 browser. Current candi
 The remaining goal is substantive: CSS math, CSSOM, animation grammar, typed attr, DOM and cascade gaps remain.
 
 Descriptor equality comparison: 2026-11-02T13:17:43.457805+00:00 (Chromium) and 2026-11-02T13:17:45.763054+00:00 (native); total 5.673404 seconds. Iteration1 end: 2026-11-02T13:17:45.775012+00:00. Iteration1 elapsed wall time: 2822.775 seconds. Total session elapsed at this qualification: 5533.775 seconds. Checkpoint written: 2026-11-02T13:21:51.091311+00:00, session elapsed 5779.091 seconds. Parallel-agent intervals are not summed. Next iteration: ordinary keyframes1703, then timing1704;1702 unused reservation retired.
+
+## Iteration 2 — ordinary keyframes1703, independently qualified
+
+Logical iteration start: `2026-11-02T13:17:45.775012+00:00` (previous1701 qualification closure).
+Iteration end after independent retained review: `2026-11-02T13:58:03.041877+00:00`.
+Elapsed wall time: **2417.266865s**. Cumulative session wall time from11:45:32: **7951.041877s**.
+Last required execution ended `2026-11-02T13:54:15.546805+00:00`; core ended `2026-11-02T13:51:26.339993+00:00`;
+independent audit ended separately at `2026-11-02T13:58:03.041877+00:00`. These are distinct timestamps, not extra test runs.
+Objective score **56.33/100**, the last complete fixed-sample file rate703/1248; no broader1703 score is inferred.
+
+Engineering role: engine_improvements authored ordinary CSSOM selector/list/EOF/precision fixes, preserved
+the two named-range failures, and reviewed timing1704. Integration_validation independently reviewed,
+selectively committed, built and qualified exact source `70d99dc0d8e9646f0a256bc3cf68aa47235b92c9` / app `38f8185c73bf17b3ec625bc30945216a19950a2bf7d9f597afb53519f11122ba`.
+Delivery_performance independently reviewed keyframe runtime precision and audited all retained1318 rows.
+Root provided scope/quality oversight and connector relay only. Some engineering preparation overlapped
+iteration1; overlapping agent work is not summed into session elapsed. Model compute time is not exposed.
+
+| Measured task | Start UTC | End UTC | Wall seconds | Outcome |
+|---|---|---|---:|---|
+| build-startup | 2026-11-02T13:47:53.888097+00:00 | 2026-11-02T13:48:40.052748+00:00 | 46.164653 | exit 0 |
+| keyframe34 | 2026-11-02T13:48:40.088281+00:00 | 2026-11-02T13:48:44.572053+00:00 | 4.483769 | exit 0 |
+| keyframe-eof-numeric13 | 2026-11-02T13:48:44.581266+00:00 | 2026-11-02T13:48:46.928140+00:00 | 2.346872 | exit 0 |
+| keyframe-runtime2 | 2026-11-02T13:48:46.937510+00:00 | 2026-11-02T13:48:49.248835+00:00 | 2.311325 | exit 0 |
+| css-property-rule21 | 2026-11-02T13:48:49.260630+00:00 | 2026-11-02T13:48:51.565257+00:00 | 2.304627 | exit 0 |
+| descriptor-comparison13 | 2026-11-02T13:48:51.576519+00:00 | 2026-11-02T13:48:53.871212+00:00 | 2.294692 | exit 0 |
+| keyframe8 | 2026-11-02T13:48:53.880602+00:00 | 2026-11-02T13:49:04.983469+00:00 | 11.102867 | exit 0 |
+| native218 | 2026-11-02T13:49:04.993900+00:00 | 2026-11-02T13:51:26.125034+00:00 | 141.131133 | exit 0 |
+| retained/authored38 | 2026-11-02T13:52:36.749576+00:00 | 2026-11-02T13:53:59.879078+00:00 | 83.129502 | exit 0 |
+| retained/retained-additional14 | 2026-11-02T13:53:59.879283+00:00 | 2026-11-02T13:54:04.284623+00:00 | 4.405353 | exit 0 |
+| retained/retained-extras143 | 2026-11-02T13:54:04.284941+00:00 | 2026-11-02T13:54:10.982010+00:00 | 6.697074 | exit 0 |
+| retained/retained-universal40 | 2026-11-02T13:54:10.982215+00:00 | 2026-11-02T13:54:13.258804+00:00 | 2.276598 | exit 0 |
+| retained/retained-frame4 | 2026-11-02T13:54:13.259014+00:00 | 2026-11-02T13:54:15.538018+00:00 | 2.279013 | exit 0 |
+
+Build46.164653s; complete build/core212.461050s; retained45 campaign98.797229s. No individual task exceeded
+five minutes. Process tree build peakRSS489.144MiB/PSS366.924MiB; shared cgroup mean302.202356%,
+maximum381.496403% across46 one-second samples, below480% quota in every sample. Shared cgroup includes
+the full slice, while process-tree snapshots may miss subsecond peaks; do not conflate their CPU measures.
+
+Fixed8 assertions20/55→44/55 and complete files0/8→5/8; Chromium49/55 and6/8. Exact matched-identity
+audit records24 gains, no prior-pass loss, missing/new assertion or harness regression. Five whole-file gains:
+CSSKeyframeRule-keyText, CSSKeyframeRule-keyText-edge-cases, CSSKeyframeRule,
+CSSKeyframesRule-appendRule-invalid and CSSKeyframesRule-deleteRule-detach.
+Original authored34 remains32/34 (named-range normalization/escaped identifiers fail); separate13 and2 pass,
+giving47/49 versus16/49 before and49/49 Chromium. Prior1701 owned21/21 and descriptor13/13 pass;
+native218/218; retained45/45 and1318/1318,563/563 independent evidence checks.
+Preserve synchronous getAnimations activation and unresolved named-range effect metadata as existing limitations.
+
+Full1248 has not yet been replayed on1703;703/1248 and22604/26245 remain1603 measurements.
+The earlier properties41 +68 assertions remains a separate, zero-overlap scope measured on1701.
+
+Setup/review corrections are explicit: compact staged keyframe patch payload differs from the full local
+review JSON only by pinned fixture transport representation; independent review caught the digest mismatch
+before commit/build launch, and exact compact hash10bed2c3… was verified. A proposed timing6 selection
+stopped before any writes/tests because animation-timing-function-valid.html is absent from fixed1248;
+use original timing5 and its transition-valid alias rows. Reviewv1 is preserved and correctedv2 records this.
+Timing42's first worker failed Python parsing before any test execution; its exact failed worker/log and
+absence of outputs/progress were verified before a fresh retry with all nested worker layers parsed locally.
+This is infrastructure/setup time, not engine failure or test time. Original30 timing controls and27/30
+Chromium result are unchanged; versioned30 compatibility corrections plus12 differential rows have separate identities.
+
+Public1701 push/readback4.351823s, public commit2ec6af18…; monitored archive/offline recovery4.157009s,
+11/11 checks, all834 tracked members and734 build-input blobs/modes exact, archive SHA-256
+55ab04c72136c8e35a6d4878d743eb0595c91dec27c1db06390be8fd22275bf0.
+No public private-history transfer; final newer-candidate publication still pending.
+
+Next:1704 timing, bounded MIME if safe, first integrated1248 replay14:30–14:45. Final60min remains reserved.
+
+Checkpoint written 2026-11-02T14:05:07.616684+00:00, cumulative session wall seconds 8375.616684. Parallel intervals are not summed.

@@ -1,14 +1,14 @@
 {
   "title": "Lumen Linux · WPT improvement session17",
-  "phase": "Candidate 1701 qualified for its targeted Linux scopes; keyframe CSSOM and easing grammar improvements under review",
-  "iteration": 1701,
-  "session_iteration": 1,
+  "phase": "Candidate1703 accepted for targeted keyframe CSSOM and retained Linux scopes; timing grammar controls and MIME metadata review continue",
+  "iteration": 1703,
+  "session_iteration": 2,
   "score": 56.330128205128204,
   "selected_case_score": 56.330128205128204,
   "score_candidate": 1603,
-  "score_note": "56.33/100 is the last measured fixed 1,248 file pass percentage from candidate 1603; it is a sample measurement. Candidate 1701 passes its separate targeted and retained gates.",
+  "score_note": "56.33/100 remains the last measured fixed1,248-file pass percentage from candidate1603. Candidate1703 passes separate incremental scopes; two unchanged named-range keyframe cases remain explicit failures.",
   "score_scope": "Same1248 frozen HTTP/default-timeout testharness URLs, fully passing files only; separate assertion denominators.",
-  "checkpoint": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
+  "checkpoint": "70d99dc0d8e9646f0a256bc3cf68aa47235b92c9",
   "session_started_utc": "2026-11-02T11:45:42Z",
   "deadline_utc": "2026-11-02T16:45:42Z",
   "session_id": "20261102-session17",
@@ -22,12 +22,12 @@
   "goal_score": 98,
   "overall_assessment": "Linux browser improvements underway. Full-WPT rate and whole-browser95/98score are not established.",
   "overall_result_label": "Chromium parity incomplete; full official WPT unmeasured",
-  "accepted_iteration": 1701,
-  "active_iteration": 1701,
+  "accepted_iteration": 1703,
+  "active_iteration": 1703,
   "active_candidate": 1603,
   "accepted_binary_sha256": "b2591720be38f312a42654fab3d864094796d3d9a3dfc0bf19e19d34bc4f7202",
   "accepted_binary_scope": "Incrementally accepted candidate1603 development build from prior session; live Linux executable identity verified2026-11-02T12:25:39Z.",
-  "coverage": "Last fixed HTTP/default-timeout sample: candidate 1603 passed 703/1,248 files and 22,604/26,245 assertions; Chromium 150 passed 1,062/1,248 files and 24,541/26,064 assertions. Candidate 1701 separate properties sample: 18/41 files and 589/813 assertions, with 68 shared FAIL-to-PASS changes and zero lost passes. Full official WPT remains unmeasured.",
+  "coverage": "Last fixed HTTP/default-timeout sample: candidate1603 passed703/1,248files and22,604/26,245assertions; Chromium150 passed1,062/1,248files and24,541/26,064assertions. Candidate1703 targeted keyframe8:5/8files44/55assertions, versus1603 0/8files20/55assertions, with24shared FAIL-to-PASS changes and zero lost/missing/new assertions. Full official WPT remains unmeasured.",
   "current_evidence": [
     [
       "Lumen1603 · frozen1248 URLs",
@@ -85,9 +85,65 @@
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session17-20261102",
   "working_commit": "83f02aeb00fffa3f27667607f3d015639d464ccc",
-  "updated_utc": "2026-11-02T13:20:52.911227+00:00",
+  "updated_utc": "2026-11-02T14:05:01.651011+00:00",
   "updated_at": "2026-11-02T12:31:48.634858+00:00",
   "qualified_candidate_scope": {
+    "candidate": 1703,
+    "source_commit": "70d99dc0d8e9646f0a256bc3cf68aa47235b92c9",
+    "binary_sha256": "38f8185c73bf17b3ec625bc30945216a19950a2bf7d9f597afb53519f11122ba",
+    "source_manifest_digest": "0ed85c68a9944a34e4ab8351a8c536348b2c5d21c97b31a06b4b63e512f41825",
+    "native_contracts": {
+      "passed": 218,
+      "total": 218
+    },
+    "retained_authored": {
+      "fixtures": 45,
+      "passed": 1318,
+      "total": 1318,
+      "independent_checks_passed": 563,
+      "independent_checks_total": 563
+    },
+    "keyframe_cssom_authored": {
+      "passed": 32,
+      "total": 34,
+      "baseline1603_passed": 7,
+      "declared_remaining_failures": [
+        "named timeline ranges retain their name and normalize offsets",
+        "named timeline range identifiers respect escapes and token boundaries"
+      ]
+    },
+    "keyframe_eof_numeric": {
+      "passed": 13,
+      "total": 13
+    },
+    "keyframe_runtime": {
+      "passed": 2,
+      "total": 2
+    },
+    "prior_property_rule": {
+      "passed": 21,
+      "total": 21
+    },
+    "prior_descriptor_comparison": {
+      "passed": 13,
+      "total": 13
+    },
+    "targeted_keyframe_wpt": {
+      "files_passed": 5,
+      "files_total": 8,
+      "assertions_passed": 44,
+      "assertions_total": 55,
+      "baseline1603_files_passed": 0,
+      "baseline1603_assertions_passed": 20,
+      "shared_fail_to_pass": 24,
+      "lost_passes": 0,
+      "missing_assertions": 0,
+      "new_assertions": 0
+    }
+  },
+  "runtime_candidate": 1603,
+  "runtime_note": "Desktop and connected Android retain the previously accepted candidate1603 until final qualified deployment.",
+  "qualified_prior_candidate_scope": {
     "candidate": 1701,
     "source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
     "binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
@@ -120,7 +176,5 @@
       "shared_fail_to_pass": 68,
       "lost_passes": 0
     }
-  },
-  "runtime_candidate": 1603,
-  "runtime_note": "Desktop and connected Android still run the previously accepted candidate 1603 build until final qualified session deployment."
+  }
 }
