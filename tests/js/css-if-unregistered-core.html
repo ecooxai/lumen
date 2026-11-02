@@ -1,0 +1,45 @@
+<!doctype html><meta charset="utf-8"><title>Native lazy if() with unregistered custom properties</title>
+<style>html,body{margin:0;padding:0;border:0}</style><body><script>
+(async()=>{
+ const rows=[],owned=[];
+ const eq=(actual,expected,label)=>{if(actual!==expected)throw Error(label+': '+JSON.stringify(actual)+' expected '+JSON.stringify(expected));};
+ const near=(actual,expected,label)=>{if(!Number.isFinite(actual)||Math.abs(actual-expected)>.01)throw Error(label+': '+actual+' expected '+expected);};
+ const frame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+ const check=async(name,fn)=>{try{await fn();rows.push({name,pass:true});}catch(error){rows.push({name,pass:false,error:String(error)});}finally{while(owned.length)owned.pop().remove();}};
+ const make=(css,parentCss='')=>{
+  const parent=document.createElement('div'),target=document.createElement('div');
+  parent.style.cssText='width:240px;height:100px;margin:0;padding:0;border:0;'+parentCss;
+  target.style.cssText='display:block;height:10px;margin:0;padding:0;border:0;'+css;
+  parent.appendChild(target);document.body.appendChild(parent);owned.push(parent);return {parent,target};
+ };
+ const width=(target,value)=>{eq(getComputedStyle(target).width,value+'px','computed width');near(target.getBoundingClientRect().width,value,'actual width');};
+ const prop=(target,name)=>getComputedStyle(target).getPropertyValue(name);
+ await check('matching unregistered equality reaches native width',()=>{const {target}=make('--mode:wide;--selected:if(style(--mode:wide):40px;else:20px);width:var(--selected)');eq(prop(target,'--selected'),'40px','selected tokens');width(target,40);});
+ await check('nonmatching equality selects the fallback branch',()=>{const {target}=make('--mode:narrow;--selected:if(style(--mode:wide):40px;else:20px);width:var(--selected)');width(target,20);});
+ await check('the first matching branch wins before a later true branch',()=>{const {target}=make('--mode:wide;--selected:if(style(--missing):1px;else:41px;style(--mode:wide):2px);width:var(--selected)');width(target,41);});
+ await check('grouped boolean conditions use each unregistered property',()=>{const {target}=make('--a:on;--c:on;--selected:if(style(--a) and ((not style(--b)) or style(--c)):42px;else:2px);width:var(--selected)');width(target,42);});
+ await check('boolean operators also nest inside style queries',()=>{const {target}=make('--a:on;--b:off;--selected:if(style((--a:on) and ((not (--b:on)) or (--c:on))):43px;else:3px);width:var(--selected)');width(target,43);});
+ await check('an unselected value does not introduce a self cycle',()=>{const {target}=make('--mode:on;--selected:if(style(--mode):44px;else:var(--selected));width:var(--selected,4px)');width(target,44);});
+ await check('an unvisited later condition does not introduce a self cycle',()=>{const {target}=make('--mode:on;--selected:if(style(--mode):45px;style(--selected):5px);width:var(--selected,5px)');width(target,45);});
+ await check('a selected value cycle invalidates the participating property',()=>{const {target}=make('--mode:on;--selected:if(style(--mode):var(--selected);else:6px);width:var(--selected,46px)');eq(prop(target,'--selected'),'','invalid participating property');width(target,46);});
+ await check('a queried self cycle remains invalid after a fallback branch',()=>{const {target}=make('--selected:if(style(--selected):7px;else:8px);width:var(--selected,47px)');eq(prop(target,'--selected'),'','queried cycle');width(target,47);});
+ await check('an unrelated cyclic property makes its condition false',()=>{const {target}=make('--bad:var(--bad);--selected:if(style(--bad):8px;else:48px);width:var(--selected)');width(target,48);});
+ await check('no matching branch produces valid empty tokens instead of a missing variable',()=>{const {target}=make('--selected:if(style(--missing):9px);width:var(--selected,49px)');width(target,240);});
+ await check('an explicitly empty custom property differs from its invalid initial value',()=>{const {target}=make('--empty: ;--selected:if(style(--empty):50px;else:10px);width:var(--selected)');width(target,50);});
+ await check('unregistered equality does not compute a stored numeric expression',()=>{const {target}=make('--token:calc(1 + 2);--selected:if(style(--token:3):11px;else:51px);width:var(--selected)');width(target,51);});
+ await check('initial matches an absent unregistered custom property',()=>{const {target}=make('--selected:if(style(--missing:initial):52px;else:12px);width:var(--selected)');width(target,52);});
+ await check('inherit in a query is evaluated against the actual parent',async()=>{const {target}=make('--mode:blue;--selected:if(style(--mode:inherit):53px;else:13px);width:var(--selected)','--mode:green');width(target,13);target.style.setProperty('--mode','green');await frame();width(target,53);});
+ await check('direct normal-property if reaches the same native layout consumer',()=>{const {target}=make('--mode:wide;width:if(style(--mode:wide):54px;else:14px)');width(target,54);});
+ await check('stylesheet conditions invalidate after an inherited custom property changes',async()=>{const {parent,target}=make('','--mode:wide'),sheet=document.createElement('style');target.id='if-core-sheet-target';sheet.textContent='#if-core-sheet-target{--selected:if(style(--mode:wide):55px;else:15px);width:var(--selected)}';document.head.appendChild(sheet);owned.push(sheet);width(target,55);parent.style.setProperty('--mode','narrow');await frame();width(target,15);});
+ await check('an inherited resolved custom property keeps its parent substitution context',async()=>{const {parent,target}=make('--mode:narrow;width:var(--selected)','--mode:wide;--selected:if(style(--mode:wide):56px;else:16px)');width(target,56);parent.style.setProperty('--mode','narrow');await frame();width(target,16);});
+ await check('reparenting resolves local conditions against the new inherited map',async()=>{const {target}=make('--selected:if(style(--mode:wide):57px;else:17px);width:var(--selected)','--mode:wide'),other=document.createElement('div');other.style.cssText='width:240px;--mode:narrow';document.body.appendChild(other);owned.push(other);width(target,57);other.appendChild(target);await frame();width(target,17);});
+ await check('adjacent conditional token streams preserve their lexical boundary',()=>{const {target}=make('--mode:on;--selected:if(style(--mode):a)if(style(--mode):b);width:18px');eq(prop(target,'--selected'),'a/**/b','separate ident tokens');width(target,18);});
+ await check('negating an unknown condition does not make it true',()=>{const {target}=make('--selected:if(not future-condition(example):19px;else:59px);width:var(--selected)');width(target,59);});
+ await check('unregistered comparisons do not truncate long token streams',()=>{const value='q'.repeat(280)+'a',different='q'.repeat(280)+'b';const {target}=make('--token:'+value+';--selected:if(style(--token:'+different+'):20px;style(--token:'+value+'):60px);width:var(--selected)');width(target,60);});
+ await check('branch delimiters inside a string stay inside that component',()=>{const {target}=make('--mode:on;--selected:if(style(--mode):"a;b:c";else:"unused");width:21px');eq(prop(target,'--selected'),'"a;b:c"','selected string tokens');width(target,21);});
+ for(const row of rows)console.log('IF_UNREGISTERED_ROW '+JSON.stringify(row));
+ const passed=rows.filter(row=>row.pass).length,ok=rows.length===23&&passed===23;
+ document.documentElement.setAttribute('data-css-if-unregistered',ok?'PASS':'FAIL');
+ console.log('RESULTS css-if-unregistered:'+(ok?'PASS':'FAIL')+' '+JSON.stringify({passed,total:rows.length}));
+})().catch(error=>{document.documentElement.setAttribute('data-css-if-unregistered','FAIL');console.log('RESULTS css-if-unregistered:FAIL '+JSON.stringify({error:String(error)}));});
+</script>

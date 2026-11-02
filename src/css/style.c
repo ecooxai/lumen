@@ -800,19 +800,314 @@ static const char *var_lookup(VarResolver *r, const char *name, unsigned depth) 
     if (!value) value = css_property_initial(name);
     return value && *value ? value : NULL;
 }
+/* Draft insertion after var_lookup(). The existing VarResolver owns all
+ * custom-property resolution/cycle state; this code owns only parsed tokens.
+ * It deliberately does not implement registered style values, ranges,
+ * supports(), media(), or attr() substitution. */
+typedef enum { IF_FALSE, IF_TRUE, IF_UNKNOWN, IF_INVALID } IfTruth;
+typedef struct { CTok token; int close; } IfToken;
+typedef VEC(IfToken) IfTokens;
+typedef struct {
+    const char *source;
+    size_t length;
+    IfTokens tokens;
+} IfInput;
+typedef struct { int condition_begin, condition_end, value_begin, value_end; size_t value_stop; } IfBranch;
+typedef VEC(IfBranch) IfBranches;
+
+static int if_closing(int type) {
+    if (type == CT_FUNC || type == CT_LPAREN) return CT_RPAREN;
+    if (type == CT_LBRACK) return CT_RBRACK;
+    if (type == CT_LBRACE) return CT_RBRACE;
+    return 0;
+}
+static void if_input_free(IfInput *in) {
+    for (int i = 0; i < in->tokens.n; i++) free(in->tokens.v[i].token.str);
+    vec_free(in->tokens);
+}
+static bool if_input_init(IfInput *in, const char *source, size_t length) {
+    *in = (IfInput){ .source = source, .length = length };
+    CLexer lexer; clex_init(&lexer, source, length);
+    int opens[VAR_RECURSION_LIMIT], depth = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_EOF) { free(token.str); break; }
+        IfToken item = { .token = token, .close = -1 };
+        int index = in->tokens.n; vec_push(in->tokens, item);
+        if (if_closing(type)) {
+            if (depth == VAR_RECURSION_LIMIT) return false;
+            opens[depth++] = index;
+        } else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
+            if (!depth) return false;
+            int open = opens[--depth];
+            if (if_closing(in->tokens.v[open].token.type) != type) return false;
+            in->tokens.v[open].close = index;
+        } else if (type == CT_BAD) return false;
+    }
+    /* CSS Syntax implicitly closes otherwise valid blocks at EOF. */
+    while (depth) in->tokens.v[opens[--depth]].close = in->tokens.n;
+    return true;
+}
+static int if_skip_ws(const IfInput *in, int at, int end) {
+    while (at < end && in->tokens.v[at].token.type == CT_WS) at++;
+    return at;
+}
+static int if_trim_end(const IfInput *in, int begin, int end) {
+    while (end > begin && in->tokens.v[end - 1].token.type == CT_WS) end--;
+    return end;
+}
+static size_t if_offset(const IfInput *in, int at) {
+    return at < in->tokens.n ? (size_t)(in->tokens.v[at].token.start - in->source) : in->length;
+}
+static int if_after_component(const IfInput *in, int at) {
+    int close = in->tokens.v[at].close;
+    return close >= 0 ? LMIN(close + 1, in->tokens.n) : at + 1;
+}
+static bool if_keyword(const IfInput *in, int at, const char *word) {
+    const CTok *token = &in->tokens.v[at].token;
+    return token->type == CT_IDENT && token->str && str_ieq(token->str, word);
+}
+static char *if_declaration_value(const IfInput *in, int begin, int end) {
+    /* Trim declaration-boundary whitespace tokens before substitution.
+     * Do not trim the substituted result or whitespace within escaped tokens. */
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return xstrdup("");
+    const CTok *last = &in->tokens.v[end - 1].token;
+    return xstrndup(in->source + if_offset(in, begin),
+        (size_t)(last->start - in->source) + last->len - if_offset(in, begin));
+}
+static bool if_unregistered_equal(const char *left, const char *right) {
+    if (!left || !right) return left == right;
+    /* A single space is the existing map's valid-empty sentinel. */
+    if (!strcmp(left, " ")) left = "";
+    if (!strcmp(right, " ")) right = "";
+    return !strcmp(left, right);
+}
+static IfTruth if_boolean(VarResolver *, VarEntry *, const IfInput *, int, int, bool, unsigned);
+
+static IfTruth if_style_feature(VarResolver *r, VarEntry *owner, const IfInput *in,
+                               int begin, int end, unsigned depth, bool *matched) {
+    *matched = false;
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return IF_INVALID;
+    const CTok *name = &in->tokens.v[begin].token;
+    if (name->type != CT_IDENT || !name->str) return IF_INVALID;
+    int next = if_skip_ws(in, begin + 1, end);
+    if (next != end && in->tokens.v[next].token.type != CT_COLON) return IF_INVALID;
+    *matched = true;
+    /* This initial implementation evaluates unregistered custom properties.
+     * Native registration currently lacks syntax/inherits metadata. */
+    if (name->str[0] != '-' || name->str[1] != '-' || !name->str[2] || css_property_initial(name->str))
+        return IF_UNKNOWN;
+    for (int at = next < end ? next + 1 : end; at < end; at = if_after_component(in, at)) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (token->type == CT_SEMI ||
+            (token->type == CT_DELIM && strchr("!<>=", *token->start))) return IF_FALSE;
+    }
+    const char *actual = var_lookup(r, name->str, depth + 1);
+    if (next == end) return actual ? IF_TRUE : IF_FALSE;
+    char *raw = if_declaration_value(in, next + 1, end);
+    char *value = var_substitute(r, owner, raw, depth + 1); free(raw);
+    if (!value) return IF_FALSE;
+    const char *expected = value;
+    CLexer lexer; clex_init(&lexer, value, strlen(value)); CTok first, after;
+    do { first = clex_next(&lexer); if (first.type == CT_WS) free(first.str); } while (first.type == CT_WS);
+    do { after = clex_next(&lexer); if (after.type == CT_WS) free(after.str); } while (after.type == CT_WS);
+    bool forbidden = false;
+    if (first.type == CT_IDENT && first.str && after.type == CT_EOF) {
+        if (str_ieq(first.str, "initial")) expected = NULL;
+        else if (str_ieq(first.str, "inherit") || str_ieq(first.str, "unset")) {
+            cm_add_name(&r->style->custom_dependencies, name->str);
+            expected = r->parent ? custom_get(r->parent->custom, name->str) : NULL;
+            if (expected && !*expected) expected = NULL;
+        } else if (str_ieq(first.str, "revert") || str_ieq(first.str, "revert-layer") || str_ieq(first.str, "revert-rule")) forbidden = true;
+    }
+    free(first.str); free(after.str);
+    bool equal = !forbidden && if_unregistered_equal(actual, expected);
+    free(value); return equal ? IF_TRUE : IF_FALSE;
+}
+static IfTruth if_group(VarResolver *r, VarEntry *owner, const IfInput *in,
+                        int *position, int end, bool style, unsigned depth) {
+    int at = if_skip_ws(in, *position, end);
+    if (at == end || depth > VAR_RECURSION_LIMIT) return IF_INVALID;
+    const IfToken *item = &in->tokens.v[at]; const CTok *token = &item->token;
+    if (item->close < 0 || item->close > end) return IF_INVALID;
+    int close = item->close;
+    *position = LMIN(close + 1, end);
+    if (token->type == CT_LPAREN) {
+        IfTruth result = if_boolean(r, owner, in, at + 1, close, style, depth + 1);
+        return result == IF_INVALID ? IF_UNKNOWN : result;
+    }
+    if (token->type == CT_FUNC) {
+        if (!style && token->str && str_ieq(token->str, "style")) {
+            IfTruth result = if_boolean(r, owner, in, at + 1, close, true, depth + 1);
+            /* style() is a nested boolean production, so its top-level
+             * unknown result becomes false before an outer not. */
+            return result == IF_TRUE ? IF_TRUE : IF_FALSE;
+        }
+        return IF_UNKNOWN;
+    }
+    return IF_INVALID;
+}
+static IfTruth if_boolean(VarResolver *r, VarEntry *owner, const IfInput *in,
+                          int begin, int end, bool style, unsigned depth) {
+    if (depth > VAR_RECURSION_LIMIT) return IF_INVALID;
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return IF_INVALID;
+    if (style) {
+        bool matched;
+        IfTruth feature = if_style_feature(r, owner, in, begin, end, depth, &matched);
+        if (matched) return feature;
+    }
+    bool negate = if_keyword(in, begin, "not");
+    int position = negate ? begin + 1 : begin;
+    IfTruth result = if_group(r, owner, in, &position, end, style, depth + 1);
+    if (result == IF_INVALID) return result;
+    position = if_skip_ws(in, position, end);
+    if (negate) return position != end ? IF_INVALID : result == IF_UNKNOWN ? IF_UNKNOWN : result == IF_TRUE ? IF_FALSE : IF_TRUE;
+    int operator_kind = 0;
+    while (position < end) {
+        int kind = if_keyword(in, position, "and") ? 1 : if_keyword(in, position, "or") ? 2 : 0;
+        if (!kind || (operator_kind && operator_kind != kind)) return IF_INVALID;
+        operator_kind = kind; position++;
+        /* Evaluate every operand in the selected condition. A discovered
+         * cycle remains marked even if another boolean operand decides it. */
+        IfTruth right = if_group(r, owner, in, &position, end, style, depth + 1);
+        if (right == IF_INVALID) return right;
+        if (kind == 1) result = result == IF_FALSE || right == IF_FALSE ? IF_FALSE : result == IF_UNKNOWN || right == IF_UNKNOWN ? IF_UNKNOWN : IF_TRUE;
+        else result = result == IF_TRUE || right == IF_TRUE ? IF_TRUE : result == IF_UNKNOWN || right == IF_UNKNOWN ? IF_UNKNOWN : IF_FALSE;
+        position = if_skip_ws(in, position, end);
+    }
+    return result;
+}
+static char *if_argument(const IfInput *in, int begin, int end, size_t stop, bool condition) {
+    begin = if_skip_ws(in, begin, end);
+    int trimmed_end = if_trim_end(in, begin, end);
+    if (begin == trimmed_end) return condition ? NULL : xstrdup("");
+    size_t start = if_offset(in, begin);
+    const IfToken *first = &in->tokens.v[begin];
+    bool wrapped = first->token.type == CT_LBRACE;
+    if (wrapped) {
+        if (first->close < 0 || if_skip_ws(in, LMIN(first->close + 1, end), end) != end)
+            return NULL;
+        start += first->token.len;
+        stop = if_offset(in, first->close);
+        begin++; end = first->close;
+    }
+    /* Declaration-value restrictions still apply inside a free-form wrapper.
+     * Commas and braces are only excluded from unwrapped arguments; a
+     * condition's separating colon has the same unwrapped restriction. */
+    for (int at = begin; at < end; at = if_after_component(in, at)) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (token->type == CT_SEMI || (token->type == CT_DELIM && *token->start == '!') ||
+            (!wrapped && (token->type == CT_COMMA || token->type == CT_LBRACE ||
+                          (condition && token->type == CT_COLON)))) return NULL;
+    }
+    if (condition && if_skip_ws(in, begin, end) == end) return NULL;
+    /* Preserve the selected stream's trailing whitespace and comments. */
+    return xstrndup(in->source + start, stop - start);
+}
+static char *if_branch_value(const IfInput *in, const IfBranch *branch) {
+    return if_argument(in, branch->value_begin, branch->value_end, branch->value_stop, false);
+}
+static IfTruth if_condition(VarResolver *r, VarEntry *owner, const IfInput *in,
+                            const IfBranch *branch, unsigned depth) {
+    char *raw = if_argument(in, branch->condition_begin, branch->condition_end,
+                           if_offset(in, branch->condition_end), true);
+    char *value = raw ? var_substitute(r, owner, raw, depth + 1) : NULL;
+    free(raw);
+    if (!value) return IF_INVALID;
+    IfInput condition;
+    bool valid = if_input_init(&condition, value, strlen(value));
+    int begin = if_skip_ws(&condition, 0, condition.tokens.n);
+    int end = if_trim_end(&condition, begin, condition.tokens.n);
+    IfTruth truth = IF_INVALID;
+    if (valid && begin != end) {
+        bool otherwise = end == begin + 1 && if_keyword(&condition, begin, "else");
+        truth = otherwise ? IF_TRUE : if_boolean(r, owner, &condition, begin, end, false, depth + 1);
+    }
+    if_input_free(&condition); free(value); return truth;
+}
+static char *var_substitute_if(VarResolver *r, VarEntry *owner, CLexer *lexer, unsigned depth) {
+    size_t start = lexer->i, stop = start; int closes[VAR_RECURSION_LIMIT], nesting = 0;
+    bool complete = false;
+    for (;;) {
+        CTok token = clex_next(lexer); int type = token.type;
+        stop = (size_t)(token.start - lexer->s); free(token.str);
+        if (type == CT_EOF) { complete = true; break; }
+        int close = if_closing(type);
+        if (close) { if (nesting == VAR_RECURSION_LIMIT) break; closes[nesting++] = close; }
+        else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
+            if (!nesting) { complete = type == CT_RPAREN; break; }
+            if (closes[--nesting] != type) break;
+        }
+    }
+    if (!complete || depth > VAR_RECURSION_LIMIT) return NULL;
+    IfInput in; bool valid = if_input_init(&in, lexer->s + start, stop - start);
+    IfBranches branches = {0}; int begin = 0, colon = -1;
+    for (int at = 0; valid && at <= in.tokens.n;) {
+        bool end = at == in.tokens.n;
+        int type = end ? CT_EOF : in.tokens.v[at].token.type;
+        if (end || type == CT_SEMI) {
+            int first = if_skip_ws(&in, begin, at);
+            if (first != at) {
+                if (colon < first) { valid = false; break; }
+                IfBranch branch = {first, colon, colon + 1, at, if_offset(&in, at)};
+                /* Validate every branch's argument grammar, but do not
+                 * resolve unselected arbitrary substitutions. */
+                char *condition = if_argument(&in, first, colon, if_offset(&in, colon), true);
+                char *value = if_branch_value(&in, &branch);
+                if (!condition || !value) valid = false;
+                free(condition); free(value);
+                if (!valid) break;
+                vec_push(branches, branch);
+            } else if (!end) { valid = false; break; }
+            begin = at + 1; colon = -1;
+            if (end) break;
+            at++; continue;
+        }
+        if (colon < 0 && type == CT_COLON) colon = at;
+        at = if_after_component(&in, at);
+    }
+    char *result = NULL;
+    if (valid && branches.n) {
+        result = xstrdup("");
+        for (int i = 0; i < branches.n; i++) {
+            IfBranch *branch = &branches.v[i];
+            IfTruth truth = if_condition(r, owner, &in, branch, depth + 1);
+            if (owner && owner->cycle) { free(result); result = NULL; break; }
+            /* The broad argument grammar was checked above. A visited test
+             * that fails its post-substitution grammar simply does not match. */
+            if (truth == IF_TRUE) {
+                char *raw = if_branch_value(&in, branch); free(result);
+                result = raw ? var_substitute(r, owner, raw, depth + 1) : NULL; free(raw); break;
+            }
+        }
+    }
+    vec_free(branches); if_input_free(&in); return result;
+}
+
 static char *var_substitute(VarResolver *r, VarEntry *owner, const char *source, unsigned depth) {
     if (depth > VAR_RECURSION_LIMIT) return NULL;
-    if (!css_value_has_var(source)) return xstrdup(source);
+    if (!css_value_has_var(source) && !css_value_has_if(source)) return xstrdup(source);
     CLexer l; clex_init(&l, source, strlen(source));
     VarOutput out = {0}; size_t copied = 0; bool invalid = false;
     for (;;) {
         CTok t = clex_next(&l); int type = t.type;
         bool is_var = type == CT_FUNC && t.str && str_ieq(t.str, "var");
+        bool is_if = type == CT_FUNC && t.str && str_ieq(t.str, "if");
         free(t.str);
         if (type == CT_EOF) break;
-        if (!is_var) continue;
+        if (!is_var && !is_if) continue;
         size_t start = (size_t)(t.start - source), argument_start = l.i;
         if (!var_append(&out, source + copied, start - copied)) invalid = true;
+        if (is_if) {
+            char *value = var_substitute_if(r, owner, &l, depth + 1);
+            copied = l.i;
+            if (!value || (owner && owner->cycle)) invalid = true;
+            else if (!var_append(&out, value, strlen(value))) invalid = true;
+            free(value); continue;
+        }
         size_t argument_end, fallback, content_end;
         if (!css_var_arguments(&l, &argument_end, &fallback, &content_end)) { invalid = true; break; }
         copied = l.i;
@@ -846,8 +1141,8 @@ static char *var_substitute(VarResolver *r, VarEntry *owner, const char *source,
     if (invalid) { sb_free(&out.text); return NULL; }
     return sb_take(&out.text);
 }
-static char *subst_vars(const char *value, ComputedStyle *style, int depth) {
-    VarResolver r = { .style = style };
+static char *subst_vars(const char *value, ComputedStyle *style, const ComputedStyle *parent, int depth) {
+    VarResolver r = { .style = style, .parent = parent };
     return var_substitute(&r, NULL, value, (unsigned)depth);
 }
 static void custom_resolve_values(ComputedStyle *style, const ComputedStyle *parent, const CustomProps *origin_base) {
@@ -856,7 +1151,7 @@ static void custom_resolve_values(ComputedStyle *style, const ComputedStyle *par
     VEC(VarEntry *) values = {0};
     hm_foreach(&style->custom->map, item) {
         const char *raw = item->val;
-        if (!css_value_has_var(raw)) continue;
+        if (!css_value_has_var(raw) && !css_value_has_if(raw)) continue;
         VarEntry *entry = xcalloc(1, sizeof *entry); entry->name = item->key; entry->raw = raw;
         hm_put(&r.entries, item->key, entry); vec_push(values, entry);
     }
@@ -2993,13 +3288,13 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             v = xstrdup(pv ? pv : "");
         } else if (str_ieq(k, "initial")) v = xstrdup("");
         else if (!*k) v = xstrdup(" ");   /* valid empty value, unlike "" */
-        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, 0);
+        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, par, 0);
         free(kb);
         if (!v) v = xstrdup("");
         /* Re-declaring the value already in effect (Tailwind's universal --tw-* resets on every
            element) changes nothing: keep sharing the inherited map instead of copying it. */
         const char *cur = custom_get(st->custom, prop);
-        if (cur && !strcmp(cur, v) && !css_value_has_var(v)) { free(v); return; }
+        if (cur && !strcmp(cur, v) && !css_value_has_var(v) && !css_value_has_if(v)) { free(v); return; }
         /* custom property: copy-on-write map */
         if (!st->custom || st->custom->refs > 1 || (par && st->custom == par->custom)) {
             CustomProps *n = xcalloc(1, sizeof *n); n->refs = 1;
@@ -3029,8 +3324,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
-    if (css_value_has_var(v)) {
-        subst = subst_vars(v, st, 0);
+    if (css_value_has_var(v) || css_value_has_if(v)) {
+        subst = subst_vars(v, st, par, 0);
         if (subst && !css_math_spacing_valid(subst)) { free(subst); subst = NULL; }
         /* A failed substitution or property grammar takes unset; recognized
          * CSS-wide keywords keep their existing dedicated dispatch. */

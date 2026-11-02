@@ -145,6 +145,17 @@ bool css_value_has_var(const char *value) {
         if (type == CT_EOF) return false;
     }
 }
+bool css_value_has_if(const char *value) {
+    if (!strchr(value, '(')) return false;
+    CLexer l; clex_init(&l, value, strlen(value));
+    for (;;) {
+        CTok t = clex_next(&l); int type = t.type;
+        bool found = type == CT_FUNC && t.str && str_ieq(t.str, "if");
+        free(t.str);
+        if (found) return true;
+        if (type == CT_EOF) return false;
+    }
+}
 static bool css_math_function(const char *name) {
     static const char *const names[] = { "calc", "-webkit-calc", "min", "max", "clamp",
         "round", "mod", "rem", "abs", "sign", "sin", "cos", "tan", "asin", "acos",
@@ -769,7 +780,7 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         char *v = str_trim(val), *bang = css_important_start(v);
         bool imp = bang != NULL;
         if (bang) { *bang = 0; v = str_trim(v); }
-        bool pending = css_value_has_var(v);
+        bool pending = css_value_has_var(v) || css_value_has_if(v);
         /* Comments do not supply whitespace tokens in calc grammar. Defer
          * this typed check until substitution when the value is pending. */
         bool math_valid = custom || pending || css_math_spacing_valid(v);
