@@ -432,13 +432,14 @@ function waPositionSpecified(el, prop, value) {
 /* Preserve the intrinsic basis through the entire interpolation, including
  * its endpoints and extrapolation. Layout resolves size and percentages after
  * combining coefficients; a negative coefficient is not a negative used size. */
-const WA_PREFERRED_SIZE = /^(width|height)$/;
+const WA_PREFERRED_SIZE = /^(?:(?:min|max)-)?(?:width|height|inline-size|block-size)$/;
 const WA_SIZE_KEYWORD = /^(auto|min-content|max-content|fit-content|stretch)$/;
 function waPreferredSpecified(el, prop, value) {
     const tokens = cssGridTokens(value);
     const wide = tokens && tokens.length === 1 ? cssGridDecode(tokens[0]).toLowerCase() : '';
-    if (wide === 'inherit') return el && el.parentElement ? waBaseValue(el.parentElement, prop) || 'auto' : 'auto';
-    if (/^(initial|unset)$/.test(wide)) return 'auto';
+    const initial = prop.startsWith('max-') ? 'none' : 'auto';
+    if (wide === 'inherit') return el && el.parentElement ? waBaseValue(el.parentElement, prop) || initial : initial;
+    if (/^(initial|unset)$/.test(wide)) return initial;
     return WA_SIZE_KEYWORD.test(wide) ? wide : value;
 }
 /* A preferred-size value retains its calculation and intrinsic basis through

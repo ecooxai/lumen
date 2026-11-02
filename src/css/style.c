@@ -3400,16 +3400,27 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     }
     bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
     GridTrack *prepared_tracks = NULL; int prepared_count = 0;
-    if ((!strcmp(P, "width") || !strcmp(P, "height")) && !inherit && !initial && !unset &&
+    bool preferred_size = !strcmp(P, "width") || !strcmp(P, "height");
+    bool minimum_size = !strcmp(P, "min-width") || !strcmp(P, "min-height");
+    bool maximum_size = !strcmp(P, "max-width") || !strcmp(P, "max-height");
+    if ((preferred_size || minimum_size || maximum_size) && !inherit && !initial && !unset &&
         calc_size_function(val)) {
         /* Commit native and generic computed state together. Unsupported or
          * malformed calculation syntax cannot replace only half a declaration.
          * A pending declaration already took unset before this final parse. */
         Length value; char *computed = NULL;
         if (calc_size_preferred_value(&c, val, &value, &computed)) {
-            int axis = !strcmp(P, "height");
-            if (axis) st->height = value; else st->width = value;
-            free(st->anchor_sz[axis]); st->anchor_sz[axis] = NULL;
+            /* A calc-size basis must be a sizing value allowed by this
+             * property. Maximum sizes have none, never the auto keyword. */
+            if (maximum_size && value.kind == LK_AUTO) { free(computed); goto out; }
+            Length *slot = !strcmp(P, "width") ? &st->width : !strcmp(P, "height") ? &st->height :
+                !strcmp(P, "min-width") ? &st->min_width : !strcmp(P, "min-height") ? &st->min_height :
+                !strcmp(P, "max-width") ? &st->max_width : &st->max_height;
+            *slot = value;
+            if (preferred_size) {
+                int axis = !strcmp(P, "height");
+                free(st->anchor_sz[axis]); st->anchor_sz[axis] = NULL;
+            }
             gen_put(&st->gen_n, P, computed);
         }
         goto out;
@@ -3577,8 +3588,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
                 !strcmp(P, "min-width") ? &st->min_width : !strcmp(P, "min-height") ? &st->min_height :
                 !strcmp(P, "max-width") ? &st->max_width : &st->max_height;
             *dst = *v; if (inherit) st->parent_sensitive = true;
-            if ((!strcmp(P, "width") || !strcmp(P, "height")) &&
-                (len_calc_size(*dst) || custom_get(st->gen_n, P))) {
+            if (len_calc_size(*dst) || custom_get(st->gen_n, P)) {
                 const char *computed = len_calc_size(*dst) ? gen_value(src, gen_prop(from)) : NULL;
                 gen_put(&st->gen_n, P, xstrdup(computed ? computed : ""));
             }
@@ -7142,14 +7152,17 @@ static char *animation_value_of(Node *n, const ComputedStyle *s, const char *pro
         const char *value = gen_value(s, gen_prop(prop));
         if (!value || str_ieq(value, "normal")) return xstrdup("0px");
     }
-    /* Preferred sizes belong to the supplied computed snapshot, not the
-       element's single current used box. Keep keywords and percentage bases
-       on both sides so an auto/length pair cannot become two pixel values. */
+    /* Every sizing endpoint belongs to the supplied computed snapshot,
+       before CSSOM resolves preferred sizes or an automatic minimum. Logical
+       names use that snapshot's writing mode, including inheritance. */
     if (s) {
         const char *size = logical_size_prop(prop, s->writing_mode != 0);
         int axis = !strcmp(size, "width") ? 0 : !strcmp(size, "height") ? 1 : -1;
-        if (axis >= 0 && !s->anchor_sz[axis]) {
-            Length value = axis ? s->height : s->width;
+        const Length *slot = axis == 0 ? &s->width : axis == 1 ? &s->height :
+            !strcmp(size, "min-width") ? &s->min_width : !strcmp(size, "min-height") ? &s->min_height :
+            !strcmp(size, "max-width") ? &s->max_width : !strcmp(size, "max-height") ? &s->max_height : NULL;
+        if (slot && (axis < 0 || !s->anchor_sz[axis])) {
+            Length value = *slot;
             if (len_calc_size(value)) {
                 const char *computed = gen_value(s, gen_prop(size));
                 if (computed) return xstrdup(computed);
@@ -7160,7 +7173,7 @@ static char *animation_value_of(Node *n, const ComputedStyle *s, const char *pro
             if (value.kind != LK_LEN || finite) {
                 SB out; sb_init(&out);
                 if (value.kind == LK_LEN) bg_length_str(&out, value);
-                else len_str(&out, value, "auto");
+                else len_str(&out, value, !strncmp(size, "max-", 4) ? "none" : "auto");
                 return sb_take(&out);
             }
         }
@@ -7192,17 +7205,6 @@ static char *animation_value_of(Node *n, const ComputedStyle *s, const char *pro
         const char *physical = logical_box_prop(prop, s);
         if (physical_edge_prop(physical, &group, &side) && group == 2 && !s->anchor_ins[side]) {
             SB out; sb_init(&out); len_str(&out, s->inset[side], "auto");
-            return sb_take(&out);
-        }
-    }
-    /* Animation combines computed values, before CSSOM resolves an automatic
-       minimum to zero. Keep the keyword for discrete interpolation and for
-       underlying/neutral keyframes, independent of box or aspect-ratio state. */
-    if (s && !strncmp(prop, "min-", 4)) {
-        const char *physical = logical_size_prop(prop, s->writing_mode != 0);
-        if (!strcmp(physical, "min-width") || !strcmp(physical, "min-height")) {
-            SB out; sb_init(&out);
-            len_str(&out, !strcmp(physical, "min-width") ? s->min_width : s->min_height, "auto");
             return sb_take(&out);
         }
     }
@@ -7517,7 +7519,7 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
            mapping above, so their range and automatic-value rules agree. */
         Length minimum = !strcmp(prop, "min-width") ? s->min_width : s->min_height;
         const char *automatic = "auto";
-        if (minimum.kind == LK_AUTO) {
+        if (!len_calc_size(minimum) && minimum.kind == LK_AUTO) {
             const Node *parent = el ? (s == el->style ? el->parent : el) : NULL;
             while (parent && parent->style && parent->style->display == D_CONTENTS) parent = parent->parent;
             const ComputedStyle *ps = parent ? parent->style : NULL;
@@ -7536,10 +7538,14 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
             bool noninitial_ratio = ratio && !str_ieq(ratio, "auto");
             automatic = box && (item || noninitial_ratio) ? "auto" : "0px";
         }
-        len_str(&b, minimum, automatic);
+        const char *computed = len_calc_size(minimum) ? gen_value(s, gen_prop(prop)) : NULL;
+        if (computed) sb_puts(&b, computed); else len_str(&b, minimum, automatic);
     }
-    else if (!strcmp(prop, "max-width")) len_str(&b, s->max_width, "none");
-    else if (!strcmp(prop, "max-height")) len_str(&b, s->max_height, "none");
+    else if (!strcmp(prop, "max-width") || !strcmp(prop, "max-height")) {
+        Length maximum = !strcmp(prop, "max-width") ? s->max_width : s->max_height;
+        const char *computed = len_calc_size(maximum) ? gen_value(s, gen_prop(prop)) : NULL;
+        if (computed) sb_puts(&b, computed); else len_str(&b, maximum, "none");
+    }
     else if (!strcmp(prop, "top") || !strcmp(prop, "right") || !strcmp(prop, "bottom") || !strcmp(prop, "left")) {
         int i = prop[0] == 't' ? 0 : prop[0] == 'r' ? 1 : prop[0] == 'b' ? 2 : 3;
         float resolved;
