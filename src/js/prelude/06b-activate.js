@@ -547,6 +547,11 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             if (!cssInterpolateSizeSet(m, value, priority)) return;
             this._w(m); return;
         }
+        if (CSS_IMAGE_LONGHAND.test(p)) {
+            const priority = pri == null ? '' : String(pri);
+            if (!cssImageLonghandSet(m, p, v, priority)) return;
+            this._w(m); return;
+        }
         if (p === 'overflow') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (!cssOverflowSet(m, value, priority)) return;
