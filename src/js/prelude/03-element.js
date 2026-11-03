@@ -1139,19 +1139,20 @@ function shapeLenPx(el) {
     };
 }
 /* Raw declaration reads share the setters' scalar serialization. Normalize
- * only complete length/percentage literals (or line-height numbers), after
+ * only complete length/percentage literals or line-height/opacity numbers, after
  * the property's existing parser has seen its original token spelling. */
 function cssScalarSpecified(property, value) {
-    if (!CSS_PROP_NAMES.has(property) || !(TOM_LENGTH_PROPS.test(property) ||
+    const opacity = /^(?:fill-|stroke-|stop-|flood-)?opacity$/.test(property);
+    if (!CSS_PROP_NAMES.has(property) || !(TOM_LENGTH_PROPS.test(property) || opacity ||
         property === 'baseline-shift' || property === 'border-spacing')) return value;
     const scalar = /^([+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?)([a-z]+|%)?$/i.exec(value);
     if (!scalar || !Number.isFinite(Number(scalar[1]))) return value;
     const unit = (scalar[2] || '').toLowerCase();
-    if (!TOM_LEN_UNITS.has(unit)) return value;
+    if (opacity ? unit !== '' && unit !== '%' : !TOM_LEN_UNITS.has(unit)) return value;
     /* Keep unitless tokens on their existing property grammar path. In
        particular, underflow must not manufacture a valid zero length, and
        number-valued border-image widths must not become px values. */
-    if (!unit && property !== 'line-height') return value;
+    if (!unit && property !== 'line-height' && !opacity) return value;
     const canonical = specNormalize(property, scalar[1] + unit);
     if (canonical === value || !mathValid(property, value)) return value;
     if (N.cssSupports('(' + property + ':initial)') &&

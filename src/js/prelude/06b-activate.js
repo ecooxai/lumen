@@ -601,7 +601,7 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             const value = cssMathValueText(String(v));
             if (value === null || !mathValid(p, value)) return;
             m.set(p, [specNormalize(p, value), priority ? 'important' : '']);
-        } else m.set(p, [String(v), pri ? 'important' : '']); this._w(m);
+        } else m.set(p, [/^(?:fill-|stroke-|stop-|flood-)?opacity$/.test(p) ? cssScalarSpecified(p, String(v)) : String(v), pri ? 'important' : '']); this._w(m);
     }
     removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
 }
