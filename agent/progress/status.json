@@ -1,57 +1,57 @@
 {
-  "title": "Lumen Linux · WPT improvement session17",
-  "phase": "Candidate1703 accepted for targeted keyframe CSSOM and retained Linux scopes; timing grammar controls and MIME metadata review continue",
-  "iteration": 1703,
-  "session_iteration": 2,
-  "score": 56.330128205128204,
-  "selected_case_score": 56.330128205128204,
-  "score_candidate": 1603,
-  "score_note": "56.33/100 remains the last measured fixed1,248-file pass percentage from candidate1603. Candidate1703 passes separate incremental scopes; two unchanged named-range keyframe cases remain explicit failures.",
+  "title": "Lumen Linux \u00b7 WPT improvement session18",
+  "phase": "Establishing candidate1705 baseline and selecting high-value Linux compatibility fixes",
+  "iteration": 1800,
+  "session_iteration": 0,
+  "score": 57.21153846153846,
+  "selected_case_score": 57.21153846153846,
+  "score_candidate": 1705,
+  "score_note": "57.21/100 is the verified candidate1705 pass percentage on the frozen1248-file sample. Full official WPT and whole-browser quality are not measured by this score.",
   "score_scope": "Same1248 frozen HTTP/default-timeout testharness URLs, fully passing files only; separate assertion denominators.",
-  "checkpoint": "70d99dc0d8e9646f0a256bc3cf68aa47235b92c9",
-  "session_started_utc": "2026-11-02T11:45:42Z",
-  "deadline_utc": "2026-11-02T16:45:42Z",
-  "session_id": "20261102-session17",
-  "work_session_id": "20261102-session17",
-  "work_session_number": 17,
+  "checkpoint": "13c22d3d28a68746fede3f265f55c5eda3247da6",
+  "session_started_utc": "2026-11-03T06:58:59Z",
+  "deadline_utc": "2026-11-03T11:58:59Z",
+  "session_id": "20261103-session18",
+  "work_session_id": "20261103-session18",
+  "work_session_number": 18,
   "session_active": true,
   "session_status": "active",
-  "session_deadline_utc": "2026-11-02T16:45:42Z",
+  "session_deadline_utc": "2026-11-03T11:58:59Z",
   "session_response_availability": "This work session is active. The supervising agent polls session messages during development. Replies require the active session; no unattended response is promised after it ends.",
   "goal_achieved": false,
   "goal_score": 98,
   "overall_assessment": "Linux browser improvements underway. Full-WPT rate and whole-browser95/98score are not established.",
   "overall_result_label": "Chromium parity incomplete; full official WPT unmeasured",
-  "accepted_iteration": 1703,
-  "active_iteration": 1703,
-  "active_candidate": 1603,
-  "accepted_binary_sha256": "b2591720be38f312a42654fab3d864094796d3d9a3dfc0bf19e19d34bc4f7202",
-  "accepted_binary_scope": "Incrementally accepted candidate1603 development build from prior session; live Linux executable identity verified2026-11-02T12:25:39Z.",
-  "coverage": "Last fixed HTTP/default-timeout sample: candidate1603 passed703/1,248files and22,604/26,245assertions; Chromium150 passed1,062/1,248files and24,541/26,064assertions. Candidate1703 targeted keyframe8:5/8files44/55assertions, versus1603 0/8files20/55assertions, with24shared FAIL-to-PASS changes and zero lost/missing/new assertions. Full official WPT remains unmeasured.",
+  "accepted_iteration": 1705,
+  "active_iteration": 1800,
+  "active_candidate": 1705,
+  "accepted_binary_sha256": "a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271",
+  "accepted_binary_scope": "Candidate1705 immutable Linux binary independently verified against complete fixed1248 results; it is not presently running on display0.",
+  "coverage": "Candidate1705 passed714/1248files and22637/26245assertions on the frozen HTTP/default-timeout sample. Chromium150 passed1062/1248files and24541/26064assertions. This is selected WPT coverage, not full official WPT.",
   "current_evidence": [
     [
-      "Lumen1603 · frozen1248 URLs",
-      "703/1248 fully passing files(56.33%);22604/26245 assertions(86.13%)."
+      "Lumen1705 \u00b7 frozen1248 URLs",
+      "714/1248 fully passing files(57.21%);22637/26245 assertions(86.25%)."
     ],
     [
-      "Chromium150.0.7871.114 · same1248 URLs",
+      "Chromium150 \u00b7 same1248 URLs",
       "1062/1248 fully passing files(85.10%);24541/26064 assertions(94.16%). Assertion denominators remain separate."
     ],
     [
-      "Lumen1603 harness outcomes",
-      "1238 OK,1ERROR,9TIMEOUT; all1248 files remain counted. Raw assertions:22604PASS,3613FAIL,7TIMEOUT,21NOTRUN."
+      "Lumen1705 harness outcomes",
+      "1238 OK,1ERROR,9TIMEOUT; all1248 files remain counted. Raw assertions:22637PASS,3580FAIL,7TIMEOUT,21NOTRUN."
     ],
     [
-      "Separate retained regression gates",
-      "Prior accepted1603:218/218 native contracts;45authored fixtures/1318assertions. These are separate from WPT."
+      "Changes since1603",
+      "11 whole-file gains and33 shared assertion gains; zero previous PASS losses and zero missing/new assertion identities."
     ],
     [
-      "Desktop and Android delivery",
-      "Live desktop1851540 matches accepted1603 hash; connectedMI8 still runs installed1603 packagePID24824. Android deployment evidence is not AndroidWPT."
+      "Live devices",
+      "Linux display0 socket exists; stale Lumen PIDfile is not used to kill processes. MI8 is connected and authorized. Final runtime restart remains pending."
     ],
     [
-      "Performance investigation",
-      "Repeating the matched200registrations/1000boxes/fourchanges control to investigate the prior single-run slowdown. No speedup claim."
+      "Delivery status",
+      "Live HTTPS and two-second WebSocket telemetry verified. Surge is installed but has no authenticated account."
     ]
   ],
   "findings": [
@@ -64,14 +64,14 @@
     "comparison": "Current pinned reference Chromium150. Older234/640-file measurements use different scope."
   },
   "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
-  "source_archive_label": "Download historical candidate234 source",
-  "source_archive_note": "This download currently contains the reviewed historical candidate234 public source. A fresh curated export is being prepared; it is not the current1603source.",
+  "source_archive_label": "Download reviewed candidate1701 source",
+  "source_archive_note": "The archive is the reviewed historical candidate1701 engine snapshot with approved portable Git ancestry. It is not current candidate1705 source.",
   "broad_current": {
-    "iteration": 1603,
+    "iteration": 1705,
     "files": 1248,
-    "whole_files_passed": 703,
-    "whole_file_pass_percent": 56.330128205128204,
-    "assertions_passed": 22604,
+    "whole_files_passed": 714,
+    "whole_file_pass_percent": 57.21153846153846,
+    "assertions_passed": 22637,
     "assertions_total": 26245,
     "not_full_WPT": true,
     "chromium150": {
@@ -83,11 +83,47 @@
     }
   },
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
-  "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session17-20261102",
-  "working_commit": "83f02aeb00fffa3f27667607f3d015639d464ccc",
-  "updated_utc": "2026-11-02T14:05:01.651011+00:00",
-  "updated_at": "2026-11-02T12:31:48.634858+00:00",
-  "qualified_candidate_scope": {
+  "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
+  "working_commit": "f192066202d201177aaadbfb28f1ea6295c521d1",
+  "updated_utc": "2026-11-03T07:03:10.363539+00:00",
+  "updated_at": "2026-11-03T07:03:10.363539+00:00",
+  "runtime_candidate": null,
+  "runtime_note": "No executable from this checkout is currently running on Linux display0; its old PIDfile is stale. Connected MI8 is authorized; installed Android version verification is pending final delivery.",
+  "qualified_prior_candidate_scope": {
+    "candidate": 1701,
+    "source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
+    "binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
+    "recorded_inputs": 734,
+    "native_contracts": {
+      "passed": 218,
+      "total": 218
+    },
+    "retained_authored": {
+      "fixtures": 45,
+      "passed": 1318,
+      "total": 1318
+    },
+    "new_property_rule_authored": {
+      "passed": 21,
+      "total": 21,
+      "baseline1603_passed": 2
+    },
+    "property_descriptor_equality": {
+      "passed": 13,
+      "total": 13
+    },
+    "targeted_properties_wpt": {
+      "files_passed": 18,
+      "files_total": 41,
+      "assertions_passed": 589,
+      "assertions_total": 813,
+      "baseline1603_files_passed": 16,
+      "baseline1603_assertions_passed": 521,
+      "shared_fail_to_pass": 68,
+      "lost_passes": 0
+    }
+  },
+  "historical_candidate1703_scope": {
     "candidate": 1703,
     "source_commit": "70d99dc0d8e9646f0a256bc3cf68aa47235b92c9",
     "binary_sha256": "38f8185c73bf17b3ec625bc30945216a19950a2bf7d9f597afb53519f11122ba",
@@ -141,40 +177,26 @@
       "new_assertions": 0
     }
   },
-  "runtime_candidate": 1603,
-  "runtime_note": "Desktop and connected Android retain the previously accepted candidate1603 until final qualified deployment.",
-  "qualified_prior_candidate_scope": {
-    "candidate": 1701,
-    "source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
-    "binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
-    "recorded_inputs": 734,
-    "native_contracts": {
-      "passed": 218,
-      "total": 218
+  "qualified_candidate_scope": {
+    "candidate": 1705,
+    "source_commit": "13c22d3d28a68746fede3f265f55c5eda3247da6",
+    "binary_sha256": "a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271",
+    "fixed_sample": {
+      "iteration": 1705,
+      "files": 1248,
+      "whole_files_passed": 714,
+      "whole_file_pass_percent": 57.21153846153846,
+      "assertions_passed": 22637,
+      "assertions_total": 26245,
+      "not_full_WPT": true,
+      "chromium150": {
+        "whole_files_passed": 1062,
+        "files": 1248,
+        "whole_file_pass_percent": 85.09615384615384,
+        "assertions_passed": 24541,
+        "assertions_total": 26064
+      }
     },
-    "retained_authored": {
-      "fixtures": 45,
-      "passed": 1318,
-      "total": 1318
-    },
-    "new_property_rule_authored": {
-      "passed": 21,
-      "total": 21,
-      "baseline1603_passed": 2
-    },
-    "property_descriptor_equality": {
-      "passed": 13,
-      "total": 13
-    },
-    "targeted_properties_wpt": {
-      "files_passed": 18,
-      "files_total": 41,
-      "assertions_passed": 589,
-      "assertions_total": 813,
-      "baseline1603_files_passed": 16,
-      "baseline1603_assertions_passed": 521,
-      "shared_fail_to_pass": 68,
-      "lost_passes": 0
-    }
+    "results_sha256": "38bedb75363d20a0db610795a4c25923cf474601489c0ce543a9b31cfab267eb"
   }
 }
