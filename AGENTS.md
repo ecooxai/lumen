@@ -100,99 +100,68 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session18, frozen1807 qualification
+## Current development handoff — session18, frozen1808 regression repair
 
-Canonical checkout: `/mnt/p3/project/browser/lumen-android/lumen-android`.
-Branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
-Full request: `agent/task.md`. Session06:58:59–11:58:59UTC on2026-11-03, with at most
-one extra hour for an important unresolved bug. Root is CTO; same-model built-in agents
-own source/Git, independent tests and operations. Repo lead alone owns canonical Git.
-Coordinate ownership and freezes, use the shared480%quota and one-second monitors, and
-preserve all historical work, exact WPT/framework pins and original expectations.
+Read current `agent/continue.md` and `agent/devsummary.md`; the source/freeze receipt is
+`agent/source-work/session18/candidate1808-freeze.json`. Session began2026-11-03T06:58:59Z,
+nominal deadline11:58:59Z; one additional hour is authorized only for important bugs and
+required verification. No optional feature work remains. Root is CTO, repo_lead owns
+canonical Git/source/docs, wpt_baseline owns tests, ops_recovery owns final delivery.
 
-### Current1807 gate
+### Exact source and hold boundary
 
-Engineb8691d3ecead8555831a5c64707cace46996a517 changes only two JS prelude files after1806.
-Independently reviewed patchf6761bc7 adds ASCII-only hyphenated names and existing supported-name
-checks for ordinary inline/style/keyframe declarations, while preserving custom/descriptor contexts.
-The following docs-only commit is the exact build HEAD; source/Git freeze applies until tester release.
-1806 restored required integer-random union216/260 but stopped alias24 at21/24; its original failures
-are preserved. Separate diagnostics XML31/31,UA16/16,timing106/106 and scopedtree13/36 passed;
-all23 unsupported tree rows remain visible. Native218/retained1318/full1248 did not run on1806.
-1807 must run all required gates and preserve full22786 priorPASS union. No new feature work.
+Engine commit d93c9769c750dacbfd4bf415aa0523fbc0de7d6f follows separately reviewed auto-duration e38e360265230131b418698fb3e0969e4de7eebe
+and lexical sizing d93c9769c750dacbfd4bf415aa0523fbc0de7d6f. The following docs-only HEAD
+is frozen for1808 build; do not infer executable identity from later documentation HEAD.
+The prior exact1807 e238a82a0e60cc41c7d08d95de03e3dc3d0afe6b passed focused/native218/retained45-1318
+but its full replay found15 priorPASS losses:6 auto-duration/timeline and9 size admission.
+Its owned cohort was stopped11:09:16.881Z with1064 completed rawfiles to save time for
+fresh repaired qualification. Keep partial raw data, true stop reason, guard cleanup and
+all completed PASS identities. A partial replay is not a complete1248 score.
 
-### Candidate1805 scope and immutable full replay
+The duration fix recognizes valid auto components, resolving them to0s only for a single
+computed auto timeline; other timelines preserveauto. Existing numeric/unsupported-random
+fallback and canonical aliases remain. The sizing fix admits only the standard size/min-size/
+max-size family and uses real lexical components plus existing scalar grammar for ordinary
+inline/type1/type8 declarations. CSS-wide singleton, max-size none/auto distinction, comment/
+escape handling, duplicate canonicalization, priority and empty removal are covered. Page/
+font-face/other descriptor contexts remain separate. Native shorthand expansion/layout,
+initial-duration metadata and wider animation solver behavior remain explicit limitations.
 
-Scoped source `0415871ac9ed76e69b85acf8430765c97bcc539f`, binarySHA
-`fcf8016299063b119d48df212e4d262cd4f382aae29ee051e5a64568241360d4`, input manifest
-`7faeddce9d30fde7681ba2e2acff5ca348c31825f3c41438a9f53161f16d9eaa`.
-Acceptance: `agent/validation/linux-wpt-20261103-session18/candidate1805-incremental-acceptance.json`,
-SHA `7055dc1aa3d055b488b48dbf40f0ff68cdbeecfdb9e78ed5c6766c57221fad8f`.
+### Required gates and meaning of scores
 
-- Whole random serialization retains27/71 prior passes; typed random36/36 passes.
-- Timing102/106 satisfies the predeclared102-row scope; four original live sibling rows
-  remain failing and visible. TimingWPT gains48 existing assertions to170/204,3/5 files.
-- Integer188/188, native218/218 and retained45fixtures/1318assertions pass; retained
-  independent audit334/334. Focused MediaList/background/keyframe families lose no prior passes.
-- Original timing42 remains28/42 diagnostic. Current-spec range/serialization differences
-  from Chromium150 remain explicit. linear() and WebAnimations solver are unchanged.
-- Random syntax/type validation never supplies a value to runtime; sampling/cache computation
-  remains unimplemented. No nominal validation result may reach computed/rendered output.
+First gate the unchanged12 time-list files, both size valid/invalid files, independentduration12
+and sizing14 controls, then all previous focused/native218/retained1318 gates. The new full
+replay must retain the historical22786 PASS union plus every genuine completed1807 PASS.
+Do not alter WPT sources, expectations, skips, framework pins, guard adapters or old receipts.
+Last accepted full baseline is1705:714/1248files (57.21/100),22637/26245assertions. Held1802,
+1804,1805 were724/751/753 files with5/2/1 priorPASS losses respectively. Pinned Chromium150
+is1062/1248files,24541/26064 assertions; compare common exact identities separately. This
+selected sample is not whole upstream WPT, Chromium parity or an overall95/100 quality claim.
 
-The first random wrapper exit2 was an empty-shard cleanup return-value audit issue. Preserve
-its original receipt and independent reconciliation483877f22ac2ec86a6255841e9729f9fc336e88bf0a784022b741b058dbe52bd;
-actual PID/profile cleanup and guards passed, and no browser rerun erased the original evidence.
+1807 independent focused review verified287 raw/hash/cleanup checks: XML31/native59/upstream22,
+UA16,timing106 and narrowtree13/36 with23 unsupported failures retained. All218 native tests
+and retained45fixtures/1318 assertions passed;334 retained independent checks passed. Native
+269.21s slowdown versus~171s is spread across200/218 tests with hostCPUmedian40.27→82.33%,
+sharedcgroupmean66.01→67.81% and stable~275.4MBpeakRSS. Existing evidence supports host
+contention, not an isolated tree hot path; no duplicate benchmark or speculative change.
 
-Immutable1805 full1248 completed09:44:07.415–10:04:56.649UTC:753/1248files,22785/26245assertions,
-149 gains and one alias prior-PASS loss versus1705. All26,245 identities remain unchanged;
-all seven earlier losses recovered. HOLD remains. Next full replay requires22,786 priorPASSs.
-Historical engineb848e386c94b58a639a5a0071aaffdaac57c41a6 was frozen for1806; its gate stopped as above;
-tester owns build/focused/native/retained/full gates. No further feature work after this freeze.
+### Final delivery and remaining limits
 
-### Source integration and limits
+Keep exact accepted source HEAD through the Android build/check/install boundary. After a
+fresh complete no-loss full replay, ops builds/installs without clearing phone data, restarts
+owned Linux Lumen on display:0 and connected Android, checks actual runtime identity, and
+prepares actual-browser showcase/report. Heavy APK work follows full replay. Review every
+public export against immutable tested inputs and approved public-only Git ancestry; never
+publish private canonicalGit objects, test/profile/message data. Verify remote branch, archive
+hash, offline restore and external byte-for-byte download before promotion. Prior public1804
+remains a clearly held development checkpoint until a qualified successor replaces it.
 
-Frozen engineb848e38 includes XML39e511c, case/Unicode87b2438, canonical alias3e53a9f and
-owned inline tree-countb848e38 as separate reviewed commits. XML uses sparse branded PI state/private header, preserving ordinary
-Node layout. Staged parser59 passes; integrated parser59/browser31 and charset21 gates remain.
-Ignoring doctype PI is the selected allowed implementation policy; keep Chromium's differing
-behavior distinct from the normative post-root/invalid-label cases. No @import, stylesheet-set
-selection or full external CSSOM source reflection is added.
-
-Inline tree-count v4 is applied after independent semantic/context review and actual64-bit ABI
-verification:ComputedStyle1720B,Node304B,MDecl24B,all205 old field offsets unchanged. Context
-requires exact original literal inline property/value ownership and no pending substitution;
-stylesheet/copied/custom/inherited/pseudo/shadow contexts stay unsupported. All36 tree controls
-remain fixed, with13 predeclared literal/ordinary rows required; existing timing106 now requires106.
-Native child-list invalidation must pass mutation gates; do not broaden into cascade/provenance work.
-The14 legacy animation/transition aliases now share property identity across native/CSSOM paths,
-with descriptor isolation and parsed priority preservation. Runtime validation remains pending.
-
-Earlier qualified gains remain: MediaList10/10 and47/47; charset20/21; background8/9 and48/50;
-keyframe declarations31/31; opacity10/10; image44+10+4; canonical charset44+1. MediaList native
-stylesheet applicability, complete media math, two background computed-math cases and keyframe
-named timeline ranges remain limited. Successful narrow gates do not establish full features.
-
-### Baseline, publication and final delivery
-
-Last regression-free fixed1248 baseline remains1705:714/1248 files(57.21154%),22637/26245
-assertions. Chromium150:1062/1248 files,24541/26064 assertions; denominators remain separate.
-Selected-file score57.21/100 is not full official WPT or overall browser quality.1804 measured
-751/1248 and22735/26245 but lost2 prior passes; required union22737. The2 random losses are
-recovered in focused1805, awaiting full replay. All5 earlier1802 numeric losses are recovered.
-Preserve all historical HOLD/raw/audit receipts, including failed1803 and timing1704 evidence.
-
-Current download is held1804 development source: testedc55bd950 maps to public4064675364488ee6583c3cc50dd8a907ab1c3997
-and metadata-only2a8c99e6f80455618ffcf9cfd71afe64e2c57feb, pushed/verified on the source1804
-public branch.739 exact compiled inputs,839 curated files and approved public ancestry are
-independently checked; private working Git/test/profile material is excluded. Offline Git restore
-and public HTTPS readback match10,322,694bytes, SHA68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6.
-This proves source identity/recovery, not an independent rebuild. Public preview/WS is live;
-Surge lacks authentication and FileHarbor returned403. See ops/session18/handoff.md and
-agent/continue.md for exact operational commands and private-state precautions.
-
-Reserve the final45–60minutes for complete replay, final Android build/install-r and verified
-display0 restart, isolated actual-browser showcase, publication and final notes. Keep engine
-source frozen through runtime promotion; preserve user profiles/data and verify task-owned PIDs.
+No random sampling/cache computation was implemented; no fabricated samples may enter runtime.
+Tree context is literal inline scalar/integer ownership only; stylesheet/custom/inherited/
+typed-length/pseudo/shadow contexts retain explicit gaps. @import loading, complete stylesheet
+sets/external CSSOM source reflection and native sheet.media invalidation remain missing.
+See the ranked report-input next-work list; defer new features until after final delivery.
 
 ### Retained prior architecture and authorization boundaries
 
@@ -219,4 +188,6 @@ Full rule/layer/origin cascade rollback, typed custom-property animation and bro
 
 ## Next agent
 
-Read `agent/continue.md`, then the current iteration records in `agent/devsummary.md`. Preserve the exact tested source/binary identities and raw failures; continue from the latest qualified candidate, not an unqualified build or older public artifact.
+Start with the current continuation and immutable final candidate receipt. Preserve every
+prior PASS identity and all recorded limitations; verify the active source/device/public
+checkpoint before continuing. Keep source/Git ownership coordinated and runtime guards intact.

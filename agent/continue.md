@@ -1,57 +1,64 @@
-# Continue Lumen Linux session18 — frozen candidate1807 qualification
+# Continue Lumen Linux session18 — candidate1808 necessary regression repair
 
-Read AGENTS.md and agent/devsummary.md first; full request agent/task.md.
-Workspace /mnt/p3/project/browser/lumen-android/lumen-android; branch
+Read AGENTS.md, agent/devsummary.md and the full verbatim request agent/task.md.
+Canonical workspace /mnt/p3/project/browser/lumen-android/lumen-android; branch
  gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103.
-Nominal session06:58:59–11:58:59UTC2026-11-03, optional extra hour only for important bugs.
-Root is CTO; repo_lead owns canonical Git/source/docs; wpt_baseline owns all builds/tests;
-charset_engine independently reviews. No new feature work; only necessary gate repairs.
+Session started2026-11-03T06:58:59Z; nominal11:58:59Z, authorized extra hour only
+for important bugs and their required verification. Root is CTO; source/docs/Git
+repo_lead, tests wpt_baseline, delivery and independent review ops_recovery.
 
-## Current frozen source
+## Current boundary
 
-Engine b8691d3ecead8555831a5c64707cace46996a517 follows1806 frozen ea873d349771172867fad01ad45723ba2870ccc4.
-The following docs-only HEAD is the exact1807 build commit, sent explicitly to tester.
-Only03-element.js/06b-activate.js change: exact reviewed alias-boundaries-v4 patch
-f6761bc7c826665f31be7d250c6dad96ea78291e3537494ed59b0b7b4dd94c67, reviewSHA
-e2077ceb5c2bedff3d4d76272b2accb2bae56b531528c0e8f9e564d1077a919a.
-ASCII-only name folding avoids Unicode lookalike aliases; existing supported-name checks
-reject unknown ordinary inline/style/keyframe declarations after coercion. Custom names and
-font-face/page/position descriptors preserve their own contexts. All native sources are unchanged.
+Engine source commit d93c9769c750dacbfd4bf415aa0523fbc0de7d6f; the following docs-only commit is the exact1808
+build freeze, recorded in agent/source-work/session18/candidate1808-freeze.json.
+All1807 artifacts remain immutable and explicitly held. No feature expansion is authorized now.
+1807 exact tested commit e238a82a0e60cc41c7d08d95de03e3dc3d0afe6b built and passed
+focused gates, native218 and retained45/1318 with334 independent checks. A separate
+287-check review verified actual XML31/native59/upstream22, UA16,timing106 and
+narrowtree13/36, keeping23 unsupported failures visible. Its partial full replay
+then found6 auto-duration/timeline losses and9 size property-admission losses.
+The exact owned heldcohort was stopped11:09:16.881Z after1064 rawfiles to permit
+fresh repaired qualification; tester seals actual cleanup/partialunion separately.
+Neither the focused passes nor the partial full result permits broad promotion.
 
-1806 built successfully and retained integer-random5 union216/260, including the old alias loss.
-Its original alias24 gate stopped21/24 on three previously exposed unknown/case boundaries.
-Separate immutable diagnostics passed XML31/31, UA-key16/16, timing106/106 and exactly13/36
-tree controls in the predeclared scope; all23 unsupported rows remain visible. Native218,
-retained1318 and full1248 did not run on1806. Preserve every raw result and stopped receipt.
+## Necessary1808 changes
 
-Tester must rerun all original gates on1807, including unchanged alias24 plus separate boundary
-controls, XML native59/browser31/charset21, random36+16, strict timing106, tree36 predeclared13,
-focused regressions, native218 and retained45/1318, then full1248 union22786 without losses.
-Freeze compiled inputs and Git metadata until explicit release. Shared480%quota/one-second
-CPU/RSS/cgroup monitoring remains mandatory. Preserve immutable binaries/WPT/harness pins.
+Auto-duration repair f1635c6985696091a390fa6a678fcc11dfda987d4cb22877220e05f093439c0c
+recognizes valid auto components in the computed animation-duration list, resolving
+them to0s only for a single computed auto timeline, otherwise retainingauto.
+Canonical aliases and genuine unsupported random/math fallback remain unchanged.
+Existing initial-duration0s metadata, animation solver and list bound remain limits.
 
-## Scope, score and delivery
+Sizing repair abc2bb2af18eac9a6a199a02ccc46faaed5100a9e2d1c4ce5e652285cfbec426
+restores finite standard size/min-size/max-size names and validates ordinary one/two
+lexical components with the existing bounded tokenizer and native scalar grammar.
+Comments are trivia; escapes decode before keyword classification; nested pending
+substitution retains its original custom tokens through native validation. CSS-wide values remain singleton;
+max-size acceptsnone and rejectsauto; equal components canonicalize. Ordinary
+inline/type1/type8 routes are separate from @page/font-face/other descriptors.
+Native shorthand width/height expansion/layout remains an explicit pre-existing gap.
 
-XML sparse-state lifecycle39e511c, UA87b2438, legacy alias3e53a9f and inline treeb848e38 remain
-separate reviewed commits. Host ABI ComputedStyle1720B/Node304B/MDecl24B and205 old offsets
-unchanged. Tree context is exact literal inline ownership only; no guessed stylesheet/custom/
-pseudo/shadow scopes. No random sampler, @import, stylesheet-set selection or full external
-CSSOM source reflection. DTD PI ignore is an explicit allowed policy, not universal browser error.
+## Required qualification and release
 
-Full1805 measured753/1248files,22785/26245assertions with one alias priorPASS loss. It is held;
-all seven earlier losses recovered. Last regression-free1705 remains714/1248,22637/26245,
-57.21/100 selected-file score. Chromium150 is1062/1248,24541/26064, separate denominator.
-Full official WPT, Chromium parity and overall95 quality are not established.
+Preserve all original WPT files, oracles, runtime guards, build records and binaries.
+The new early gate includes the complete unchanged12 time-list files, complete
+size-valid/invalid files and independent duration-auto controls. Retain the six
+correct invalid-size gains plus all prior valid rows and every completed1807 PASS
+identity, alongside the prior22786 union. Final full1248 must be complete and lose
+no required priorPASS identities before release. All reported broad rates use that
+fixed selection, not the whole upstream WPT suite or a95/100 overall quality claim.
 
-Current public download is held1804,10322694bytes,SHA
-68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6. Private history/test/profile
-material is excluded from curated public source. See agent/ops/session18/release1806-plan.md
-for the reusable publication/delivery procedure, substituting the actual qualified final candidate.
-No later source may be represented by an earlier tested hash. Offline source restore is not a rebuild.
+Keep heavy work serialized and use python3 tools/codex_compile.py with the existing
+shared480% quota and one-second process/cgroup monitoring. Preserve live processes
+and user data. After a qualified final Linux source: exact-source Android build and
+install-r/check; restart owned Lumen on display:0 and connected phone; verify actual
+running binary/app and scoped UI. Curate public source from approved public ancestry
+only, independently verify all tested inputs/modes/no privateGit objects, push and
+verify, archive/offline restore and external byte/hash readback. Keep held prior
+checkpoints labeled. Final docs commits follow the exact-source devicebuild freeze.
 
-Live https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/ ; poll node agent/progress/manage.mjs poll
-every1–2minutes while active. Preserve secrets/profiles. Surge is unauthenticated; FileHarbor403.
-Reserve the final hour for regression-free replay, final Android build/install-r and verified display0
-restart, isolated4:3subminute actual-browser showcase, public archive and final notes. No physical
-media acquisition, uninstall/clear-data or blanket process killing. Keep engine source frozen
-through runtime promotion. Prior AGENTS architecture and authorization boundaries remain in force.
+The last accepted full baseline remains1705:714/1248,22637/26245 until an accepted
+successor's complete no-loss replay. Pinned Chromium150reference1062/1248 and
+24541/26064 has a different assertion set; compare shared exact identities separately.
+Preview/message service is owned by ops; source archive currently points to held1804.
+Do not publish private test logs, profiles, message queues or canonical privateGit history.
