@@ -100,68 +100,99 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session18, frozen1808 regression repair
+## Current development handoff - session18 final checkpoint
 
-Read current `agent/continue.md` and `agent/devsummary.md`; the source/freeze receipt is
-`agent/source-work/session18/candidate1808-freeze.json`. Session began2026-11-03T06:58:59Z,
-nominal deadline11:58:59Z; one additional hour is authorized only for important bugs and
-required verification. No optional feature work remains. Root is CTO, repo_lead owns
-canonical Git/source/docs, wpt_baseline owns tests, ops_recovery owns final delivery.
+Read `agent/continue.md`, `agent/devsummary.md` and the verbatim request in
+`agent/task.md`. The canonical workspace is `/mnt/p3/project/browser/lumen-android/lumen-android`;
+the WPT checkout is `/mnt/p3/project/browser/wpt`. The task branch is
+`gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
 
-### Exact source and hold boundary
+### Source, verification and measurement boundary
 
-Engine commit d93c9769c750dacbfd4bf415aa0523fbc0de7d6f follows separately reviewed auto-duration e38e360265230131b418698fb3e0969e4de7eebe
-and lexical sizing d93c9769c750dacbfd4bf415aa0523fbc0de7d6f. The following docs-only HEAD
-is frozen for1808 build; do not infer executable identity from later documentation HEAD.
-The prior exact1807 e238a82a0e60cc41c7d08d95de03e3dc3d0afe6b passed focused/native218/retained45-1318
-but its full replay found15 priorPASS losses:6 auto-duration/timeline and9 size admission.
-Its owned cohort was stopped11:09:16.881Z with1064 completed rawfiles to save time for
-fresh repaired qualification. Keep partial raw data, true stop reason, guard cleanup and
-all completed PASS identities. A partial replay is not a complete1248 score.
+The tested engine snapshot is `fcf2d2d83686a554f492fbaf992173b12d924b64`, engine commit
+`d93c9769c750dacbfd4bf415aa0523fbc0de7d6f`, source tree
+`905f9cd45711a1730d05807d85d99002b34e31a0`. Its Linux binary SHA-256 is
+`79af7023284551d597ce61ff4a5e3954a7edd2a43b4b8ee2af5d63a1658ff46d`; the 742-input
+manifest is `5c73f1b303089995b99e281ae20025600ea0c5345848eaf09705ca9d7d7ca2eb`.
+Later orchestration/documentation commits do not imply a rebuilt engine.
 
-The duration fix recognizes valid auto components, resolving them to0s only for a single
-computed auto timeline; other timelines preserveauto. Existing numeric/unsupported-random
-fallback and canonical aliases remain. The sizing fix admits only the standard size/min-size/
-max-size family and uses real lexical components plus existing scalar grammar for ordinary
-inline/type1/type8 declarations. CSS-wide singleton, max-size none/auto distinction, comment/
-escape handling, duplicate canonicalization, priority and empty removal are covered. Page/
-font-face/other descriptor contexts remain separate. Native shorthand expansion/layout,
-initial-duration metadata and wider animation solver behavior remain explicit limitations.
+The single preregistered unchanged-engine reliability replay passed: 759/1248 selected cases (60.8173%) and 22,826/26,245 assertions (86.9728%). All 22,826 required historical PASS identities were retained with no harness regressions. Compared with starting 1705, this adds 45 passing cases and 189 assertion passes. Both final unchanged namespace repetitions passed 51/51 with harness OK, real exit 0 and cleanup. Native 218/218 and retained 1318/1318 also passed. The first complete 1808 run remains HOLD: 758/1248 with 51/51 namespace assertions PASS but harness TIMEOUT; its cause remains unknown and no source fix is claimed. This is qualified development evidence, not production certification, whole-WPT parity or the unachieved 95/100 overall goal. On 26,004 exact common reference identities: 22,037 both PASS, 2,444 Chromium-only PASS, 586 Lumen-only PASS and 937 neither PASS. Independent recount SHA d60094edb3bde0aa72ba9c50fe05714a31c0df8dac8873e6fd0176b58bdc0f4c; namespace review SHA ff06f877ed01b0bffddb2ae85c480c97b7f2d9757308e2e95673e41f6382e12a.
 
-### Required gates and meaning of scores
+The denominator is 1248 selected HTTP/default-timeout testharness URLs/cases from 1247
+source files, across ten DOM/CSS families. Selection predates the results; 44 long-timeout
+cases and one HTTPS case were already excluded. This is not full upstream WPT,
+reftest/manual/visual coverage, Chromium parity or an overall 95/100 quality claim.
+The pinned reference is Chromium 150.0.7871.114 with matching ChromeDriver; its result is
+1062/1248 selected cases and 24541/26064 assertions. Compare the 26004 common exact
+(URL,name,occurrence) identities separately, not mismatched assertion denominators.
 
-First gate the unchanged12 time-list files, both size valid/invalid files, independentduration12
-and sizing14 controls, then all previous focused/native218/retained1318 gates. The new full
-replay must retain the historical22786 PASS union plus every genuine completed1807 PASS.
-Do not alter WPT sources, expectations, skips, framework pins, guard adapters or old receipts.
-Last accepted full baseline is1705:714/1248files (57.21/100),22637/26245assertions. Held1802,
-1804,1805 were724/751/753 files with5/2/1 priorPASS losses respectively. Pinned Chromium150
-is1062/1248files,24541/26064 assertions; compare common exact identities separately. This
-selected sample is not whole upstream WPT, Chromium parity or an overall95/100 quality claim.
+All 1247 selected source files were independently verified equal to pinned upstream
+revision `0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb`. The only tracked WPT changes are
+pre-existing conditional vendor automation and native completion-reporting adapters in
+`resources/testdriver-vendor.js` and `resources/testharnessreport.js`; their exact bytes,
+all 173 framework pins, selection and manifest were shared by the paired reference and
+native runs. No selected oracle, expectation, skip or timeout was changed this session.
 
-1807 independent focused review verified287 raw/hash/cleanup checks: XML31/native59/upstream22,
-UA16,timing106 and narrowtree13/36 with23 unsupported failures retained. All218 native tests
-and retained45fixtures/1318 assertions passed;334 retained independent checks passed. Native
-269.21s slowdown versus~171s is spread across200/218 tests with hostCPUmedian40.27→82.33%,
-sharedcgroupmean66.01→67.81% and stable~275.4MBpeakRSS. Existing evidence supports host
-contention, not an isolated tree hot path; no duplicate benchmark or speculative change.
 
-### Final delivery and remaining limits
+The selected family counts are: CSS Values 282; CSSOM 265; CSS Syntax 48; CSS Variables 63;
+CSS Sizing parsing 22; CSS Backgrounds parsing 74; CSS Transitions parsing 18;
+CSS Animations parsing 41; DOM Nodes 394; DOM Ranges 41. The authoritative inputs are
+`agent/validation/linux-wpt-20261101-session13/expanded-selection.json`,
+`expanded-urls.json` and `expanded-manifest.json`. Official WPT manifest version9 SHA-256:
+`440d5dc80c78ab184d977a7d58929732ce480522550a11c5664f17c76b5317ca`.
+Selected manifest SHA-256: `a97bc7c43083140f02c5f7ae3a46de905c8da6506c6a834928dbaa99d3ae63a6`.
+The reference resource bytes were shared, but native and WebDriver automation backends differ.
 
-Keep exact accepted source HEAD through the Android build/check/install boundary. After a
-fresh complete no-loss full replay, ops builds/installs without clearing phone data, restarts
-owned Linux Lumen on display:0 and connected Android, checks actual runtime identity, and
-prepares actual-browser showcase/report. Heavy APK work follows full replay. Review every
-public export against immutable tested inputs and approved public-only Git ancestry; never
-publish private canonicalGit objects, test/profile/message data. Verify remote branch, archive
-hash, offline restore and external byte-for-byte download before promotion. Prior public1804
-remains a clearly held development checkpoint until a qualified successor replaces it.
+### Preserved failure history and build identities
 
-No random sampling/cache computation was implemented; no fabricated samples may enter runtime.
-Tree context is literal inline scalar/integer ownership only; stylesheet/custom/inherited/
-typed-length/pseudo/shadow contexts retain explicit gaps. @import loading, complete stylesheet
-sets/external CSSOM source reflection and native sheet.media invalidation remain missing.
-See the ranked report-input next-work list; defer new features until after final delivery.
+The original complete 1808 run remains HOLD: 758/1248 cases and 22826/26245 assertions,
+all 22824 earlier PASS identities retained, but the namespace case reported harnessTIMEOUT
+with all 51 assertions PASS and clean exit 0. Unchanged old/current diagnostic runs passed
+under unequal host load. No new lifecycle defect or source fix was established. Exactly
+one preregistered reliability replay was authorized, requiring all 22826 first-run passes;
+its result is separate above. Do not erase that initial failure or claim a proven cause.
+
+Historical 1807's 1064-case partial replay had 15 semantic losses and 40 namespace assertion
+timeouts observed before its deliberate stop. A later copied build CLI accidentally
+reused 1807 and overwrote its original binary/build-state after cleanup. The replacement
+is quarantined; original raw/guard/monitor/oracle evidence and historical digests remain,
+but the original executable is unavailable. Never relabel a reconstruction as original.
+
+Commit `1c1ac7cfc326a960aa91e250184883db9ee5604b` adds the independently reviewed
+non-overwrite guard to `agent/validation/build_candidate.py`. Every future build must use
+`--expected-head <full frozen commit>` and a never-used positive candidate ID. Existing
+output directories, binaries, reservations and tombstones are rejected; failed attempts
+also consume an ID. Do not add a reuse/overwrite bypass. The guard changed no compiled
+input. Use the existing quota wrapper and one-second monitors; reserve shared build/source
+locks and coordinate heavy jobs. Preserve all original runtime guards and old receipts.
+
+### Runtime and publication
+
+Linux display :0 was restarted successfully at 2026-11-03T12:48:21.656938+00:00 with the exact candidate 1808 binary. Actual keyboard input, navigation/history and four own-page semantic checks passed; clean and attributed 36-second 1280x960 recordings were preserved. Android was built from exact fcf, passed all 33 original APK/RTC checks, installed with install-r, and finally restarted at 2026-11-03T12:56:33.126372+00:00. Installed APK SHA-256 is 900e38488462b364076db09c574c21405e26e5b5a474b850537b953675cf4a02; package UID 10196 was retained and no app data was cleared. Six stable foreground/liveness samples and four actual page checks passed after restart. Android smoke coverage is separate from Linux WPT. Both verification-controller corrections and failed attempts remain recorded; neither changed engine/APK bytes. The exact-source delivery window was closed and the guarded task branch restored, with all 742 inputs/binary/build-state unchanged. Final runtime receipt hashes: Linux 846747c9ac1dd03d7f8d58fc930cb29909d5f868d7df1fd3c3a556c9b2e14cdb, Android ce2c885faf24dc7e5bf07c90c3fd318321a58860974bf192f8d6abb8f81481cd.
+
+Exact tested source is durably published at public commit ec40e1f4a60c4e23921ee66cf74f7c09218a0344 on gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103 (https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103). The final metadata-only child and archive/report/media publication are recorded separately in agent/ops/session18/delivery-runtime and current progress status; preparation is never treated as publication. All 742 tested input hashes and the 842-file approved public inventory were independently reviewed. Public history excludes canonical private Git objects, profiles, credentials, message queues and validation machinery. Live HTTPS status/source download: https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/ . Its source_archive_candidate/hash/label distinguish the current download from a newly prepared artifact. Source recovery is not an independent rebuild. The PDF/video artifact handoff was still being finalized at this documentation timestamp; consult actual publication/readback receipts rather than infer success.
+
+Public exports contain exact tested source inputs with approved public-only ancestry.
+Never push the canonical private Git history or publish profiles, message queues,
+credentials or private validation machinery. Archive recovery is not an independent
+browser rebuild; external dependencies remain external. Resource `_mb` fields are decimal
+MB, dashboard GB is decimal, and CPU 100% is one core (shared quota 480%). Earlier prose
+that called these values MiB was a unit-label error; raw measurements were not rewritten.
+
+### Remaining work
+
+1. Investigate namespace/frame startup and parent-load completion reliability under controlled resource conditions. The first full run timed out after all 51 assertions passed; the cause remains unknown. Preserve the failure and every successful observation, with no timeout relaxation or test-specific bypass.
+2. Improve stylesheet and CSSOM lifecycle behavior that affects real pages: import loading, constructable sheets, source reflection, media invalidation, and atomic frame/post-connection operations. The final reliability shared-reference comparison records 449 CSSOM and 106 DOM-node assertion gaps; use the preserved final replay ranking to select a bounded next cohort.
+3. Address typed `attr()` values, cycles, `calc-size()` and context-sensitive numeric evaluation with explicit value provenance. CSS Values accounts for 1,230 of the final 2,444 shared Chromium-only passes; the large attr-all-types and calc-size-parsing files contribute 116 and 68 respectively. These counts are assertion gaps, not supported-feature percentages.
+4. Extend animation/background shorthand and selector grammar using unchanged complete valid/invalid cohorts. The measured final gaps include 230 animation-parsing and 192 background-parsing assertions; preserve the already accepted alias, priority, numeric and keyword behavior.
+5. Add separately declared rendering, network, visual/reftest and real-site coverage. The current HTTP DOM/CSS testharness sample cannot establish those broader platform properties.
+
+Keep 23 unsupported tree-context controls visible: only exact literal inline scalar/integer
+ownership is implemented. Random syntax/type acceptance has no sampling/cache runtime.
+Sizing shorthand grammar/storage does not implement native width/height expansion/layout.
+Animation-duration initial 0s metadata and broader animation/timeline behavior remain limited.
+Stylesheet imports/sets/external CSSOM reflection and complete native sheet.media invalidation
+remain incomplete. Preserve the retained architectural/authorization boundaries below.
 
 ### Retained prior architecture and authorization boundaries
 
@@ -188,6 +219,4 @@ Full rule/layer/origin cascade rollback, typed custom-property animation and bro
 
 ## Next agent
 
-Start with the current continuation and immutable final candidate receipt. Preserve every
-prior PASS identity and all recorded limitations; verify the active source/device/public
-checkpoint before continuing. Keep source/Git ownership coordinated and runtime guards intact.
+Use the exact source/runtime and validation mapping above. Read agent/continue.md and the final session18 entry in agent/devsummary.md before creating a new branch. The measured selected-URL benchmark does not establish whole-platform parity; preserve the documented first-full timeout and all historical evidence.

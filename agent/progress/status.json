@@ -1,80 +1,59 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session18",
-  "phase": "Candidate1807 frozen: narrow ASCII/supported-name repair follows1806 alias boundary failures. XML31/31, random-key16/16, timing106/106 and scoped tree13/36 diagnostics passed on1806; full qualification remains pending.",
-  "iteration": 1807,
-  "session_iteration": 7,
-  "score": 57.21153846153846,
-  "selected_case_score": 57.21153846153846,
-  "score_candidate": 1705,
-  "score_note": "57.21/100 is the verified candidate1705 pass percentage on the frozen1248-file sample. Full official WPT and whole-browser quality are not measured by this score.",
-  "score_scope": "Same1248 frozen HTTP/default-timeout testharness URLs, fully passing files only; separate assertion denominators.",
-  "checkpoint": "0415871ac9ed76e69b85acf8430765c97bcc539f",
+  "phase": "Development and both-device verification complete; final artifact publication is finishing. Earlier namespace timeout remains unexplained.",
+  "iteration": 1808,
+  "session_iteration": 8,
+  "score": 60.817307692307686,
+  "selected_case_score": 60.817307692307686,
+  "score_candidate": 1808,
+  "score_note": "60.82/100 is the selected1248-URL pass percentage, not whole-platform or95/100 product quality.",
+  "score_scope": "1248 selected HTTP/default-timeout testharness URLs from1247 source files; separate assertion denominators.",
+  "checkpoint": "fcf2d2d83686a554f492fbaf992173b12d924b64",
   "session_started_utc": "2026-11-03T06:58:59Z",
-  "deadline_utc": "2026-11-03T11:58:59Z",
+  "deadline_utc": "2026-11-03T12:58:59Z",
   "session_id": "20261103-session18",
   "work_session_id": "20261103-session18",
   "work_session_number": 18,
-  "session_active": true,
-  "session_status": "active",
-  "session_deadline_utc": "2026-11-03T11:58:59Z",
-  "session_response_availability": "This work session is active. The supervising agent polls session messages during development. Replies require the active session; no unattended response is promised after it ends.",
+  "session_active": false,
+  "session_status": "development complete; artifact handoff finishing",
+  "session_deadline_utc": "2026-11-03T12:58:59Z",
+  "session_response_availability": "Development session has ended. The status page remains available; no unattended agent reply is promised.",
   "goal_achieved": false,
   "goal_score": 95,
-  "overall_assessment": "Linux browser improvements underway. Full-WPT rate and whole-browser95/98score are not established.",
-  "overall_result_label": "Chromium parity incomplete; full official WPT unmeasured",
-  "accepted_iteration": 1705,
-  "active_iteration": 1807,
-  "active_candidate": 1807,
-  "accepted_binary_sha256": "a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271",
-  "accepted_binary_scope": "Last regression-free complete frozen1248 baseline remains1705. Candidate1805 scoped gates pass; complete replay is running.",
-  "coverage": "Candidate1705 passed714/1248files and22637/26245assertions on the frozen HTTP/default-timeout sample. Chromium150 passed1062/1248files and24541/26064assertions. This is selected WPT coverage, not full official WPT.",
+  "overall_assessment": "Linux development checkpoint verified on selected coverage; Chromium parity and overall95 quality remain unachieved.",
+  "overall_result_label": "Development checkpoint; first-full timeout history retained",
+  "accepted_iteration": 1808,
+  "active_iteration": null,
+  "active_candidate": null,
+  "accepted_binary_sha256": "79af7023284551d597ce61ff4a5e3954a7edd2a43b4b8ee2af5d63a1658ff46d",
+  "accepted_binary_scope": "One preregistered unchanged reliability replay plus two strict namespace checks and actual device verification; first full HOLD preserved.",
+  "coverage": "759/1248 selected cases and22826/26245 assertions; all22826 required passes preserved. Reference Chromium150:1062/1248 and24541/26064. Selected scope, not allWPT.",
   "current_evidence": [
     [
-      "Candidate1806 frozen source",
-      "Separately reviewed XML/UA/alias/tree commits integrated. Runtime/focused/native/retained/full gates are pending; no release claim."
+      "Final reliability replay",
+      "759/1248 selected URLs;22826/26245 assertions; all22826 historical passes retained; no harness regression."
     ],
     [
-      "Candidate1805 full HOLD",
-      "753/1248 files(60.34%);22785/26245 assertions;149 gains and one prior-PASS loss versus1705. All assertion identities unchanged."
+      "First full1808 HOLD preserved",
+      "758/1248; namespace harnessTIMEOUT despite51/51 assertions PASS. Cause unknown; no source fix claimed."
     ],
     [
-      "Lumen1705 \u00b7 last regression-free frozen1248",
-      "714/1248 fully passing files(57.21%);22637/26245 assertions. Full official WPT remains unmeasured."
+      "Both final namespace checks",
+      "Each51/51,harnessOK,actualexit0 and cleanup."
     ],
     [
-      "Chromium150 \u00b7 same1248 URLs",
-      "1062/1248 fully passing files(85.10%);24541/26064 assertions with its own denominator."
+      "Actual devices",
+      "Linux display0 restart and Android exactAPK/UID/foreground/liveness checks passed."
     ],
     [
-      "Candidate1805 focused qualification",
-      "Random27/71 retains all prior passes; random types36/36; timing102/106 with four explicit unsupported sibling rows. TimingWPT3/5files,170/204assertions."
-    ],
-    [
-      "Candidate1805 regression gates",
-      "Native218/218 and retained45fixtures/1318assertions pass; independent audit334/334. Immutable full1248 replay started09:44:08UTC."
-    ],
-    [
-      "Candidate1804 full replay \u2014 HOLD",
-      "751/1248 files;22735/26245 assertions;two prior-PASS random() losses. Both are recovered in1805 focused tests; full verification remains pending."
-    ],
-    [
-      "Candidate1806 source",
-      "Reviewed XML PI lifecycle and case/Unicode-preserving random identifiers integrated; native/browser qualification pending. Inline tree-count draft is separately reviewed and awaits measured ABI/runtime gates."
-    ],
-    [
-      "Live devices",
-      "Linux display0 socket exists; MI8 is connected and authorized. Final runtime restart is pending."
-    ],
-    [
-      "Delivery status",
-      "Current source1804 held archive matches10,322,694bytes and SHA after offline restore/public readback. Public Git checkpoint verified; HTTPS/WS telemetry is live."
+      "Score boundary",
+      "60.82% is a selectedURL rate, not overall95 or Chromium parity."
     ]
   ],
   "findings": [
-    "Candidate1806 restored the whole integer/random/alias required union216, but three new alias name boundaries stopped its qualification; original24 rows are preserved.",
-    "Independent1806 XML31, UA16, timing106 and predeclared tree13 pass;23 unsupported tree rows remain visible. These diagnostics are not a release acceptance.",
-    "Candidate1807 changes only two JS files: ASCII property-name handling and ordinary supported-name rejection, preserving custom/font-face/page/position descriptor contexts.",
-    "Full1805 remains HOLD753/1248,22785/26245 with one loss. Last regression-free score stays57.21/100 at1705; full required union22786."
+    "All selected test source blobs and frozen oracles remained unchanged.",
+    "Original1807 executable/build-state unavailable after disclosed artifact-ID overwrite; raw evidence preserved and guard installed.",
+    "Two Android controller corrections preserved strict identity/foreground predicates and original failed attempts."
   ],
   "historical": {
     "label": "Previous Linux311 same frozen1248 sample:686/1248files;21992/26245assertions.",
@@ -82,30 +61,31 @@
   },
   "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
   "source_archive_label": "Source1804 development checkpoint \u2014 HOLD:2 known full-replay regressions",
-  "source_archive_note": "HELD development checkpoint: exact1804 tested inputs and approved public Git ancestry. Focused WPT/native218/retained1318 passed; full selected1248 measured751 files and22735 assertions with2 prior-PASS losses. Broad baseline remains1705.",
+  "source_archive_note": "Published Git development source1808 is available with qualification scope. Source archive download remains explicitly held historical1804 until a reviewed final update.",
   "broad_current": {
-    "iteration": 1705,
+    "iteration": 1808,
     "files": 1248,
-    "whole_files_passed": 714,
-    "whole_file_pass_percent": 57.21153846153846,
-    "assertions_passed": 22637,
+    "unique_source_files": 1247,
+    "whole_files_passed": 759,
+    "whole_file_pass_percent": 60.817307692307686,
+    "assertions_passed": 22826,
     "assertions_total": 26245,
     "not_full_WPT": true,
+    "first_full_HOLD_preserved": true,
     "chromium150": {
       "whole_files_passed": 1062,
       "files": 1248,
-      "whole_file_pass_percent": 85.09615384615384,
       "assertions_passed": 24541,
       "assertions_total": 26064
     }
   },
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
-  "working_commit": "b8691d3ecead8555831a5c64707cace46996a517",
-  "updated_utc": "2026-11-03T10:27:45.195599+00:00",
-  "updated_at": "2026-11-03T10:27:45.195599+00:00",
-  "runtime_candidate": null,
-  "runtime_note": "Linux display0 Lumen restart remains pending; the isolated progress control window is live. MI8 is authorized and still runs prior qualified1603 APK; SDK/NDK and prebuilt dependencies are present.",
+  "working_commit": "fcf2d2d83686a554f492fbaf992173b12d924b64",
+  "updated_utc": "2026-11-03T12:59:48.301875+00:00",
+  "updated_at": "2026-11-03T12:59:48.301875+00:00",
+  "runtime_candidate": 1808,
+  "runtime_note": "Exact candidate1808 restarted on Linux display0 and connected Android; installed APK verified, UID/data preserved. Android WPT parity is not claimed.",
   "qualified_prior_candidate_scope": {
     "candidate": 1701,
     "source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
@@ -497,5 +477,7 @@
     "native218_ran": false,
     "retained1318_ran": false,
     "full1248_ran": false
-  }
+  },
+  "score_basis": "714/1248 selected HTTP/default-timeout test cases/URLs from1247 source files; last regression-free1705 score, not whole WPT",
+  "working_commit_role": "Exact tested engine source; later guard/docs commits are separate."
 }
