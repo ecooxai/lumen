@@ -546,6 +546,10 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             if (pri && !/^important$/i.test(pri) || !mathValid(p, v)) return;
         }
         const m = this._m();
+        if ((type === 1 || type === 8) && CSS_SIZE_SHORTHAND.test(p)) {
+            if (!cssSizeShorthandSet(m, p, v, pri)) return;
+            this._w(m); return;
+        }
         if (p === 'interpolate-size') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (!cssInterpolateSizeSet(m, value, priority)) return;
