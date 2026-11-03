@@ -8940,6 +8940,10 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         else if (!strcmp(q, "transition-property")) sb_puts(&b, s->tr_prop ? s->tr_prop : "all");
         else if (!strcmp(q, "transition-duration")) sb_printf(&b, "%gs", s->tr_dur);
         else if (!strcmp(q, "transition-delay")) sb_printf(&b, "%gs", s->tr_delay);
+        else if (!strcmp(q, "animation-timing-function") || !strcmp(q, "transition-timing-function")) {
+            const GenProp *g = gen_prop(q); const char *value = g ? gen_value(s, g) : NULL;
+            sb_puts(&b, value ? value : g && g->initial ? g->initial : "ease");
+        }
     }
     else if (!strcmp(prop, "position")) sb_puts(&b, ps[s->position]);
     else if (!strcmp(prop, "visibility")) sb_puts(&b, s->visibility ? "hidden" : "visible");
