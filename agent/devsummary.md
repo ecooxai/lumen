@@ -537,3 +537,8 @@ Session start 2026-11-03T06:58:59Z; final recorded handoff 2026-11-03T12:59:48.3
 3. Address typed `attr()` values, cycles, `calc-size()` and context-sensitive numeric evaluation with explicit value provenance. CSS Values accounts for 1,230 of the final 2,444 shared Chromium-only passes; the large attr-all-types and calc-size-parsing files contribute 116 and 68 respectively. These counts are assertion gaps, not supported-feature percentages.
 4. Extend animation/background shorthand and selector grammar using unchanged complete valid/invalid cohorts. The measured final gaps include 230 animation-parsing and 192 background-parsing assertions; preserve the already accepted alias, priority, numeric and keyword behavior.
 5. Add separately declared rendering, network, visual/reftest and real-site coverage. The current HTTP DOM/CSS testharness sample cannot establish those broader platform properties.
+
+
+## Session18 post-development source publication — 2026-11-03T13:05:04.477021+00:00
+
+Development/test/device work finished12:56:33UTC. Artifact publication is a separate later handoff, not additional engine work or a source fix. Public commit c57da5b98ecb52124d04d10964ce62c6793c5e47 was pushed and remote verified; source archive 10344997bytes / SHAe0ded35eb3968778f2a14af49d21dbcdae66437028cd25d3a316feeb4eed0e57 passed offline restore and external full-byte verification at 2026-11-03T13:03:35.288168+00:00. Final publication receipt SHAc2b0f751aa01197507d62cb9255a7002178f35445ae52d7964df828d34877109; exact fcf engine and742inputs unchanged. The first full HOLD remains visible. PDF/media saved-file handoff is recorded separately when actually complete.

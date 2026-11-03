@@ -1,6 +1,6 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session18",
-  "phase": "Development and both-device verification complete; final artifact publication is finishing. Earlier namespace timeout remains unexplained.",
+  "phase": "Development and both-device verification complete. Final1808 source archive published and externally verified; final report handoff finishing.",
   "iteration": 1808,
   "session_iteration": 8,
   "score": 60.817307692307686,
@@ -60,8 +60,8 @@
     "comparison": "Current pinned reference Chromium150. Older234/640-file measurements use different scope."
   },
   "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
-  "source_archive_label": "Source1804 development checkpoint \u2014 HOLD:2 known full-replay regressions",
-  "source_archive_note": "Published Git development source1808 is available with qualification scope. Source archive download remains explicitly held historical1804 until a reviewed final update.",
+  "source_archive_label": "Candidate1808 verified development source; first timeout history retained",
+  "source_archive_note": "Exact tested source and approved public Git history. One preregistered reliability replay759/1248 plus two namespace checks and actual devices passed; original first full HOLD remains. Not whole-WPT/95 or production certification.",
   "broad_current": {
     "iteration": 1808,
     "files": 1248,
@@ -82,8 +82,8 @@
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
   "working_commit": "fcf2d2d83686a554f492fbaf992173b12d924b64",
-  "updated_utc": "2026-11-03T12:59:48.301875+00:00",
-  "updated_at": "2026-11-03T12:59:48.301875+00:00",
+  "updated_utc": "2026-11-03T13:05:04.477021+00:00",
+  "updated_at": "2026-11-03T13:05:04.477021+00:00",
   "runtime_candidate": 1808,
   "runtime_note": "Exact candidate1808 restarted on Linux display0 and connected Android; installed APK verified, UID/data preserved. Android WPT parity is not claimed.",
   "qualified_prior_candidate_scope": {
@@ -201,9 +201,9 @@
     "full_fixed1248_replayed": false,
     "native218_replayed": false
   },
-  "source_archive_candidate": 1804,
-  "source_archive_sha256": "68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6",
-  "source_archive_bytes": 10322694,
+  "source_archive_candidate": 1808,
+  "source_archive_sha256": "e0ded35eb3968778f2a14af49d21dbcdae66437028cd25d3a316feeb4eed0e57",
+  "source_archive_bytes": 10344997,
   "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1804-20261103",
   "latest_broad_observation": {
     "candidate": 1805,
@@ -479,5 +479,9 @@
     "full1248_ran": false
   },
   "score_basis": "714/1248 selected HTTP/default-timeout test cases/URLs from1247 source files; last regression-free1705 score, not whole WPT",
-  "working_commit_role": "Exact tested engine source; later guard/docs commits are separate."
+  "working_commit_role": "Exact tested engine source; later guard/docs commits are separate.",
+  "public_source_commit": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
+  "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103",
+  "source_archive_external_hash_verified": true,
+  "source_archive_offline_restore_verified": true
 }
