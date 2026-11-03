@@ -1,6 +1,6 @@
 {
   "candidate": 1804,
-  "status": "QUALIFIED focused unchanged WPT, native218 and retained45/1318; full1248 replay pending",
+  "status": "HOLD development checkpoint: focused/native/retained passed; full selected1248 has2 prior-PASS losses",
   "tested_source_commit": "c55bd95010c37c7907020f951ac40c6420788a43",
   "tested_binary_sha256": "6d44ae80424d1a102829a185be6b6dd322603e1d605a2f50000b467367f89ebe",
   "source_manifest_digest": "d4cbc36fb6b52bf2d11998edeb63ccbc07b19a0822168fd94c634718f2334084",
@@ -10,9 +10,9 @@
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
   "private_history_included": false,
-  "publication_performed": false,
+  "publication_performed": true,
   "validation_summary": {
-    "qualification_scope": "Focused unchangedWPT cohorts + original218native + unchangedretained45/1318 + qualified authored semantic controls. Full1248 replay required and pending; no broad promotion.",
+    "qualification_scope": "Focused unchanged WPT,218 native and retained45/1318 passed. Complete selected1248 replay is held for2 prior-PASS losses; regression-free broad baseline remains1705.",
     "incremental_acceptance_receipt_sha256": "168657a971bddbc04e096709b0dabee85f89e3da328c344f784886278eb13904",
     "focused_wpt": {
       "integer-regressions3": {
@@ -432,8 +432,8 @@
       "registered": 1318,
       "independent_checks": 334
     },
-    "full1248_replayed": false,
-    "full1248_status": "Pending complete replay; no broad promotion inferred",
+    "full1248_replayed": true,
+    "full1248_status": "HOLD: two prior-PASS losses in z-index named-cache random() declaration retention",
     "last_regression_free_full_sample": {
       "candidate": 1705,
       "files_passed": 714,
@@ -449,10 +449,48 @@
       "assertions_total": 26245,
       "prior_pass_losses": 5,
       "status": "Historical HOLD; exact losses recovered by targeted1803/1804 integer gates, fresh full replay remains required"
+    },
+    "full1248": {
+      "files_passed": 751,
+      "files_total": 1248,
+      "file_pass_percent": 60.17628205128205,
+      "assertions_passed": 22735,
+      "assertions_total": 26245,
+      "prior_pass_losses": 2,
+      "existing_assertion_gains": 100,
+      "missing_assertions": 0,
+      "new_assertions": 0,
+      "required_union_passing_assertions": 22737,
+      "regressions": [
+        {
+          "url": "/css/css-values/random-serialize.tentative.html",
+          "name": "e.style['z-index'] = \"random(--foo, 25, 50)\" should set the property value",
+          "prior": "PASS",
+          "current": "FAIL"
+        },
+        {
+          "url": "/css/css-values/random-serialize.tentative.html",
+          "name": "e.style['z-index'] = \"random(--foo, 25, 50, 5)\" should set the property value",
+          "prior": "PASS",
+          "current": "FAIL"
+        }
+      ],
+      "raw_results_sha256": "ba6fe0bdcb30018ef8f09b50261adc9d093799d647fb90cf1df33d322fd6759e",
+      "comparison_sha256": "74df8f7b85bc943ee4861ec8f4f9159db3093774dca37ca44206f24a7ebc8f67",
+      "independent_recount_sha256": "965d00fe8240e2e68bba351d8c140066edbec8ee6ffdc26843ae0d191bd14269",
+      "immutable_provenance_sha256": "585e434e9299234cfccf5230975eabc40de824817edc63ffeedc7663038ee1f1",
+      "started_utc": "2026-11-03T08:48:55.229Z",
+      "finished_utc": "2026-11-03T09:10:31.421Z",
+      "wall_seconds": 1296.192,
+      "immutable_binary_and_runtime_pins_verified": true,
+      "working_checkout_advanced_during_replay": true,
+      "not_full_official_WPT": true,
+      "broad_promotion": false
     }
   },
   "limitations": [
-    "Focused/native218/retained45-1318 gates qualify this checkpoint; complete frozen1248 replay is pending and broader regression-free promotion is not claimed.",
+    "This is a held development checkpoint. Focused/native/retained gates passed, but the complete selected1248 replay found2 prior-PASS losses; no regression-free broad promotion is claimed.",
+    "The two known regressions reject valid named-cache random() z-index values at declaration validation. Random sampling/cache computation is an existing missing subsystem and is not claimed here.",
     "Official charset21 is20/21; XML stylesheet processing-instruction loading remains absent at this exact source. Existing import/external-CSSOM source loading is not newly implemented.",
     "Image longhand grammar and serialization pass the focused controls; border-image rendering, background text/border-area rendering and full computed slice math are not newly implemented. Two official computed slice assertions remain failing.",
     "Two prior named-timeline-range authored cases remain visible; keyframe declaration context and opacity serialization controls pass separately.",
@@ -465,5 +503,5 @@
   ],
   "independent_export_review_sha256": "28f0743099019c03479c45771495674db5b35f7d33a976c6eeef52b53bf196bd",
   "incremental_acceptance_receipt_sha256": "168657a971bddbc04e096709b0dabee85f89e3da328c344f784886278eb13904",
-  "publication_note": "Metadata frozen before reviewed public Git push; archive publication is recorded separately. Full official WPT and Chromium parity are not claimed."
+  "publication_note": "Public source4064675364488ee6583c3cc50dd8a907ab1c3997 was pushed and verified before full replay finished. This metadata-only follow-up preserves exact tested source and records the full-replay hold. Source archive publication has a separate receipt."
 }
