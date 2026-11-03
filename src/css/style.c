@@ -191,6 +191,8 @@ typedef struct {
     const ComputedStyle *flow_basis;
     const ComputedStyle *line_height_basis;
     bool line_height_parent, root_line_height_initial;
+    const Node *tree_count_element; /* borrowed only for proven literal inline values */
+    bool *used_tree_counts;
 } LCtx;
 static float ch_advance(LCtx *c) {
     if (c->used_font_units) *c->used_font_units = true;
@@ -1726,14 +1728,16 @@ static char *next_token(const char **pp) {
 static int split_ws(const char *v, char **out, int max) { int n = 0; const char *p = v; char *t; while (n < max && (t = next_token(&p))) out[n++] = t; return n; }
 static void free_toks(char **t, int n) { for (int i = 0; i < n; i++) free(t[i]); }
 
-typedef struct { ComputedStyle *st; const ComputedStyle *par; StyleEngine *e; Node *el; float em, rem; const MediaCtx *mc; bool validation_only, line_height_property; } ACtx;
+typedef struct { ComputedStyle *st; const ComputedStyle *par; StyleEngine *e; Node *el; float em, rem; const MediaCtx *mc; bool validation_only, line_height_property, literal_inline_tree_counts; } ACtx;
 static LCtx application_scalar_context(ACtx *c, bool *root_used) {
     const ComputedStyle *root = c->e && c->e->doc && c->e->doc->html ? c->e->doc->html->style : NULL;
     if (c->e && c->e->doc && c->el == c->e->doc->html) root = c->st;
     LCtx result = { .em = c->em, .rem = root ? root->font_size : c->rem, .mc = c->mc,
         .font_basis = c->st, .actual_font = c->st != NULL && !c->validation_only,
         .used_font_units = c->e ? &c->e->uses_font_units : NULL,
-        .root_font_basis = root, .resolve_font_metrics = true, .used_root_font_units = root_used };
+        .root_font_basis = root, .resolve_font_metrics = true, .used_root_font_units = root_used,
+        .tree_count_element = c->literal_inline_tree_counts ? c->el : NULL,
+        .used_tree_counts = c->st ? &c->st->uses_tree_counts : NULL };
     return result;
 }
 /* lh in line-height and font-size uses the parent's line metrics. The root's
@@ -4461,6 +4465,20 @@ static bool query_apply_dependencies(ComputedStyle *style, const char *property,
     return true;
 }
 
+/* The string-based custom-value store does not retain tree-scope provenance.
+ * Only the exact property/value owned by this element's cached inline block
+ * proves a local literal source. A copied, substituted, inherited, expanded or
+ * stylesheet value must not acquire a guessed element context. */
+static bool tree_count_literal_inline(const Node *element, const char *property, const char *value) {
+    if (!element || !element->inline_decls || !value || !strchr(value, '(') ||
+        (property[0] == '-' && property[1] == '-') || min_size_deferred(value)) return false;
+    const DeclList *declarations = element->inline_decls;
+    for (int i = 0; i < declarations->n; i++) {
+        const Decl *declaration = &declarations->v[i];
+        if (declaration->value == value && !strcmp(declaration->prop, property)) return true;
+    }
+    return false;
+}
 static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     prop = css_animation_property_name(prop);
     /* Invalid argument grammar is discarded before pending substitution can
@@ -4559,6 +4577,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     }
     ACtx c = { st, par, e, el, st->font_size, 16, e ? &e->media : NULL };
     c.line_height_property = !strcmp(prop, "line-height");
+    c.literal_inline_tree_counts = tree_count_literal_inline(el, prop, value_in);
     g_cq[0] = g_cq[1] = 0;
     if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)
         if (a->type == NODE_ELEMENT && a->style && a->style->container_type) { g_cq[0] = a->cq_w; g_cq[1] = a->style->container_type == 2 ? a->cq_h : 0; break; }
@@ -7488,7 +7507,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     ComputedStyle x = *a, y = *b;
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
     PO_Z(anchor_name); PO_Z(pos_anchor); PO_Z(pos_area); PO_Z(pos_try); PO_Z(anchor_ins); PO_Z(anchor_sz); PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom); PO_Z(gen_i); PO_Z(gen_n);
-    PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic); PO_Z(indep_set);
+    PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic); PO_Z(uses_tree_counts); PO_Z(indep_set);
     PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_origin); PO_Z(bg_clip); PO_Z(bg_color_clip); PO_Z(bg_layers); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
     PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
     PO_Z(box_shadow); PO_Z(has_shadow); PO_Z(text_shadow); PO_Z(has_text_shadow); PO_Z(text_decoration);
@@ -7816,7 +7835,13 @@ static bool annotate_tree_changes(Node *n) {
     bool changed = direct, following = changed;
     for (Node *c = n->last; c; c = c->prev) {
         bool child = annotate_tree_changes(c);
-        if (direct) c->flags |= NF_TREE_CHILD;
+        if (direct) {
+            c->flags |= NF_TREE_CHILD;
+            /* Only existing direct children that actually evaluated a count
+             * need restyling; newly inserted/moved subtrees are already dirty. */
+            if (c->type == NODE_ELEMENT && c->style && c->style->uses_tree_counts)
+                mark_style_subject(c, "tree-count");
+        }
         if (child || following) c->flags |= NF_TREE_RELATED;
         changed |= child; following |= child;
     }

@@ -282,6 +282,7 @@ typedef struct ComputedStyle {
     bool parent_sensitive, inherited_dynamic; /* explicit inherit, container/style-attribute rules */
     bool uses_vh; /* resolved a viewport-height unit (vh, vmin, vmax, viewport cq*), here or in a pseudo */
     uint8_t indep_set; /* independent inherited properties the cascade set (style.c INDEP_*) */
+    bool uses_tree_counts; /* owned literal inline typed math reads DOM sibling positions */
     struct ComputedStyle *before, *after, *marker; /* pseudo element styles */
 } ComputedStyle;
 

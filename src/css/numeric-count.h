@@ -187,11 +187,26 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
     p->p++; int strategy = 0; bool no_clamp = false;
     bool random = !strcmp(name, "random");
     if (random && (!p->validation_only || !css_number_random_key(p))) return false;
-    if (p->validation_only && (!strcmp(name, "sibling-index") || !strcmp(name, "sibling-count"))) {
-        /* Syntax-only scalar typing. No fabricated tree value may escape
-           into evaluation; actual tree-scoped resolution is a separate path. */
+    if (!strcmp(name, "sibling-index") || !strcmp(name, "sibling-count")) {
         css_number_ws(p); if (*p->p != ')') return false;
-        p->p++; out->value = 1; return true;
+        p->p++;
+        if (p->validation_only) { out->value = 1; return true; }
+        const LCtx *context = p->font_context;
+        const Node *element = context ? context->tree_count_element : NULL;
+        if (!element || element->type != NODE_ELEMENT) return false;
+        /* Only an owned literal inline source supplies an element. All
+         * stylesheet/custom/pseudo-rule values remain unsupported until their
+         * source tree scope is available; shadow subjects are excluded too. */
+        const Node *root = element; while (root->parent) root = root->parent;
+        if (root->type == NODE_FRAGMENT && root->host) return false;
+        size_t count = 1;
+        for (const Node *node = element->prev; node; node = node->prev)
+            count += node->type == NODE_ELEMENT;
+        if (!strcmp(name, "sibling-count"))
+            for (const Node *node = element->next; node; node = node->next)
+                count += node->type == NODE_ELEMENT;
+        if (context->used_tree_counts) *context->used_tree_counts = true;
+        out->value = (double)count; return true;
     }
     if (!strcmp(name, "progress")) {
         css_number_ws(p);
