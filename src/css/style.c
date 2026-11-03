@@ -8888,7 +8888,24 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
             if (strstr(prop, "-duration") || strstr(prop, "-delay")) {
                 char *copy = xstrdup(v), *parts[32]; int count = split_top(copy, ',', parts, 32);
                 bool valid = count > 0;
+                bool animation_duration = !strcmp(prop, "animation-duration");
+                const GenProp *timeline_prop = animation_duration ? gen_prop("animation-timeline") : NULL;
+                const char *timeline = timeline_prop ? gen_value(s, timeline_prop) : NULL;
+                char *timeline_text = timeline ? min_size_parser_text(timeline) : NULL;
+                bool auto_as_zero = !timeline || (timeline_text && str_ieq(str_trim(timeline_text), "auto"));
+                free(timeline_text);
                 for (int i = 0; i < count; i++) {
+                    /* Animations 2 resolves auto to 0s only for the single auto
+                     * timeline. Other timeline lists retain the keyword; this
+                     * is a valid duration, not an unsupported time calculation. */
+                    char *keyword = animation_duration ? min_size_parser_text(parts[i]) : NULL;
+                    bool auto_duration = keyword && str_ieq(str_trim(keyword), "auto");
+                    free(keyword);
+                    if (auto_duration) {
+                        if (i) sb_puts(&b, ", ");
+                        sb_puts(&b, auto_as_zero ? "0s" : "auto");
+                        continue;
+                    }
                     float value;
                     if (!css_time(parts[i], &value)) { valid = false; break; }
                     if (i) sb_puts(&b, ", ");
