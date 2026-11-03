@@ -1,6 +1,6 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session18",
-  "phase": "Candidate1805 passed scoped random/timing, native218 and retained1318 gates; full1248 replay is running. XML PI and identifier corrections are integrated for1806.",
+  "phase": "Candidate1806 frozen for qualification: canonical aliases, XML PI lifecycle, random identifier boundaries and owned inline tree counts. Full1805 remains HOLD with one alias regression.",
   "iteration": 1805,
   "session_iteration": 6,
   "score": 57.21153846153846,
@@ -29,6 +29,14 @@
   "accepted_binary_scope": "Last regression-free complete frozen1248 baseline remains1705. Candidate1805 scoped gates pass; complete replay is running.",
   "coverage": "Candidate1705 passed714/1248files and22637/26245assertions on the frozen HTTP/default-timeout sample. Chromium150 passed1062/1248files and24541/26064assertions. This is selected WPT coverage, not full official WPT.",
   "current_evidence": [
+    [
+      "Candidate1806 frozen source",
+      "Separately reviewed XML/UA/alias/tree commits integrated. Runtime/focused/native/retained/full gates are pending; no release claim."
+    ],
+    [
+      "Candidate1805 full HOLD",
+      "753/1248 files(60.34%);22785/26245 assertions;149 gains and one prior-PASS loss versus1705. All assertion identities unchanged."
+    ],
     [
       "Lumen1705 \u00b7 last regression-free frozen1248",
       "714/1248 fully passing files(57.21%);22637/26245 assertions. Full official WPT remains unmeasured."
@@ -63,10 +71,10 @@
     ]
   ],
   "findings": [
-    "Candidate1805 recovered both1804 random declaration regressions and preserves all five earlier numeric repairs.",
-    "Timing longhands gained48 existing WPT assertions without a prior-pass loss; four live sibling controls remain visible and unsupported in1805.",
-    "Full1248 is running; selected-file score remains57.21 at1705. Latest download is clearly labeled held1804 development source.",
-    "09:52UTC public WebSocket probe received four snapshots and a pong; round-trip853ms, sampled update intervals844/1296/2157ms."
+    "Full1805 recovered all seven earlier losses but exposed one native/CSSOM alias inconsistency; exact22,786 prior-pass union is required for the next full replay.",
+    "Candidate1806 canonicalizes the finite14 animation/transition aliases and retains real unsupported-time fallback; random sampling remains absent.",
+    "Tree support is limited to owned literal inline typed math, with unchanged host ABI and existing child-list invalidation; broader normative controls remain visible.",
+    "Last regression-free score remains57.21/100 at1705. Held1804 public archive is preserved until a regression-free checkpoint is qualified."
   ],
   "historical": {
     "label": "Previous Linux311 same frozen1248 sample:686/1248files;21992/26245assertions.",
@@ -93,9 +101,9 @@
   },
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
-  "working_commit": "87b2438c11184d255799ece196a61702b26351e5",
-  "updated_utc": "2026-11-03T09:54:00.485545+00:00",
-  "updated_at": "2026-11-03T09:54:00.485545+00:00",
+  "working_commit": "b848e386c94b58a639a5a0071aaffdaac57c41a6",
+  "updated_utc": "2026-11-03T10:14:21.420704+00:00",
+  "updated_at": "2026-11-03T10:14:21.420704+00:00",
   "runtime_candidate": null,
   "runtime_note": "Linux display0 Lumen restart remains pending; the isolated progress control window is live. MI8 is authorized and still runs prior qualified1603 APK; SDK/NDK and prebuilt dependencies are present.",
   "qualified_prior_candidate_scope": {
@@ -218,15 +226,16 @@
   "source_archive_bytes": 10322694,
   "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1804-20261103",
   "latest_broad_observation": {
-    "candidate": 1804,
+    "candidate": 1805,
     "qualification_status": "HOLD",
-    "files_passed": 751,
+    "files_passed": 753,
     "files": 1248,
-    "assertions_passed": 22735,
+    "assertions_passed": 22785,
     "assertions_total": 26245,
-    "prior_pass_losses": 2,
+    "prior_pass_losses": 1,
+    "required_prior_pass_union": 22786,
     "last_regression_free_candidate": 1705,
-    "scope": "Complete frozen1248 sample; not full official WPT."
+    "scope": "Frozen1248 sample; not full official WPT."
   },
   "candidate1803_quick_scope": {
     "candidate": 1803,
@@ -374,8 +383,8 @@
       "existing_gains": 48,
       "prior_pass_losses": 0
     },
-    "full1248_replayed": false,
-    "full1248_status": "Running since2026-11-03T09:44:08Z with immutable1805"
+    "full1248_replayed": true,
+    "full1248_status": "HOLD:753/1248 files,22785/26245 assertions; one prior-PASS random alias loss. No broad promotion."
   },
   "qualified_candidate1804_scope": {
     "candidate": 1804,
@@ -448,5 +457,5 @@
       }
     }
   },
-  "full_replay_candidate": 1805
+  "full_replay_candidate": null
 }

@@ -100,7 +100,7 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session18, scoped1805 accepted and1806 integration
+## Current development handoff — session18, frozen1806 qualification
 
 Canonical checkout: `/mnt/p3/project/browser/lumen-android/lumen-android`.
 Branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
@@ -132,24 +132,29 @@ The first random wrapper exit2 was an empty-shard cleanup return-value audit iss
 its original receipt and independent reconciliation483877f22ac2ec86a6255841e9729f9fc336e88bf0a784022b741b058dbe52bd;
 actual PID/profile cleanup and guards passed, and no browser rerun erased the original evidence.
 
-Immutable full1248 began09:44:08UTC. Source/Git freeze is released for later work; do not
-change1805 binary/buildrecords, WPT/framework or runtime pins. No heavy next build during
-this replay without tester coordination. Broad acceptance and score are pending.
+Immutable1805 full1248 completed09:44:07.415–10:04:56.649UTC:753/1248files,22785/26245assertions,
+149 gains and one alias prior-PASS loss versus1705. All26,245 identities remain unchanged;
+all seven earlier losses recovered. HOLD remains. Next full replay requires22,786 priorPASSs.
+Engineb848e386c94b58a639a5a0071aaffdaac57c41a6 is frozen for1806 with a following docs-only HEAD;
+tester owns build/focused/native/retained/full gates. No further feature work after this freeze.
 
 ### Source integration and limits
 
-Current source87b2438 follows XML PI commit39e511c and the reviewed case/Unicode-preserving
-random-key normalizer. XML uses sparse branded PI state/private header, preserving ordinary
+Frozen engineb848e38 includes XML39e511c, case/Unicode87b2438, canonical alias3e53a9f and
+owned inline tree-countb848e38 as separate reviewed commits. XML uses sparse branded PI state/private header, preserving ordinary
 Node layout. Staged parser59 passes; integrated parser59/browser31 and charset21 gates remain.
 Ignoring doctype PI is the selected allowed implementation policy; keep Chromium's differing
 behavior distinct from the normative post-root/invalid-label cases. No @import, stylesheet-set
 selection or full external CSSOM source reflection is added.
 
-Inline tree-count v2 is independently reviewed, still unapplied pending actual64-bit ABI and
-runtime gates. Context is restricted by exact original inline property/value ownership and no
-pending substitution; stylesheet/copied/custom/inherited/pseudo/shadow routes stay unsupported.
-All36 new tree and106 existing timing controls remain fixed. Preserve measured ABI, use existing
-child-list invalidation, and do not broaden into a cascade/provenance rewrite.
+Inline tree-count v4 is applied after independent semantic/context review and actual64-bit ABI
+verification:ComputedStyle1720B,Node304B,MDecl24B,all205 old field offsets unchanged. Context
+requires exact original literal inline property/value ownership and no pending substitution;
+stylesheet/copied/custom/inherited/pseudo/shadow contexts stay unsupported. All36 tree controls
+remain fixed, with13 predeclared literal/ordinary rows required; existing timing106 now requires106.
+Native child-list invalidation must pass mutation gates; do not broaden into cascade/provenance work.
+The14 legacy animation/transition aliases now share property identity across native/CSSOM paths,
+with descriptor isolation and parsed priority preservation. Runtime validation remains pending.
 
 Earlier qualified gains remain: MediaList10/10 and47/47; charset20/21; background8/9 and48/50;
 keyframe declarations31/31; opacity10/10; image44+10+4; canonical charset44+1. MediaList native
