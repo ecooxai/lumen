@@ -1,63 +1,57 @@
-# Continue Lumen Linux session18 — frozen candidate1806 qualification
+# Continue Lumen Linux session18 — frozen candidate1807 qualification
 
-Read AGENTS.md and agent/devsummary.md first; full request is agent/task.md.
-Workspace /mnt/p3/project/browser/lumen-android/lumen-android, branch
+Read AGENTS.md and agent/devsummary.md first; full request agent/task.md.
+Workspace /mnt/p3/project/browser/lumen-android/lumen-android; branch
  gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103.
-Session06:58:59–11:58:59UTC on2026-11-03; optional extra hour only for important bugs.
-Root is CTO; repo_lead owns Git/source/docs, wpt_baseline owns all qualification,
-charset_engine independently reviews. Ops handoff: agent/ops/session18/handoff.md.
+Nominal session06:58:59–11:58:59UTC2026-11-03, optional extra hour only for important bugs.
+Root is CTO; repo_lead owns canonical Git/source/docs; wpt_baseline owns all builds/tests;
+charset_engine independently reviews. No new feature work; only necessary gate repairs.
 
-## Frozen source and gates
+## Current frozen source
 
-Engine commit b848e386c94b58a639a5a0071aaffdaac57c41a6 contains separate reviewed commits:
-39e511c XML stylesheet PI lifecycle;87b2438 UA random key case/Unicode;3e53a9f canonical
-14-name animation/transition aliases; b848e38 owned inline tree-count context/invalidation.
-The following docs-only commit is the exact build HEAD; tester receives it explicitly.
-Freeze all compiled inputs and Git metadata through the coordinated qualification. No new
-feature work after this boundary. Preserve quota480%, one-second monitors and all original
-WPT/framework/runtime pins. Do not touch historical binaries/results or protected runners.
+Engine b8691d3ecead8555831a5c64707cace46996a517 follows1806 frozen ea873d349771172867fad01ad45723ba2870ccc4.
+The following docs-only HEAD is the exact1807 build commit, sent explicitly to tester.
+Only03-element.js/06b-activate.js change: exact reviewed alias-boundaries-v4 patch
+f6761bc7c826665f31be7d250c6dad96ea78291e3537494ed59b0b7b4dd94c67, reviewSHA
+e2077ceb5c2bedff3d4d76272b2accb2bae56b531528c0e8f9e564d1077a919a.
+ASCII-only name folding avoids Unicode lookalike aliases; existing supported-name checks
+reject unknown ordinary inline/style/keyframe declarations after coercion. Custom names and
+font-face/page/position descriptors preserve their own contexts. All native sources are unchanged.
 
-Required: integer-random5 retains all216 priorPASSs including all eight historical regression
-identities; random36 and key-boundaries16; alias20; XML native59/browser31/charset21;
-timing106 all106; tree36 keeps all rows and requires the13 predeclared literal/ordinary rows,
-with unsupported stylesheet/substitution/inheritance/length rows still visible; focused no-loss,
-native218/retained45-1318. Extra real tree gains remain separately measured. Pseudo/shadow
-boundaries remain explicit. Full1248 must then preserve the complete22,786 prior-PASS union.
+1806 built successfully and retained integer-random5 union216/260, including the old alias loss.
+Its original alias24 gate stopped21/24 on three previously exposed unknown/case boundaries.
+Separate immutable diagnostics passed XML31/31, UA-key16/16, timing106/106 and exactly13/36
+tree controls in the predeclared scope; all23 unsupported rows remain visible. Native218,
+retained1318 and full1248 did not run on1806. Preserve every raw result and stopped receipt.
 
-XML uses sparse PI state/private header; no @import, stylesheet-set selection or full external
-CSSOM reflection. DTD PI ignore is a selected allowed policy, distinct from normative post-root
-and invalid-label cases. Tree counts require exact original literal inline property/value ownership;
-no guessed stylesheet/custom/pseudo/shadow context. Host ABI verified ComputedStyle1720B,
-Node304B,MDecl24B, all205 existing member offsets unchanged. Do not generalize to all ABIs.
-Aliases share native/CSSOM storage, priority, removal, support and computed lookup. Specified
-random syntax remains; unsupported computed time uses existing native fallback, not a sampler.
+Tester must rerun all original gates on1807, including unchanged alias24 plus separate boundary
+controls, XML native59/browser31/charset21, random36+16, strict timing106, tree36 predeclared13,
+focused regressions, native218 and retained45/1318, then full1248 union22786 without losses.
+Freeze compiled inputs and Git metadata until explicit release. Shared480%quota/one-second
+CPU/RSS/cgroup monitoring remains mandatory. Preserve immutable binaries/WPT/harness pins.
 
-## Evidence and score
+## Scope, score and delivery
 
-1805 scoped random/timing/native218/retained1318 passed, but full replay09:44:07.415–10:04:56.649UTC
-(1249.235s) measured753/1248files,22785/26245assertions with one prior-PASS alias loss.
-All seven earlier losses recovered; no missing/new identities. Required prior-pass union22,786.
-RawSHA b9ad979537fce09f48d0de638e62ac66c503c1dd7b90abef9bdc5611ffccfedb;
-recount161a1eaee1f174113466f7ea56813ffb4522b3c34cd3b97b95fbe543d7d6f618;
-immutable provenancefce6cf8915f447ca517a6ed3fbf87ee2e490e34b52e999354d34a4fd44259998.
-Preserve the original working-source-frozen=false flag; immutable binary/runtime checks passed.
-Prior1804/1802 HOLD and cleanup reconciliation receipts also remain untouched.
+XML sparse-state lifecycle39e511c, UA87b2438, legacy alias3e53a9f and inline treeb848e38 remain
+separate reviewed commits. Host ABI ComputedStyle1720B/Node304B/MDecl24B and205 old offsets
+unchanged. Tree context is exact literal inline ownership only; no guessed stylesheet/custom/
+pseudo/shadow scopes. No random sampler, @import, stylesheet-set selection or full external
+CSSOM source reflection. DTD PI ignore is an explicit allowed policy, not universal browser error.
 
-Last regression-free selected1248 baseline remains1705:714/1248,22637/26245,57.21/100.
-Chromium150:1062/1248,24541/26064 with its separate denominator. Full official WPT,
-Chromium parity and overall95quality are not established. Current full rates are held observations.
+Full1805 measured753/1248files,22785/26245assertions with one alias priorPASS loss. It is held;
+all seven earlier losses recovered. Last regression-free1705 remains714/1248,22637/26245,
+57.21/100 selected-file score. Chromium150 is1062/1248,24541/26064, separate denominator.
+Full official WPT, Chromium parity and overall95 quality are not established.
 
-## Delivery
+Current public download is held1804,10322694bytes,SHA
+68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6. Private history/test/profile
+material is excluded from curated public source. See agent/ops/session18/release1806-plan.md
+for the reusable publication/delivery procedure, substituting the actual qualified final candidate.
+No later source may be represented by an earlier tested hash. Offline source restore is not a rebuild.
 
-Current public source archive remains explicitly held1804:10322694bytes,
-SHA68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6.
-Testedc55bd950 maps to curatedpublic40646753 plusHOLDmetadata2a8c99e6; approved public
-ancestry only, no private working Git/test/profile material. Offline source recovery is not a rebuild.
-Preview https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/ ; queue check
-node agent/progress/manage.mjs poll. Relay real messages without printing access secrets.
-Surge lacks authentication and FileHarbor returned403; do not claim those deliveries succeeded.
-
-Reserve final hour for regression-free replay, final Android build/install-r, verified task-owned
-display0 restart, isolated actual-browser showcase, source publication and final notes. Preserve
-phone/browser profiles; no uninstall/clear-data/broad process killing. Source remains frozen
-through final runtime promotion. Retained AGENTS architecture/authorization boundaries apply.
+Live https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/ ; poll node agent/progress/manage.mjs poll
+every1–2minutes while active. Preserve secrets/profiles. Surge is unauthenticated; FileHarbor403.
+Reserve the final hour for regression-free replay, final Android build/install-r and verified display0
+restart, isolated4:3subminute actual-browser showcase, public archive and final notes. No physical
+media acquisition, uninstall/clear-data or blanket process killing. Keep engine source frozen
+through runtime promotion. Prior AGENTS architecture and authorization boundaries remain in force.

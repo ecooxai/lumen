@@ -100,7 +100,7 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session18, frozen1806 qualification
+## Current development handoff — session18, frozen1807 qualification
 
 Canonical checkout: `/mnt/p3/project/browser/lumen-android/lumen-android`.
 Branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
@@ -109,6 +109,17 @@ one extra hour for an important unresolved bug. Root is CTO; same-model built-in
 own source/Git, independent tests and operations. Repo lead alone owns canonical Git.
 Coordinate ownership and freezes, use the shared480%quota and one-second monitors, and
 preserve all historical work, exact WPT/framework pins and original expectations.
+
+### Current1807 gate
+
+Engineb8691d3ecead8555831a5c64707cace46996a517 changes only two JS prelude files after1806.
+Independently reviewed patchf6761bc7 adds ASCII-only hyphenated names and existing supported-name
+checks for ordinary inline/style/keyframe declarations, while preserving custom/descriptor contexts.
+The following docs-only commit is the exact build HEAD; source/Git freeze applies until tester release.
+1806 restored required integer-random union216/260 but stopped alias24 at21/24; its original failures
+are preserved. Separate diagnostics XML31/31,UA16/16,timing106/106 and scopedtree13/36 passed;
+all23 unsupported tree rows remain visible. Native218/retained1318/full1248 did not run on1806.
+1807 must run all required gates and preserve full22786 priorPASS union. No new feature work.
 
 ### Candidate1805 scope and immutable full replay
 
@@ -135,7 +146,7 @@ actual PID/profile cleanup and guards passed, and no browser rerun erased the or
 Immutable1805 full1248 completed09:44:07.415–10:04:56.649UTC:753/1248files,22785/26245assertions,
 149 gains and one alias prior-PASS loss versus1705. All26,245 identities remain unchanged;
 all seven earlier losses recovered. HOLD remains. Next full replay requires22,786 priorPASSs.
-Engineb848e386c94b58a639a5a0071aaffdaac57c41a6 is frozen for1806 with a following docs-only HEAD;
+Historical engineb848e386c94b58a639a5a0071aaffdaac57c41a6 was frozen for1806; its gate stopped as above;
 tester owns build/focused/native/retained/full gates. No further feature work after this freeze.
 
 ### Source integration and limits

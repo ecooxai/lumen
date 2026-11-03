@@ -1,8 +1,8 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session18",
-  "phase": "Candidate1806 frozen for qualification: canonical aliases, XML PI lifecycle, random identifier boundaries and owned inline tree counts. Full1805 remains HOLD with one alias regression.",
-  "iteration": 1805,
-  "session_iteration": 6,
+  "phase": "Candidate1807 frozen: narrow ASCII/supported-name repair follows1806 alias boundary failures. XML31/31, random-key16/16, timing106/106 and scoped tree13/36 diagnostics passed on1806; full qualification remains pending.",
+  "iteration": 1807,
+  "session_iteration": 7,
   "score": 57.21153846153846,
   "selected_case_score": 57.21153846153846,
   "score_candidate": 1705,
@@ -23,8 +23,8 @@
   "overall_assessment": "Linux browser improvements underway. Full-WPT rate and whole-browser95/98score are not established.",
   "overall_result_label": "Chromium parity incomplete; full official WPT unmeasured",
   "accepted_iteration": 1705,
-  "active_iteration": 1806,
-  "active_candidate": 1806,
+  "active_iteration": 1807,
+  "active_candidate": 1807,
   "accepted_binary_sha256": "a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271",
   "accepted_binary_scope": "Last regression-free complete frozen1248 baseline remains1705. Candidate1805 scoped gates pass; complete replay is running.",
   "coverage": "Candidate1705 passed714/1248files and22637/26245assertions on the frozen HTTP/default-timeout sample. Chromium150 passed1062/1248files and24541/26064assertions. This is selected WPT coverage, not full official WPT.",
@@ -71,10 +71,10 @@
     ]
   ],
   "findings": [
-    "Full1805 recovered all seven earlier losses but exposed one native/CSSOM alias inconsistency; exact22,786 prior-pass union is required for the next full replay.",
-    "Candidate1806 canonicalizes the finite14 animation/transition aliases and retains real unsupported-time fallback; random sampling remains absent.",
-    "Tree support is limited to owned literal inline typed math, with unchanged host ABI and existing child-list invalidation; broader normative controls remain visible.",
-    "Last regression-free score remains57.21/100 at1705. Held1804 public archive is preserved until a regression-free checkpoint is qualified."
+    "Candidate1806 restored the whole integer/random/alias required union216, but three new alias name boundaries stopped its qualification; original24 rows are preserved.",
+    "Independent1806 XML31, UA16, timing106 and predeclared tree13 pass;23 unsupported tree rows remain visible. These diagnostics are not a release acceptance.",
+    "Candidate1807 changes only two JS files: ASCII property-name handling and ordinary supported-name rejection, preserving custom/font-face/page/position descriptor contexts.",
+    "Full1805 remains HOLD753/1248,22785/26245 with one loss. Last regression-free score stays57.21/100 at1705; full required union22786."
   ],
   "historical": {
     "label": "Previous Linux311 same frozen1248 sample:686/1248files;21992/26245assertions.",
@@ -101,9 +101,9 @@
   },
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
-  "working_commit": "b848e386c94b58a639a5a0071aaffdaac57c41a6",
-  "updated_utc": "2026-11-03T10:14:21.420704+00:00",
-  "updated_at": "2026-11-03T10:14:21.420704+00:00",
+  "working_commit": "b8691d3ecead8555831a5c64707cace46996a517",
+  "updated_utc": "2026-11-03T10:27:45.195599+00:00",
+  "updated_at": "2026-11-03T10:27:45.195599+00:00",
   "runtime_candidate": null,
   "runtime_note": "Linux display0 Lumen restart remains pending; the isolated progress control window is live. MI8 is authorized and still runs prior qualified1603 APK; SDK/NDK and prebuilt dependencies are present.",
   "qualified_prior_candidate_scope": {
@@ -457,5 +457,45 @@
       }
     }
   },
-  "full_replay_candidate": null
+  "full_replay_candidate": null,
+  "candidate1806_diagnostic_scope": {
+    "source_commit": "ea873d349771172867fad01ad45723ba2870ccc4",
+    "accepted_for_release": false,
+    "integer_random5_required_union": [
+      216,
+      216
+    ],
+    "integer_random5_observed": [
+      216,
+      260
+    ],
+    "alias24": [
+      21,
+      24
+    ],
+    "xml31": [
+      31,
+      31
+    ],
+    "random_key16": [
+      16,
+      16
+    ],
+    "timing106": [
+      106,
+      106
+    ],
+    "tree36": [
+      13,
+      36
+    ],
+    "tree_required": [
+      13,
+      13
+    ],
+    "unsupported_tree_rows": 23,
+    "native218_ran": false,
+    "retained1318_ran": false,
+    "full1248_ran": false
+  }
 }
