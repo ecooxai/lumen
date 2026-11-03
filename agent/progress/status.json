@@ -1,14 +1,14 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session18",
-  "phase": "Establishing candidate1705 baseline and selecting high-value Linux compatibility fixes",
-  "iteration": 1800,
-  "session_iteration": 0,
+  "phase": "Candidate1801 z-index integer conversion passed focused gates; MediaList1802 independent review complete and qualification pending",
+  "iteration": 1802,
+  "session_iteration": 1,
   "score": 57.21153846153846,
   "selected_case_score": 57.21153846153846,
   "score_candidate": 1705,
   "score_note": "57.21/100 is the verified candidate1705 pass percentage on the frozen1248-file sample. Full official WPT and whole-browser quality are not measured by this score.",
   "score_scope": "Same1248 frozen HTTP/default-timeout testharness URLs, fully passing files only; separate assertion denominators.",
-  "checkpoint": "13c22d3d28a68746fede3f265f55c5eda3247da6",
+  "checkpoint": "4e74e964347ed5608a3110a1e2b31b270e610ac9",
   "session_started_utc": "2026-11-03T06:58:59Z",
   "deadline_utc": "2026-11-03T11:58:59Z",
   "session_id": "20261103-session18",
@@ -22,11 +22,11 @@
   "goal_score": 98,
   "overall_assessment": "Linux browser improvements underway. Full-WPT rate and whole-browser95/98score are not established.",
   "overall_result_label": "Chromium parity incomplete; full official WPT unmeasured",
-  "accepted_iteration": 1705,
-  "active_iteration": 1800,
-  "active_candidate": 1705,
-  "accepted_binary_sha256": "a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271",
-  "accepted_binary_scope": "Candidate1705 immutable Linux binary independently verified against complete fixed1248 results; it is not presently running on display0.",
+  "accepted_iteration": 1801,
+  "active_iteration": 1802,
+  "active_candidate": 1801,
+  "accepted_binary_sha256": "21e04192acf8602705c0aeb9e27ce673977a75a41c0b1c02618a79a1c65c7839",
+  "accepted_binary_scope": "Candidate1801 accepted for focused numeric WPT and authored integer controls. Full1248 score remains measured candidate1705.",
   "coverage": "Candidate1705 passed714/1248files and22637/26245assertions on the frozen HTTP/default-timeout sample. Chromium150 passed1062/1248files and24541/26064assertions. This is selected WPT coverage, not full official WPT.",
   "current_evidence": [
     [
@@ -40,6 +40,10 @@
     [
       "Lumen1705 harness outcomes",
       "1238 OK,1ERROR,9TIMEOUT; all1248 files remain counted. Raw assertions:22637PASS,3580FAIL,7TIMEOUT,21NOTRUN."
+    ],
+    [
+      "Candidate1801 focused numeric gates",
+      "WPT3:132/199 assertions (before130), one whole-file gain and zero losses; authored controls24/28 (before13), four existing specified-value failures retained."
     ],
     [
       "Changes since1603",
@@ -85,8 +89,8 @@
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
   "working_commit": "f192066202d201177aaadbfb28f1ea6295c521d1",
-  "updated_utc": "2026-11-03T07:03:10.363539+00:00",
-  "updated_at": "2026-11-03T07:03:10.363539+00:00",
+  "updated_utc": "2026-11-03T07:24:49.554584+00:00",
+  "updated_at": "2026-11-03T07:24:49.554584+00:00",
   "runtime_candidate": null,
   "runtime_note": "No executable from this checkout is currently running on Linux display0; its old PIDfile is stale. Connected MI8 is authorized; installed Android version verification is pending final delivery.",
   "qualified_prior_candidate_scope": {
@@ -178,25 +182,30 @@
     }
   },
   "qualified_candidate_scope": {
-    "candidate": 1705,
-    "source_commit": "13c22d3d28a68746fede3f265f55c5eda3247da6",
-    "binary_sha256": "a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271",
-    "fixed_sample": {
-      "iteration": 1705,
-      "files": 1248,
-      "whole_files_passed": 714,
-      "whole_file_pass_percent": 57.21153846153846,
-      "assertions_passed": 22637,
-      "assertions_total": 26245,
-      "not_full_WPT": true,
-      "chromium150": {
-        "whole_files_passed": 1062,
-        "files": 1248,
-        "whole_file_pass_percent": 85.09615384615384,
-        "assertions_passed": 24541,
-        "assertions_total": 26064
-      }
+    "candidate": 1801,
+    "source_commit": "4e74e964347ed5608a3110a1e2b31b270e610ac9",
+    "binary_sha256": "21e04192acf8602705c0aeb9e27ce673977a75a41c0b1c02618a79a1c65c7839",
+    "source_manifest_digest": "6646326b25ee6dd2422bce96f1e3a92991165d291561fee8f3f3590088d392de",
+    "numeric_wpt3": {
+      "before_passed_assertions": 130,
+      "passed_assertions": 132,
+      "total_assertions": 199,
+      "whole_file_gains": 1,
+      "prior_pass_losses": 0,
+      "identity_drift": 0
     },
-    "results_sha256": "38bedb75363d20a0db610795a4c25923cf474601489c0ce543a9b31cfab267eb"
+    "authored_numeric28": {
+      "before_passed": 13,
+      "passed": 24,
+      "total": 28,
+      "remaining_failures": [
+        "specified z-index:1px remains accepted",
+        "specified z-index:1% remains accepted",
+        "specified z-index:calc(1px) remains accepted",
+        "specified z-index:calc(1%) remains accepted"
+      ]
+    },
+    "full_fixed1248_replayed": false,
+    "native218_replayed": false
   }
 }
