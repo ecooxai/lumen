@@ -505,13 +505,37 @@ class MediaList {
 }
 Object.defineProperty(MediaList.prototype, Symbol.toStringTag, {value: 'MediaList', configurable: true});
 Object.defineProperty(MediaList.prototype, Symbol.iterator, {value: Array.prototype.values, writable: true, configurable: true});
+/* A keyframe block has its own declaration context. Animation controls do
+ * not nest animations, while timing/composition describe the keyframe itself.
+ * Priority must be rejected before duplicate declarations are resolved. */
+function cssKeyframePropertyAllowed(property) {
+    const name = property.toLowerCase().replace(/^-webkit-/, '');
+    return !/^animation(?:-|$)/.test(name) ||
+        name === 'animation-timing-function' || name === 'animation-composition';
+}
+function cssKeyframeImportant(value) {
+    const tokens = cssMediaTokens(value), count = tokens.length;
+    return count >= 2 && tokens[count - 2].kind === 'delim' &&
+        tokens[count - 2].value === '!' && tokens[count - 1].kind === 'ident' &&
+        tokens[count - 1].value.toLowerCase() === 'important';
+}
+function cssRuleDeclarations(rule, text) {
+    return parseDecls(text, rule instanceof CSSFontFaceRule, cssOwnerGet(rule).type === 8);
+}
 class CSSRuleStyle extends CSSStyleDeclaration {
-    constructor(rule, text) { super(null); def(this, '_rule', rule); def(this, '_map', parseDecls(text || '', rule instanceof CSSFontFaceRule)); }
+    constructor(rule, text) { super(null); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
     _m() { return new SMap(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
-    get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v), this._rule instanceof CSSFontFaceRule)); }
+    get cssText() { return serDecls(this._map); } set cssText(v) { this._w(cssRuleDeclarations(this._rule, String(v))); }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
         v = v == null ? '' : String(v);
+        if (cssOwnerGet(this._rule).type === 8) {
+            if (!cssKeyframePropertyAllowed(p)) return;
+            if (v !== '') {
+                pri = pri == null ? '' : String(pri);
+                if (pri !== '' || cssKeyframeImportant(v)) return;
+            }
+        }
         if (v !== '' && !cssVarSyntax(v)) return;
         const m = this._m();
         if (p === 'interpolate-size') {
@@ -586,7 +610,7 @@ class CSSRule {
 }
 for (const [k, v] of Object.entries({ STYLE_RULE: 1, CHARSET_RULE: 2, IMPORT_RULE: 3, MEDIA_RULE: 4, FONT_FACE_RULE: 5, PAGE_RULE: 6, KEYFRAMES_RULE: 7, KEYFRAME_RULE: 8, MARGIN_RULE: 9, NAMESPACE_RULE: 10, COUNTER_STYLE_RULE: 11, SUPPORTS_RULE: 12, FONT_FEATURE_VALUES_RULE: 14 })) { Object.defineProperty(CSSRule, k, { value: v, enumerable: true }); Object.defineProperty(CSSRule.prototype, k, { value: v, enumerable: true }); }
 const ruleStyle = (r) => r._style || (r._style = new Proxy(new CSSRuleStyle(r, r._body), styleHandler));
-const blockText = (r) => { const d = r._style ? r._style.cssText : serDecls(parseDecls(r._body || '', r instanceof CSSFontFaceRule)); return d ? `{ ${d} }` : '{ }'; };
+const blockText = (r) => { const d = r._style ? r._style.cssText : serDecls(cssRuleDeclarations(r, r._body || '')); return d ? `{ ${d} }` : '{ }'; };
 cssMediaRuleChanged = Function.prototype.call.bind(CSSRule.prototype._changed);
 class CSSStyleRule extends CSSRule {
     get type() { return 1; }
