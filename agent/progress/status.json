@@ -1,6 +1,6 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session18",
-  "phase": "Qualifying candidate1804: targeted numeric regressions recovered; reviewed opacity, charset and image-longhand changes are integrated. Broad acceptance awaits all gates and fresh1248 replay.",
+  "phase": "Candidate1804 passed focused WPT, native218 and retained1318; fresh full1248 replay is running. Reviewed easing and XML stylesheet follow-ups are being prepared.",
   "iteration": 1804,
   "session_iteration": 4,
   "score": 57.21153846153846,
@@ -42,6 +42,10 @@
       "1238 OK,1ERROR,9TIMEOUT; all1248 files remain counted. Raw assertions:22637PASS,3580FAIL,7TIMEOUT,21NOTRUN."
     ],
     [
+      "Candidate1804 focused qualification",
+      "Charset20/21; background8/9,48/50; keyframe declarations31/31; native218 and retained1318 pass. Full1248 replay running."
+    ],
+    [
       "Candidate1802 full replay \u2014 HOLD",
       "724/1248 complete files;22676/26245 assertions;5 prior-PASS losses. Focused/native218/retained1318 passed, but broad acceptance is held."
     ],
@@ -63,9 +67,9 @@
     ]
   ],
   "findings": [
-    "Candidate1803 recovered all5 broad1802 regressions and passed188/188 integer WPT,12/12 large integers,38/38 syntax and28/28 computed contracts.",
-    "Three opacity serialization rows stopped the1803 quick gate at28/31; the reviewed repair and ready charset/image-longhand changes are preparing1804.",
-    "Last regression-free complete1248 baseline remains1705 at57.21/100; the1802 source archive stays a clearly labeled development checkpoint with its broad HOLD."
+    "Candidate1804 passed every required focused/no-loss, native218 and retained1318 gate; all five earlier broad regressions remain recovered.",
+    "Official charset gained16 files and background gained7 files; the unchanged full1248 replay is running before any broad score update.",
+    "Current accepted full baseline stays1705 at57.21/100; latest downloadable1802 remains a development checkpoint with its recorded broad HOLD until a newer reviewed archive is promoted."
   ],
   "historical": {
     "label": "Previous Linux311 same frozen1248 sample:686/1248files;21992/26245assertions.",
@@ -93,8 +97,8 @@
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
   "working_commit": "95e8bf3b2c0f201984cf560a3725a6f5bbe39c1a",
-  "updated_utc": "2026-11-03T08:28:40.089929+00:00",
-  "updated_at": "2026-11-03T08:28:40.089929+00:00",
+  "updated_utc": "2026-11-03T08:50:24.855328+00:00",
+  "updated_at": "2026-11-03T08:50:24.855328+00:00",
   "runtime_candidate": null,
   "runtime_note": "Linux display0 Lumen restart remains pending; the isolated progress control window is live. MI8 is authorized and still runs prior qualified1603 APK; SDK/NDK and prebuilt dependencies are present.",
   "qualified_prior_candidate_scope": {
@@ -185,62 +189,6 @@
       "new_assertions": 0
     }
   },
-  "qualified_candidate_scope": {
-    "candidate": 1802,
-    "source_commit": "c60398214ad22f5d7578ec8f1f5239e2bab53010",
-    "binary_sha256": "e54c56023927627937ea6bcd2e9f4e1bb835709e8d7eb90c6d8522e27577b4db",
-    "source_manifest_digest": "711bc0fd75334746677edd4655198d4ce0dbb24f2abc59e8c39ece5f220a5909",
-    "medialist_wpt10": {
-      "before_files_passed": 2,
-      "files_passed": 10,
-      "files_total": 10,
-      "before_assertions_passed": 23,
-      "assertions_passed": 47,
-      "assertions_total": 47
-    },
-    "neighbor_wpt13": {
-      "files_passed": 9,
-      "files_total": 13,
-      "before_assertions_passed": 74,
-      "assertions_passed": 76,
-      "assertions_total": 113
-    },
-    "numeric_wpt3": {
-      "before_passed_assertions": 130,
-      "passed_assertions": 132,
-      "total_assertions": 199,
-      "whole_file_gains": 1,
-      "prior_pass_losses": 0,
-      "identity_drift": 0
-    },
-    "original_medialist15": {
-      "passed": 15,
-      "total": 15
-    },
-    "owner_medialist8": {
-      "passed": 8,
-      "total": 8
-    },
-    "native_contracts": {
-      "passed": 218,
-      "total": 218
-    },
-    "retained_authored": {
-      "fixtures": 45,
-      "passed": 1318,
-      "total": 1318
-    },
-    "prior_pass_losses": 0,
-    "identity_drift": 0,
-    "full_fixed1248_replayed": true,
-    "limitations": [
-      "Native stylesheet.media applicability is not yet connected to MediaList mutation",
-      "Known-feature media math simplification remains partial",
-      "Four specified invalid-unit declarations are pending1803 validation"
-    ],
-    "broad_qualification_status": "HOLD:5 prior-PASS regressions",
-    "full1248_replayed": true
-  },
   "qualified_candidate1801_scope": {
     "candidate": 1801,
     "source_commit": "4e74e964347ed5608a3110a1e2b31b270e610ac9",
@@ -315,5 +263,132 @@
     "full1248_ran": false,
     "accepted_for_broad_promotion": false,
     "remaining_gate": "3 canonical opacity serialization rows"
+  },
+  "qualified_candidate1802_scope": {
+    "candidate": 1802,
+    "source_commit": "c60398214ad22f5d7578ec8f1f5239e2bab53010",
+    "binary_sha256": "e54c56023927627937ea6bcd2e9f4e1bb835709e8d7eb90c6d8522e27577b4db",
+    "source_manifest_digest": "711bc0fd75334746677edd4655198d4ce0dbb24f2abc59e8c39ece5f220a5909",
+    "medialist_wpt10": {
+      "before_files_passed": 2,
+      "files_passed": 10,
+      "files_total": 10,
+      "before_assertions_passed": 23,
+      "assertions_passed": 47,
+      "assertions_total": 47
+    },
+    "neighbor_wpt13": {
+      "files_passed": 9,
+      "files_total": 13,
+      "before_assertions_passed": 74,
+      "assertions_passed": 76,
+      "assertions_total": 113
+    },
+    "numeric_wpt3": {
+      "before_passed_assertions": 130,
+      "passed_assertions": 132,
+      "total_assertions": 199,
+      "whole_file_gains": 1,
+      "prior_pass_losses": 0,
+      "identity_drift": 0
+    },
+    "original_medialist15": {
+      "passed": 15,
+      "total": 15
+    },
+    "owner_medialist8": {
+      "passed": 8,
+      "total": 8
+    },
+    "native_contracts": {
+      "passed": 218,
+      "total": 218
+    },
+    "retained_authored": {
+      "fixtures": 45,
+      "passed": 1318,
+      "total": 1318
+    },
+    "prior_pass_losses": 0,
+    "identity_drift": 0,
+    "full_fixed1248_replayed": true,
+    "limitations": [
+      "Native stylesheet.media applicability is not yet connected to MediaList mutation",
+      "Known-feature media math simplification remains partial",
+      "Four specified invalid-unit declarations are pending1803 validation"
+    ],
+    "broad_qualification_status": "HOLD:5 prior-PASS regressions",
+    "full1248_replayed": true
+  },
+  "qualified_candidate_scope": {
+    "candidate": 1804,
+    "source_commit": "c55bd95010c37c7907020f951ac40c6420788a43",
+    "binary_sha256": "6d44ae80424d1a102829a185be6b6dd322603e1d605a2f50000b467367f89ebe",
+    "source_manifest_digest": "d4cbc36fb6b52bf2d11998edeb63ccbc07b19a0822168fd94c634718f2334084",
+    "accepted_scope": "Focused unchangedWPT cohorts + original218native + unchangedretained45/1318 + qualified authored semantic controls. Full1248 replay required and pending; no broad promotion.",
+    "acceptance_receipt_sha256": "168657a971bddbc04e096709b0dabee85f89e3da328c344f784886278eb13904",
+    "native_contracts": {
+      "passed": 218,
+      "total": 218
+    },
+    "retained_authored": {
+      "fixtures": 45,
+      "passed": 1318,
+      "total": 1318,
+      "independent_checks": 334
+    },
+    "full1248_replayed": false,
+    "full1248_status": "RUNNING",
+    "focused": {
+      "integer-regressions3": {
+        "files_passed": 3,
+        "files_total": 3,
+        "assertions_passed": 188,
+        "assertions_total": 188,
+        "prior_pass_losses": 0
+      },
+      "charset": {
+        "files_passed": 20,
+        "files_total": 21,
+        "assertions_passed": 20,
+        "assertions_total": 21,
+        "prior_pass_losses": 0
+      },
+      "background9": {
+        "files_passed": 8,
+        "files_total": 9,
+        "assertions_passed": 48,
+        "assertions_total": 50,
+        "prior_pass_losses": 0
+      },
+      "numeric3": {
+        "files_passed": 1,
+        "files_total": 3,
+        "assertions_passed": 134,
+        "assertions_total": 199,
+        "prior_pass_losses": 0
+      },
+      "keyframe18": {
+        "files_passed": 8,
+        "files_total": 18,
+        "assertions_passed": 92,
+        "assertions_total": 129,
+        "prior_pass_losses": 0
+      },
+      "medialist10": {
+        "files_passed": 10,
+        "files_total": 10,
+        "assertions_passed": 47,
+        "assertions_total": 47,
+        "prior_pass_losses": 0
+      },
+      "cssom-neighbors13": {
+        "files_passed": 9,
+        "files_total": 13,
+        "assertions_passed": 76,
+        "assertions_total": 113,
+        "prior_pass_losses": 0
+      }
+    }
   }
 }

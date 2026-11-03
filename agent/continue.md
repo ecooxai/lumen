@@ -9,24 +9,31 @@ build/test and operations. Preserve source ownership, locks and exact qualificat
 
 ## Current source and next gate
 
-Candidate1803 is preserved at eda38fd5e79daf2cab3070e4890d0809aee953e5;
-binary5f8edbe982876fdaa03967b81c4fc609411fecac7b37b71e0824415197333c50.
-Its frozen integer-regressions3 is188/188, including all185 required union passes
-and all5 full1802 regression recoveries. Large integers12/12, syntax38/38 and
-computed z-index28/28 pass. Keyframe31 is28/31 with no prior-pass loss; three
-canonical opacity .5 versus0.5 failures stopped the worker before broader gates.
-Native218, retained1318 and full1248 did not run on1803.
+Candidate1804 is accepted for focused/native/retained scope at source
+c55bd95010c37c7907020f951ac40c6420788a43, binary
+6d44ae80424d1a102829a185be6b6dd322603e1d605a2f50000b467367f89ebe; manifest
+d4cbc36fb6b52bf2d11998edeb63ccbc07b19a0822168fd94c634718f2334084.
+Acceptance: session18/candidate1804-incremental-acceptance.json,
+SHA-256168657a971bddbc04e096709b0dabee85f89e3da328c344f784886278eb13904.
+Integer188/188, large12/12, syntax38/38, computed28/28, keyframe31/31,
+opacity10/10 and image44+10+4 pass. Official background9 is8/9,48/50;
+charset21 is20/21; keyframe18 is8/18,92/129. Native218/218 and retained45/1318
+pass with334 independent audit checks. Previous MediaList/other gates retain gains.
 
-Integrated1804 source adds independently reviewed charset decoding69aa677,
-opacity scalar canonicalization dce2d612 and image-longhand grammar fb6d3bd.
-The final opacity literal-percentage-to-number correction is committed as95e8bf3b2c0f201984cf560a3725a6f5bbe39c1a.
-Freeze the exact clean documentation HEAD with wpt_baseline. All changes have separate source
-commits and review receipts under agent/source-work/session18/.
-Keep every original WPT and authored acceptance fixture unchanged. The new opacity
-fixture v1 has three explicitly documented wrong percentage assumptions and is
-preserved unqualified; v2 is separately versioned and reference-qualified10/10.
-Original keyframe31 remains unchanged. Use all frozen feature cohorts plus original
-regression gates; a fresh complete1248 replay is mandatory after quick/native/retained.
+Immutable1804 full1248 replay launched08:48:55.18Z and is expected around09:10–09:12Z.
+No heavy builds until the tester releases that execution lane. Source/Git may advance,
+but never alter its binary/build records or pinned WPT/framework/runtime inputs.
+A fresh bounded easing draft is independently reviewed under
+agent/source-work/session18/easing-longhands-v3/. It covers steps/cubic longhands
+and computation using existing typed helpers; linear() and WA solver remain unchanged.
+It introduces only a private easing.h boundary, preserving broadcss.h build inputs.
+Current Easing2/Values4 range and serialization differences from Chromium150 and old42
+remain explicit; no frozen expectation was changed. Charset agent drafts a separate
+bounded XML stylesheet-PI loading path outside source. Coordinate all patch ownership.
+
+Candidate1803 evidence remains preserved, including exact5 regression recoveries and
+the three opacity failures that stopped that earlier candidate. Do not erase failed
+experiments or conflate independently versioned fixture corrections with engine gains.
 
 ## Broad baseline and held checkpoint
 

@@ -323,3 +323,81 @@ Fresh independent opacity controls found literal percentages require number seri
 Remaining limits: stylesheet decoder covers the three existing byte ingress routes, not missing import/XML-PI/external-CSSOM loading subsystems; image longhands do not implement text/border-area or border-image rendering, shorthand expansion, or full computed slice math. Canonical source is only promoted after exact-input focused/native/retained and fresh full1248 gates.
 
 Final opacity percentage correction committed95e8bf3b2c0f201984cf560a3725a6f5bbe39c1a at2026-11-03T08:28:40.089929+00:00. Independent reviewer accepted literal percentage conversion without clamping; original author tokens still pass existing validation. Candidate1804 source is ready for exact-input qualification.
+
+
+### Iteration4 — focused/native/retained acceptance; full replay separately running
+
+Accepted2026-11-03T08:47:00.874974+00:00; phase2026-11-03T08:16:21.488300+00:00 to2026-11-03T08:47:00.874974+00:00, wall1839.386674s, cumulative session wall6481.874974s. Sourcec55bd95010c37c7907020f951ac40c6420788a43; binary SHA-2566d44ae80424d1a102829a185be6b6dd322603e1d605a2f50000b467367f89ebe; input manifestd4cbc36fb6b52bf2d11998edeb63ccbc07b19a0822168fd94c634718f2334084. Acceptance receipt SHA-256168657a971bddbc04e096709b0dabee85f89e3da328c344f784886278eb13904.
+
+| Task | UTC start | UTC end | Seconds | Exit |
+|---|---|---|---:|---:|
+| build-startup | 2026-11-03T08:34:45.560229+00:00 | 2026-11-03T08:37:29.753408+00:00 | 164.193 | 0 |
+| charset-native45 | 2026-11-03T08:37:29.767740+00:00 | 2026-11-03T08:37:30.894455+00:00 | 1.127 | 0 |
+| integer-regressions3 | 2026-11-03T08:37:30.903928+00:00 | 2026-11-03T08:37:38.048930+00:00 | 7.145 | 0 |
+| large-integers12 | 2026-11-03T08:37:38.163494+00:00 | 2026-11-03T08:37:40.547531+00:00 | 2.384 | 0 |
+| declarations38 | 2026-11-03T08:37:40.557758+00:00 | 2026-11-03T08:37:42.870214+00:00 | 2.312 | 0 |
+| numeric28 | 2026-11-03T08:37:42.881016+00:00 | 2026-11-03T08:37:45.189948+00:00 | 2.309 | 0 |
+| keyframe-declarations31 | 2026-11-03T08:37:45.204646+00:00 | 2026-11-03T08:37:47.526171+00:00 | 2.322 | 0 |
+| opacity10 | 2026-11-03T08:37:47.677533+00:00 | 2026-11-03T08:37:50.175122+00:00 | 2.498 | 0 |
+| charset | 2026-11-03T08:37:50.192064+00:00 | 2026-11-03T08:38:15.338721+00:00 | 25.147 | 0 |
+| background9 | 2026-11-03T08:38:15.452873+00:00 | 2026-11-03T08:38:28.616553+00:00 | 13.164 | 0 |
+| image-longhands44 | 2026-11-03T08:38:28.705585+00:00 | 2026-11-03T08:38:31.105445+00:00 | 2.400 | 0 |
+| image-slice-boundaries10 | 2026-11-03T08:38:31.121730+00:00 | 2026-11-03T08:38:33.447399+00:00 | 2.326 | 0 |
+| image-slice-nested4 | 2026-11-03T08:38:33.458049+00:00 | 2026-11-03T08:38:35.830614+00:00 | 2.373 | 0 |
+| numeric3 | 2026-11-03T08:38:35.845745+00:00 | 2026-11-03T08:38:42.966585+00:00 | 7.121 | 0 |
+| keyframe18 | 2026-11-03T08:38:43.117434+00:00 | 2026-11-03T08:39:04.324224+00:00 | 21.207 | 0 |
+| medialist15 | 2026-11-03T08:39:04.417380+00:00 | 2026-11-03T08:39:06.795364+00:00 | 2.378 | 0 |
+| owner8 | 2026-11-03T08:39:06.805921+00:00 | 2026-11-03T08:39:09.149283+00:00 | 2.343 | 0 |
+| medialist10 | 2026-11-03T08:39:09.157638+00:00 | 2026-11-03T08:39:22.303858+00:00 | 13.146 | 0 |
+| cssom-neighbors13 | 2026-11-03T08:39:22.379391+00:00 | 2026-11-03T08:39:39.511150+00:00 | 17.132 | 0 |
+| keyframe34 | 2026-11-03T08:39:39.641873+00:00 | 2026-11-03T08:39:44.140576+00:00 | 4.499 | 0 |
+| keyframe-eof-numeric13 | 2026-11-03T08:39:44.150639+00:00 | 2026-11-03T08:39:46.512136+00:00 | 2.362 | 0 |
+| keyframe-runtime2 | 2026-11-03T08:39:46.523635+00:00 | 2026-11-03T08:39:48.843526+00:00 | 2.320 | 0 |
+| css-property-rule21 | 2026-11-03T08:39:48.854056+00:00 | 2026-11-03T08:39:51.163595+00:00 | 2.310 | 0 |
+| descriptor-comparison13 | 2026-11-03T08:39:51.173871+00:00 | 2026-11-03T08:39:53.514547+00:00 | 2.341 | 0 |
+| native218 | 2026-11-03T08:39:53.525752+00:00 | 2026-11-03T08:42:38.677241+00:00 | 165.151 | 0 |
+| authored38 | 2026-11-03T08:42:38.689983+00:00 | 2026-11-03T08:44:07.863846+00:00 | 89.174 | 0 |
+| retained-additional14 | 2026-11-03T08:44:07.876038+00:00 | 2026-11-03T08:44:12.401314+00:00 | 4.525 | 0 |
+| retained-extras143 | 2026-11-03T08:44:12.414679+00:00 | 2026-11-03T08:44:20.203584+00:00 | 7.789 | 0 |
+| retained-universal40 | 2026-11-03T08:44:20.228359+00:00 | 2026-11-03T08:44:22.659055+00:00 | 2.431 | 0 |
+| retained-frame4 | 2026-11-03T08:44:22.667332+00:00 | 2026-11-03T08:44:25.019617+00:00 | 2.352 | 0 |
+
+Frozen official cohorts (each retains its exact original identities):
+
+| Cohort | Fully passing files | Passing assertions | Existing gains | Prior PASS losses |
+|---|---:|---:|---:|---:|
+| integer-regressions3 | 3/3 | 188/188 | 0 | 0 |
+| charset | 20/21 | 20/21 | 16 | 0 |
+| background9 | 8/9 | 48/50 | 17 | 0 |
+| numeric3 | 1/3 | 134/199 | 2 | 0 |
+| keyframe18 | 8/18 | 92/129 | 1 | 0 |
+| medialist10 | 10/10 | 47/47 | 0 | 0 |
+| cssom-neighbors13 | 9/13 | 76/113 | 0 | 0 |
+
+Authored controls remain separately measured:
+
+| Control | Passed/registered | Full control gate |
+|---|---:|---|
+| large-integers12 | 12/12 | True |
+| declarations38 | 38/38 | True |
+| numeric28 | 28/28 | True |
+| keyframe-declarations31 | 31/31 | True |
+| opacity10 | 10/10 | True |
+| image-longhands44 | 44/44 | True |
+| image-slice-boundaries10 | 10/10 | True |
+| image-slice-nested4 | 4/4 | True |
+| medialist15 | 15/15 | True |
+| owner8 | 8/8 | True |
+| keyframe34 | 32/34 | False |
+| keyframe-eof-numeric13 | 13/13 | True |
+| keyframe-runtime2 | 2/2 | True |
+| css-property-rule21 | 21/21 | True |
+| descriptor-comparison13 | 13/13 | True |
+
+Original native218/218 and unchanged retained45/1318 pass, with334/334 independent retained audit checks. Charset canonical native44 plus separate BOM1 control also passed against the candidate library. The original keyframe34 remains32/34 because named timeline ranges are unsupported; its no-loss gate is distinct from new declaration31/31. The new opacity10v2 and image44/boundary10/nested4 all pass; original exploratory fixture versions remain preserved.
+
+Build/startup resource samples164, CPU tree median153.001%,max188.000%; peakRSS712.110MiB,peakPSS561.184MiB. Shared cgroup weightedmean166.773%,max189.098%,under480%quota. The164s build cost is explained by115compiles(73testunits) plus100links after shared core/header changes; it remains below5minutes. Next new easing API uses a narrow private header rather than changing broadcss.h, reducing avoidable future rebuild fan-out. Accepted1804 was not changed for this optimization.
+
+The full1248 replay started08:48:55.18Z with immutable1804 and unchanged WPT/framework/runtime pins. Compare against both regression-free1705 and experimental1802 so every prior gain/loss is accounted for. Do not substitute narrow success for this gate. Score remains57.21/100 selected-file baseline until a complete regression-free replay. Acceptance: focused/native/retained PASS; full replay RUNNING; desktop/Android PENDING.
+
+Public preparation ran08:48:26.754022–08:48:32.861752Z,6.105890s wall,6.003707s target, in the tester-reserved pre-replay gap. A first metadata-only attempt rejected an obsolete receipt key before any preparation job; actualschema was then verified and used. Prepared839inventoryfiles/739exactinputs/218approvedpublicancestry, no private working objects. Independent export review precedes isolated commit/push; archive packaging waits for full replay completion.

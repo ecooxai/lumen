@@ -160,20 +160,20 @@ Its larger raw pass count does not satisfy the no-regression acceptance gate.
 Preserve that binary and all pinned WPT/harness/manifest files while drafting new source.
 The live checkout may advance; distinguish source-worktree state from immutable build provenance.
 
-Candidate1803 (eda38fd5) recovered all5 prior full-replay regressions and passed
-integer188/188, large-integer12/12, z-index syntax38/38 and computed28/28. Keyframe31
-reached28/31 without a prior-pass loss; three opacity scalar serialization failures
-stopped the worker before native/retained/full gates. Do not claim those unrun gates.
-Integrated1804 source adds reviewed charset byte decoding, opacity canonicalization
-and image-longhand grammar/serialization in separate commits. The final opacity percentage
-serialization correction is independently reviewed and committed; freeze the exact
-clean documentation HEAD with the independent tester.
-The original keyframe and WPT expectations remain unchanged; the new opacity fixture
-has an explicitly preserved unqualified v1 and separately reference-qualified v2.
-Parsed keyframe text discards!important before duplicates; CSSOM setters retain
-recognized important priority. Empty removal remains before priority validation,
-despite the documented Chromium reference difference. Charset decoder native44+1
-private controls pass, but actual candidate/browser and full regression gates remain.
+Candidate1804 atc55bd950 is accepted for focused unchanged WPT cohorts, native218,
+and retained45/1318 (334 independent checks). Integer188, large12, syntax38, computed28,
+keyframe declarations31, opacity10 and image44+10+4 controls all pass. Official charset
+is20/21 and background8/9,48/50; their remaining XML-PI and computed slice gaps are
+explicit. The full immutable1248 replay started08:48:55.18Z and remains a separate
+required gate. Do not claim broad acceptance before that receipt.
+
+The next independently reviewed easing draft uses a private easing.h for its new API
+to limit rebuild fan-out. It covers steps/cubic longhands via existing typed context;
+linear() behavior and the Web Animations solver remain unchanged. Preserve normative
+math range clamping and current canonical step serialization despite the pinned
+Chromium differences; do not change the original WPT or historical42 expectations.
+XML stylesheet-PI loading is a separately owned staged follow-up. Preserve source
+ownership and the immutable1804 runtime/test inputs while new source advances.
 Failed timing1704 remains separately preserved at527e190832b0ee6ff6a10def4bc42fe9b7d5cc22;
 do not revive its wholesale draft or alter tests to manufacture passes.
 
