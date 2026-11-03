@@ -100,7 +100,7 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session18, starting from candidate1705
+## Current development handoff — session18, focused candidate1801
 
 Canonical checkout: `/mnt/p3/project/browser/lumen-android/lumen-android`.
 Current branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
@@ -129,7 +129,7 @@ The newer saved complete selected1248 replay, found after the prior handoff, is
 **714/1248 complete files (57.21154%) and22637/26245 assertions**, versus prior1603
 703/1248 and22604/26245. Pinned Chromium150 is1062/1248 and24541/26064; the assertion
 denominators remain engine-specific. Saved comparison records33 assertion gains,
-11 whole-file gains and no prior-PASS losses. Independent recount is underway.
+11 whole-file gains and no prior-PASS losses. Independent raw recount and compiled-source hashes are verified in `agent/validation/linux-wpt-20261103-session18/verified-baseline1705.json`.
 This is the frozen selected sample, not full official WPT or a browser-quality score.
 
 Failed timing1704 remains on its separate preserved branch at527e190832b0ee6ff6a10def4bc42fe9b7d5cc22;
@@ -142,6 +142,35 @@ promotion. Keep final qualified engine source frozen through Android build/insta
 and desktop:0 restart; preserve profiles and Android data. The prior public1701
 backup is historical until a newer exact source checkpoint is verified.
 Reserve at least final60min for integrated replay/repair, delivery and persistence.
+
+
+### Session18 iteration1: focused candidate1801
+
+Source1801 is `4e74e964347ed5608a3110a1e2b31b270e610ac9`, containing the isolated
+z-index engine commit `8f9cdd82567a0609b18088f687c068299d19c919` plus status documentation.
+Immutable binary SHA-256 `21e04192acf8602705c0aeb9e27ce673977a75a41c0b1c02618a79a1c65c7839`;
+source manifest `6646326b25ee6dd2422bce96f1e3a92991165d291561fee8f3f3590088d392de`.
+Accepted scope is the exact numeric3 WPT cohort and independent authored28 controls:
+130→132/199 assertions and0→1/3 complete files; two existing assertion gains, no
+prior-PASS losses, missing/new identities, or harness regressions. Authored28 improves
+13→24/28. Four original declaration-validation failures remain visible: unit-valued
+z-index declarations are accepted by the pre-existing specified-value path, although
+all now compute to auto. This patch replaces z-index's ad-hoc numeric conversion with
+the existing typed integer path, including CSS half-ties, NaN and range clamping.
+
+Build/startup62.435s; numeric3 replay8.290s; authored28 gate3.855s. Build peak treeRSS
+318.72MiB; cgroup CPUmean122.10%,max185.53%,62 one-second samples. Full native218 and
+retained45 will run once on integrated1802; their old1705 results are not new1801 evidence.
+Full1248 score remains the verified1705 **57.21/100** selected-file rate until a new replay.
+No overall95/98 quality claim. Desktop/Android promotion and new external persistence
+remain pending; operations owns them.
+
+Next implementation is MediaList1802, staged outside source in
+`agent/source-work/session18/medialist1802-v2/`, under independent review. It repairs
+component-value list parsing, canonical single-query mutation, live indexed API state,
+and null-namespace owner media attribute initialization/synchronization. Its semantic
+nesting guard, unsimplified media math, and pre-existing native stylesheet.media rendering
+invalidation are explicit limits; no full MediaQueries implementation claim is made.
 
 ### Retained prior architecture and authorization boundaries
 

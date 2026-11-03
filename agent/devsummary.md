@@ -160,3 +160,22 @@ Tracked source was clean at13c22d3d28a68746fede3f265f55c5eda3247da6; existing co
 Created session18 branch; archived previous task/continue and recorded current request verbatim.
 Saved1705 full selected1248 replay reports714 files/22637 assertions, +11 files/+33 assertions with no prior-pass loss; independent recount pending. This57.21% selected-file rate is not full WPT or an invented95/100 product rating.
 Iteration1 start:2026-11-03T06:58:59Z; end pending. No session18 build/browser tests yet. Parallel-agent wall intervals will not be summed; model compute time is not exposed.
+
+
+## Session18 iteration1 — z-index typed integer conversion1801
+
+Logical iteration start **2026-11-03T06:58:59Z**; qualification end **2026-11-03T07:21:18.425510+00:00**.
+Iteration and cumulative session elapsed **1339.425510s**. This includes initial access, baseline recovery, branch/task preservation and parallel MediaList preparation; parallel agent wall intervals are not summed. Model compute time is not exposed.
+Ops authored the12-line z-index fix; repo_lead independently reviewed shared typed conversion and committed8f9cdd8; WPT agent independently built and qualified4e74e964. Root remained CTO.
+
+| Task | StartUTC | EndUTC | Seconds | Outcome |
+|---|---|---|---:|---|
+|build-startup|2026-11-03T07:20:03.578370+00:00|2026-11-03T07:21:06.013597+00:00|62.435240|exit0|
+|numeric3|2026-11-03T07:21:06.031032+00:00|2026-11-03T07:21:14.321337+00:00|8.290301|exit0|
+|numeric28|2026-11-03T07:21:14.355483+00:00|2026-11-03T07:21:18.210505+00:00|3.855028|exit0|
+
+No individual build/test exceeded five minutes. Exact source/binary and scope are recorded in candidate1801-incremental-acceptance.json. Build process-tree peakRSS318.72MiB; shared cgroup mean122.10%,max185.53%,62samples. One core=100%; sharedquota480%. Snapshot samples may miss subsecond children and RSS may double-count shared pages.
+NumericWPT3 improves130→132/199 assertions,0→1/3 completefiles,2existinggains withzero losses or changedidentities/harness. Reference183/183 remains a distinct assertiondenominator. Authored28 improves13→24/28; originalfour specified-value invalidunit failures preserved, all nowcomputeauto.
+Acceptance: focusedregressiongatePASS; focusedresourcegatePASS; native218/retained45DEFERRED tointegrated1802; full1248NOTYETRERUN; desktopPENDING; AndroidPENDING; newexternalcheckpointPENDING.
+Iteration score **57.21/100**, tied to lastverifiedfull selected1248 measurement1705; no broadscore increment inferred from a small cohort.
+Nextiteration1802: MediaListv2 underindependentreview. Normative readonly indexed methods remainFALSE despiteChromium150 TRUE/no-op deviation. No originalfixture/expectedrow modified.
