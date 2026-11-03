@@ -5,6 +5,7 @@
 #endif
 /* Cascade, inheritance and computed values */
 #include "css.h"
+#include "easing.h"
 #include "color.h"
 #include "../layout/layout.h"
 #include "../base/url.h"
@@ -3730,6 +3731,147 @@ bool css_image_longhand_valid(const char *property, const char *value) {
     free(parsed); return valid;
 }
 
+/* Easing longhands share strict component boundaries and numeric typing.
+ * This bounded parser leaves the established linear() component behavior intact;
+ * it does not replace the Web Animations curve evaluator. */
+static bool easing_property(const char *property) {
+    if (!strncmp(property, "-webkit-", 8)) property += 8;
+    return !strcmp(property, "animation-timing-function") || !strcmp(property, "transition-timing-function");
+}
+static char *easing_component(CLexer *lexer, const CTok *first) {
+    if (first->type != CT_IDENT && first->type != CT_NUMBER && first->type != CT_FUNC) return NULL;
+    size_t start = (size_t)(first->start - lexer->s);
+    unsigned depth = first->type == CT_FUNC;
+    while (depth) {
+        CTok token = clex_next(lexer); int type = token.type; free(token.str);
+        if (type == CT_EOF) return NULL;
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) depth--;
+        if (depth > 256) return NULL;
+    }
+    return xstrndup(lexer->s + start, lexer->i - start);
+}
+static bool easing_arguments(const char *body, char **parts, int *types, unsigned *count) {
+    CLexer lexer; clex_init(&lexer, body, strlen(body)); bool need = true;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_EOF) { free(token.str); return !need; }
+        if (!need) {
+            free(token.str); if (type != CT_COMMA) return false;
+            need = true; continue;
+        }
+        char *part = easing_component(&lexer, &token); free(token.str);
+        if (!part || *count == 4) { free(part); return false; }
+        types[*count] = type; parts[(*count)++] = part; need = false;
+    }
+}
+static void easing_number_text(SB *out, double value) {
+    if (isnan(value)) sb_putc(out, '0');
+    else if (isinf(value)) sb_puts(out, value < 0 ? "calc(-infinity)" : "calc(infinity)");
+    else sb_printf(out, "%.15g", value == 0 ? 0.0 : value);
+}
+static char *easing_single(ACtx *context, const char *text, bool computed) {
+    static const char *const keywords[] = { "linear", "ease", "ease-in", "ease-out", "ease-in-out" };
+    for (unsigned i = 0; i < sizeof keywords / sizeof keywords[0]; i++)
+        if (!strcmp(text, keywords[i])) return xstrdup(text);
+    if (!strcmp(text, "step-start")) return xstrdup("steps(1, start)");
+    if (!strcmp(text, "step-end")) return xstrdup("steps(1)");
+    bool steps = !strncmp(text, "steps(", 6), bezier = !strncmp(text, "cubic-bezier(", 13);
+    if (!steps && !bezier) return !strncmp(text, "linear(", 7) ? xstrdup(text) : NULL;
+    size_t prefix = steps ? 6 : 13, length = strlen(text);
+    if (length <= prefix || text[length - 1] != ')') return NULL;
+    char *body = xstrndup(text + prefix, length - prefix - 1), *parts[4] = {0};
+    int types[4] = {0}; unsigned count = 0; SB out = {0};
+    if (!easing_arguments(body, parts, types, &count)) goto invalid;
+    if (steps) {
+        if (count < 1 || count > 2 || (count == 2 && types[1] != CT_IDENT)) goto invalid;
+        const char *position = count == 2 ? parts[1] : "end";
+        bool none = !strcmp(position, "jump-none"), end = !strcmp(position, "end") || !strcmp(position, "jump-end");
+        if (!none && !end && strcmp(position, "start") && strcmp(position, "jump-start") && strcmp(position, "jump-both")) goto invalid;
+        int number;
+        if (!application_integer(context, parts[0], none ? 2 : 1, &number)) goto invalid;
+        sb_puts(&out, "steps(");
+        if (computed) sb_printf(&out, "%d", number);
+        else if (types[0] == CT_FUNC) sb_puts(&out, parts[0]);
+        else {
+            /* Keep the accepted integer token's full magnitude in specified
+             * values. Only computed storage uses the implementation range. */
+            const char *digits = parts[0]; if (*digits == '+') digits++;
+            while (digits[0] == '0' && digits[1]) digits++;
+            sb_puts(&out, digits);
+        }
+        if (!end) { sb_puts(&out, ", "); sb_puts(&out, position); }
+        sb_putc(&out, ')');
+    } else {
+        if (count != 4) goto invalid;
+        sb_puts(&out, "cubic-bezier(");
+        for (unsigned i = 0; i < 4; i++) {
+            CssNumber number;
+            if ((types[i] != CT_NUMBER && types[i] != CT_FUNC) ||
+                !application_number(context, parts[i], false, &number) || !css_number_scalar(&number)) goto invalid;
+            bool x = i == 0 || i == 2, math = types[i] == CT_FUNC;
+            if (x && !math && !(number.value >= 0 && number.value <= 1)) goto invalid;
+            if (i) sb_puts(&out, ", ");
+            if (math && !computed) sb_puts(&out, parts[i]);
+            else {
+                double value = number.value;
+                if (x && math) value = isnan(value) ? 0 : fmin(1, fmax(0, value));
+                if (!math && !isfinite(value)) sb_puts(&out, parts[i]);
+                else easing_number_text(&out, value);
+            }
+        }
+        sb_putc(&out, ')');
+    }
+    for (unsigned i = 0; i < count; i++) free(parts[i]);
+    free(body); return sb_take(&out);
+invalid:
+    for (unsigned i = 0; i < count; i++) free(parts[i]);
+    free(body); sb_free(&out); return NULL;
+}
+static char *easing_parse_context(ACtx *context, const char *value, bool computed) {
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    if (!css_math_spacing_valid(value)) return NULL;
+    char *buffer = min_size_parser_text(value); if (!buffer) return NULL;
+    CLexer lexer; clex_init(&lexer, buffer, strlen(buffer)); SB out = {0};
+    bool need = true, singleton = false;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_EOF) {
+            free(token.str); if (need) goto invalid;
+            free(buffer); return sb_take(&out);
+        }
+        if (!need) {
+            free(token.str); if (type != CT_COMMA || singleton) goto invalid;
+            need = true; continue;
+        }
+        if (type != CT_IDENT && type != CT_FUNC) { free(token.str); goto invalid; }
+        char *component = easing_component(&lexer, &token); free(token.str);
+        if (!component) goto invalid;
+        const char *wide = var_wide_keyword(component);
+        bool wide_component = wide != NULL;
+        char *parsed = wide && !out.n ? xstrdup(wide) : easing_single(context, component, computed);
+        free(component);
+        if (!parsed) goto invalid;
+        if (out.n) sb_puts(&out, ", ");
+        sb_puts(&out, parsed); free(parsed);
+        singleton = wide_component; need = false;
+    }
+invalid:
+    free(buffer); sb_free(&out); return NULL;
+}
+char *css_easing_parse(const char *value) {
+    ACtx context = { .em = 16, .rem = 16, .validation_only = true };
+    return easing_parse_context(&context, value, false);
+}
+bool css_easing_valid(const char *property, const char *value) {
+    if (!easing_property(property)) return true;
+    char *parsed = css_easing_parse(value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
 static bool column_property(const char *prop) {
     return !strcmp(prop, "columns") || !strcmp(prop, "column-width") || !strcmp(prop, "column-count");
 }
@@ -4370,6 +4512,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     if (!css_box_shadow_valid(prop, value_in)) return;
     if (!css_border_valid(prop, value_in)) return;
     if (!css_image_longhand_valid(prop, value_in)) return;
+    if (!css_easing_valid(prop, value_in)) return;
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
@@ -4393,7 +4536,8 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
         !strcmp(prop, "transition-property") ? css_transition_property_parse(v) :
         !strcmp(prop, "box-shadow") ? css_box_shadow_parse(v) :
         border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) :
-        image_longhand_kind(prop) ? css_image_longhand_parse(prop, v) : xstrdup(v);
+        image_longhand_kind(prop) ? css_image_longhand_parse(prop, v) :
+        easing_property(prop) ? css_easing_parse(v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);
     if (min_size_property(prop) && (str_ieq(val, "-webkit-min-content") ||
@@ -4436,6 +4580,11 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
             if (invalid_substitution) css_apply_decl(st, par, P, "unset", e, el);
             return;
         }
+    }
+    if (easing_property(P) && !inherit && !initial && !unset) {
+        char *computed = easing_parse_context(&c, val, true);
+        if (computed) gen_put(&st->gen_n, P, computed);
+        free(vbuf); free(subst); return;
     }
     bool flex_value = !strcmp(P, "flex") || !strcmp(P, "flex-grow") ||
                       !strcmp(P, "flex-shrink") || !strcmp(P, "flex-basis");
