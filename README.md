@@ -1,10 +1,12 @@
 # Lumen Linux checkpoint 1808
 
-**DEVELOPMENT SOURCE ONLY — scoped qualification PASSED; full1248 verification PENDING. NOT AN ACCEPTED PRODUCT RELEASE.**
+**DEVELOPMENT DEVICE CHECKPOINT — preregistered reliability replay and two namespace checks PASS. Earlier intermittent namespace timeout remains documented. Not a production or whole-WPT certification.**
 
-The last regression-free full selected sample remains1705:714/1248 selected test cases/URLs (57.21%). Source availability is separate from runtime promotion. The1,248 selected URLs come from1,247 source files across10 DOM/CSS families; pre-existing selection excludes44 long-timeout cases and1 HTTPS-only case.
+The one preregistered unchanged reliability replay completed 759/1248 selected test cases/URLs (60.82%), with 22826/26245 assertions passing and all 22826 prior passes retained. The first full run remains HOLD at 758/1248 because its namespace harness timed out despite 51/51 assertions passing. Its raw result is preserved; no source fix or resolved cause is claimed.
 
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
+The starting accepted sample was 1705:714/1248 (57.21%). The 1248 URLs come from 1247 source files across 10 DOM/CSS families; the pre-existing selection excludes 44 long-timeout cases and 1 HTTPS-only case. This is not the whole WPT platform, and Chromium parity or 95/100 product quality is not claimed.
+
+Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for exact scope and identities. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) for the approved public Git history.
 
 ## Historical repository documentation
 
