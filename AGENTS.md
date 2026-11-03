@@ -167,7 +167,7 @@ as curated public commit `1f01b72cfcfb797244a8ff5853389897401e419f` on branch
 `gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1801-20261103`.
 That public checkpoint has the1801 focused qualification scope, not1802's broader gates.
 The1801 archive passed offline Git restore and public HTTPS readback:10,301,351 bytes,
-SHA-256 a61ccf59f41c0123d2a65092a86f5d7b31e5e8a4288b8d50847df6259828215a.
+SHA-256 a61ccf593c39061aac7a85240bdee1c3eb813999fd9ba7279995fa7037c8215a.
 Treat the exact promotion receipt as authoritative if a later archive replaces it.
 Desktop display:0 and connected Android promotion are pending the final qualified candidate.
 Keep final engine source frozen through Android build/install and desktop restart;
