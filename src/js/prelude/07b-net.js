@@ -173,7 +173,7 @@ const XHR_DOC = (x, text, mt) => {
 };
 const XHR_DOC_BODY = (body, h) => {
     if (!(typeof Document === 'function' && body instanceof Document)) return undefined;
-    const html = body.contentType === 'text/html';
+    const html = N.ns(body) !== 3;   /* HTML documents can have text/plain or image response MIME types */
     if (!h.has('content-type')) h.set('Content-Type', html ? 'text/html;charset=UTF-8' : 'application/xml;charset=UTF-8');
     return html ? (body.doctype ? `<!DOCTYPE ${body.doctype.name}>` : '') + (body.documentElement ? body.documentElement.outerHTML : '') : new XMLSerializer().serializeToString(body);
 };

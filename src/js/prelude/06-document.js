@@ -227,8 +227,8 @@ methods(Document.prototype, {
     set designMode(v) { const s = String(v).toLowerCase(); if (s === 'on' || s === 'off') designModes.set(this, s); },
     open(a, b, c) {
         if (arguments.length > 2) return G.open(a, b, c);
+        if (N.ns(this) === 3) throw new DOMException("Failed to execute 'open' on 'Document': Only HTML documents support open().", 'InvalidStateError');
         if (this !== document) return this;
-        if (this.contentType !== 'text/html') throw new DOMException("Failed to execute 'open' on 'Document': Only HTML documents support open().", 'InvalidStateError');
         ceParserMarkupGuard(this);
         if (N.parserWritePoint()) return this;   /* an active parser script has a nonzero nesting level */
         resetOpenedDocumentEvents(this);
@@ -380,8 +380,8 @@ function execData(cmd, val) {
     return c;
 }
 function docWriteTo(doc, html) {
+    if (N.ns(doc) === 3) throw new DOMException("Failed to execute 'write' on 'Document': Only HTML documents support write().", 'InvalidStateError');
     if (doc !== document) return;
-    if (doc.contentType !== 'text/html') throw new DOMException("Failed to execute 'write' on 'Document': Only HTML documents support write().", 'InvalidStateError');
     ceParserMarkupGuard(doc);
     if (docOpened.has(doc) || N.docStreamWritePoint()) { N.docWrite(html); return; }
     if (N.ignoreWrites()) return;

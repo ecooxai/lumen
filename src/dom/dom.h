@@ -92,7 +92,7 @@ typedef struct Document {
     char *url;
     char *base_url;               /* an about:blank or about:srcdoc frame's fallback base URL (its parent's), else NULL */
     char *title;
-    char *content_type;           /* the response's MIME type of a loaded XML document, else NULL */
+    char *content_type;           /* normalized response MIME essence, else NULL; node.ns independently records HTML/XML mode */
     struct Document *template_contents_owner; /* associated inert owner; self marks a template-owner document */
     VEC(struct Document *) retired_documents; /* metadata retained until this owner's final tree teardown */
     uint8_t interface_kind;       /* 0 HTMLDocument, 1 XMLDocument, 2 Document; independent of mutable JS prototypes */

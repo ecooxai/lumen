@@ -1,88 +1,77 @@
 {
-  "candidate": 1701,
-  "status": "SOURCE MAPPING ACCEPTED after independent public inventory review",
-  "tested_source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
-  "tested_binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
-  "source_manifest_digest": "2c75e05834c127e4dc4f19b5b559e43fd6080118df146e427eb9cbb9779d9458",
-  "public_parent": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1701-20261102",
+  "candidate": 1801,
+  "status": "INDEPENDENTLY ACCEPTED exact1801 public source; publication tracked separately",
+  "tested_source_commit": "4e74e964347ed5608a3110a1e2b31b270e610ac9",
+  "tested_binary_sha256": "21e04192acf8602705c0aeb9e27ce673977a75a41c0b1c02618a79a1c65c7839",
+  "source_manifest_digest": "6646326b25ee6dd2422bce96f1e3a92991165d291561fee8f3f3590088d392de",
+  "public_parent": "2ec6af183597791985b48c6a9c2689c4a8ef3cf2",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1801-20261103",
   "all_recorded_inputs_exact": true,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
   "private_history_included": false,
+  "publication_performed": false,
   "validation_summary": {
     "build_startup": {
       "passed": true,
-      "elapsed_seconds": 51.14
+      "started_utc": "2026-11-03T07:20:05Z",
+      "finished_utc": "2026-11-03T07:21:05Z"
     },
-    "native_suite": {
-      "passed": 218,
-      "total": 218,
-      "elapsed_seconds": 137.13
+    "numeric_wpt3": {
+      "before": {
+        "fully_passing_files": 0,
+        "files": 3,
+        "passing_assertions": 130,
+        "registered_assertions": 199
+      },
+      "current": {
+        "fully_passing_files": 1,
+        "files": 3,
+        "passing_assertions": 132,
+        "registered_assertions": 199
+      },
+      "chromium150": {
+        "fully_passing_files": 3,
+        "files": 3,
+        "passing_assertions": 183,
+        "registered_assertions": 183
+      },
+      "shared_native_assertion_gains": 2,
+      "prior_pass_losses": 0,
+      "identity_drift": 0,
+      "raw_result_sha256": "eefd213b9f0383bc1efe2afdd82d0f78c0936a55926c735a956493eae37df759",
+      "elapsed_seconds": 6.404340998036787
     },
-    "retained_authored": {
-      "fixtures": 45,
-      "passed_assertions": 1318,
-      "total_assertions": 1318,
-      "independent_audit_checks_passed": 542,
-      "independent_audit_checks_total": 542,
-      "elapsed_seconds": 98.7633
-    },
-    "css_property_rule_authored": {
-      "passed": 21,
-      "total": 21,
-      "baseline1603_passed": 2,
-      "baseline1603_total": 21
-    },
-    "descriptor_exact_object_comparison": {
-      "native_passed": 13,
-      "chromium_passed": 13,
-      "total_each": 13
-    },
-    "css_properties_values_api_wpt41": {
-      "passed_files": 18,
-      "total_files": 41,
-      "passed_assertions": 589,
-      "total_assertions": 813,
-      "baseline1603_passed_files": 16,
-      "baseline1603_passed_assertions": 521,
-      "baseline1603_total_assertions": 813,
-      "shared_fail_to_pass": 68,
-      "shared_pass_to_fail": 0,
-      "missing_or_new_assertion_identities": 0
+    "authored_numeric28": {
+      "before_passed": 13,
+      "passed": 24,
+      "total": 28,
+      "remaining_failure_scope": "Specified values1px,1%,calc(1px),calc(1%) remain accepted; computed fallback is repaired."
     },
     "last_fixed1248_measurement": {
-      "candidate": 1603,
-      "candidate1701_rerun": false,
-      "lumen_passed_files": 703,
+      "candidate": 1705,
+      "candidate1801_rerun": false,
+      "lumen_passed_files": 714,
       "total_files": 1248,
-      "lumen_passed_assertions": 22604,
+      "lumen_passed_assertions": 22637,
       "lumen_total_assertions": 26245,
-      "chromium_version": "150.0.7871.114",
       "chromium_passed_files": 1062,
       "chromium_passed_assertions": 24541,
       "chromium_total_assertions": 26064,
-      "scope": "Fixed HTTP default-timeout testharness sample, not the full official WPT suite"
-    }
+      "scope": "Frozen HTTP default-timeout testharness sample; not full official WPT"
+    },
+    "native218_rerun_for1801": false,
+    "retained45_rerun_for1801": false
   },
   "limitations": [
-    "Candidate 1701 incremental scopes passed; the last full fixed 1248 sample remains candidate 1603 and was not rerun for 1701.",
+    "Candidate1801 is qualified for focused numeric scopes; its whole frozen1248 replay is pending.",
+    "Four authored specified-value failures remain visible; no oracle was removed or relaxed.",
     "Full official WPT conformance and Chromium parity remain unmeasured and are not claimed.",
     "Only approved public source ancestry and exact tested source inputs are exported; private working history and validation machinery are excluded.",
     "External build dependencies and browser profiles are not bundled.",
     "Public packaging and offline Git recovery checks are not an independent rebuild.",
-    "Android and display :0 runtime qualification for the final integrated session candidate will be recorded separately."
+    "Android and display0 runtime deployment remain pending final integrated candidate qualification."
   ],
-  "publication_evidence": "Public commit, offline bundle recovery and external publication receipts are recorded separately after this source tree is committed.",
-  "independent_source_review": {
-    "reviewer": "engine_improvements GPT-6 Astra Pro builtin agent",
-    "review_sha256": "88ca3101d6d7b67f6038bf2d5dd17801b88b170b804fb036b00443597d56d91a",
-    "preparation_sha256": "a128dc9688a290a092f7008299f190a45c8de01f4c3f403dfb73619c72e94862",
-    "recorded_inputs": 734,
-    "public_files": 834,
-    "approved_public_history_commits": 217,
-    "all_recorded_inputs_exact": true,
-    "private_history_excluded": true,
-    "scope": "Independent review of full public-source inventory, generated metadata and source pins; not a rebuild or publication receipt"
-  }
+  "independent_review_sha256": "323af8d3a47497cb1808a229d08c42fc1afa112068e340495190dacb891025de",
+  "independent_review_scope": "All839 reviewed files matched preparation inventory; all739 recorded inputs matched tested4e74e964 Gitblobs, modes and exported bytes; approved218-commit ancestry retained."
 }

@@ -1,0 +1,65 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CSS keyframe EOF recovery and numeric selector identity</title>
+<body><script>
+(() => {
+    'use strict';
+    const marker = 'css-keyframe-eof-numeric', rows = [];
+    const equal = (actual, expected) => { if (actual !== expected) throw new Error(JSON.stringify({actual, expected})); };
+    const make = body => { const sheet = new CSSStyleSheet(); sheet.replaceSync('@keyframes owned { ' + body + ' }'); return sheet.cssRules[0]; };
+    function test(name, fn) {
+        try { const observations = fn(); rows.push({name, pass: true, observations}); }
+        catch (error) { rows.push({name, pass: false, observations: {error: String(error && error.stack || error)}}); }
+        console.log('CSS_KEYFRAME_EOF_NUMERIC_ROW ' + JSON.stringify(rows[rows.length - 1]));
+    }
+    const recovered = [
+        ['appendRule recovers an unclosed declaration block', 'from { opacity: 0'],
+        ['appendRule recovers an unclosed comment inside its block', 'from { opacity: 0; /*'],
+        ['appendRule recovers an unclosed string inside its block', 'from { content: "x'],
+        ['appendRule ignores a brace inside an unclosed string', 'from { content: "x}'],
+        ['appendRule keeps a keyframe whose bad string declaration is discarded', 'from { content: "x\ny"; }'],
+        ['appendRule permits an unclosed trailing comment', 'from { opacity: 0; } /*']
+    ];
+    for (const [name, input] of recovered) test(name, () => {
+        const keys = make(''); keys.appendRule(input); equal(keys.cssRules.length, 1); equal(keys.cssRules[0].keyText, '0%');
+        // Declaration serialization is recorded separately: these assertions
+        // cover acceptance of a recovered single keyframe rule.
+        return {input, cssText: keys.cssRules[0].cssText};
+    });
+    test('appendRule rejects a trailing unmatched closing brace', () => {
+        const keys = make(''); keys.appendRule('from { opacity: 0; } }'); equal(keys.cssRules.length, 0);
+    });
+    test('precise lookup does not use rounded CSSOM selector text', () => {
+        const keys = make('1.23456789% { opacity: 0; }'), rule = keys.cssRules[0];
+        equal(rule.keyText, '1.23457%'); equal(keys.findRule('1.23456789%'), rule); equal(keys.findRule('1.23457%'), null);
+    });
+    test('near-end selectors retain identity when display text rounds to 100 percent', () => {
+        const keys = make('99.99999999999999% { opacity: 0; }'), rule = keys.cssRules[0];
+        equal(rule.keyText, '100%'); equal(keys.findRule('99.99999999999999%'), rule); equal(keys.findRule('100%'), null);
+    });
+    test('tiny percentages preserve scientific serialization and exact lookup', () => {
+        const keys = make('1e-7% { opacity: 0; }'), rule = keys.cssRules[0];
+        equal(rule.keyText, '1.00000e-7%'); equal(keys.findRule('0.0000001%'), rule);
+    });
+    test('distinct selectors with identical display text find their own rules', () => {
+        const keys = make('1.2345678% { opacity: 0; } 1.2345679% { opacity: 1; }');
+        equal(keys.cssRules[0].keyText, keys.cssRules[1].keyText);
+        equal(keys.findRule('1.2345678%'), keys.cssRules[0]); equal(keys.findRule('1.2345679%'), keys.cssRules[1]);
+        equal(keys.findRule('1.23457%'), null);
+    });
+    test('deleting a precise selector preserves a different equal-looking rule', () => {
+        const keys = make('1.2345678% { opacity: 0; } 1.2345679% { opacity: 1; }');
+        const removed = keys.cssRules[0], retained = keys.cssRules[1]; keys.deleteRule('1.2345678%');
+        equal(keys.cssRules.length, 1); equal(keys.cssRules[0], retained); equal(removed.parentRule, null);
+    });
+    test('invalid keyText mutation preserves the exact semantic lookup value', () => {
+        const keys = make('1.23456789% { opacity: 0; }'), rule = keys.cssRules[0]; let error;
+        try { rule.keyText = '1.23456789%, 101%'; } catch (caught) { error = caught; }
+        equal(error && error.name, 'SyntaxError'); equal(rule.keyText, '1.23457%');
+        equal(keys.findRule('1.23456789%'), rule); equal(keys.findRule('1.23457%'), null);
+    });
+    const passed = rows.filter(row => row.pass).length, status = passed === rows.length ? 'PASS' : 'FAIL';
+    console.log('RESULTS ' + marker + ':' + status + ' ' + JSON.stringify({passed, total: rows.length}));
+    document.documentElement.setAttribute('data-' + marker, status);
+})();
+</script></body>
