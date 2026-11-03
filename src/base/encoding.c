@@ -573,17 +573,19 @@ int enc_from_content_type(const char *ct) {
         if (*eq != '=') { p = eq; if (!*p) break; continue; }
         bool cs = eq - p == 7 && !strncasecmp(p, "charset", 7);
         const char *v = eq + 1, *ve;
-        char buf[64];
-        size_t bn = 0;
+        SB value = {0};
         if (*v == '"') {
-            for (ve = v + 1; *ve && *ve != '"'; ve++) { if (*ve == '\\' && ve[1]) ve++; if (bn < sizeof buf - 1) buf[bn++] = *ve; }
+            for (ve = v + 1; *ve && *ve != '"'; ve++) { if (*ve == '\\' && ve[1]) ve++; if (cs) sb_putc(&value, *ve); }
             if (*ve) ve++;
             while (*ve && *ve != ';') ve++;
         } else {
-            for (ve = v; *ve && *ve != ';'; ve++) if (bn < sizeof buf - 1) buf[bn++] = *ve;
-            while (bn && (buf[bn - 1] == ' ' || buf[bn - 1] == '\t')) bn--;
+            for (ve = v; *ve && *ve != ';'; ve++) if (cs) sb_putc(&value, *ve);
         }
-        if (cs) return enc_label(buf, bn);
+        /* Get an encoding consumes the complete label. A fixed prefix buffer
+           could turn a long invalid parameter into a valid encoding label. */
+        int encoding = cs ? enc_label(value.s ? value.s : "", value.n) : -1;
+        sb_free(&value);
+        if (cs) return encoding;
         p = ve;
         if (!*p) break;
     }
@@ -713,4 +715,31 @@ char *enc_document(const uint8_t *s, size_t n, const char *content_type, bool xm
     *enc = e;
     if (e == ENC_UTF_8 && !bom) return NULL;
     return enc_decode_all(e, s + bom, n - (size_t)bom, out_len);
+}
+
+/* CSS Syntax 3, input byte stream: BOM overrides the fallback selected by
+ * transport metadata, the exact initial @charset bytes, and the environment.
+ * Only an ASCII @charset naming UTF-16 is normalized to UTF-8; a UTF-16
+ * transport or environment encoding remains UTF-16. */
+char *enc_stylesheet(const uint8_t *s, size_t n, const char *content_type, int environment,
+                     int *encoding, size_t *out_len) {
+    size_t bom = 0; int e;
+    if (n >= 3 && s[0] == 0xEF && s[1] == 0xBB && s[2] == 0xBF) { bom = 3; e = ENC_UTF_8; }
+    else if (n >= 2 && s[0] == 0xFE && s[1] == 0xFF) { bom = 2; e = ENC_UTF_16BE; }
+    else if (n >= 2 && s[0] == 0xFF && s[1] == 0xFE) { bom = 2; e = ENC_UTF_16LE; }
+    else {
+        e = enc_from_content_type(content_type);
+        size_t limit = n < 1024 ? n : 1024;
+        if (e < 0 && limit >= 12 && !memcmp(s, "@charset \"", 10)) {
+            size_t end = 10;
+            while (end < limit && s[end] != '"' && s[end] <= 0x7F) end++;
+            if (end + 1 < limit && s[end] == '"' && s[end + 1] == ';') {
+                e = enc_label((const char *)s + 10, end - 10);
+                if (e == ENC_UTF_16BE || e == ENC_UTF_16LE) e = ENC_UTF_8;
+            }
+        }
+        if (e < 0) e = environment >= 0 && environment < ENC_COUNT ? environment : ENC_UTF_8;
+    }
+    if (encoding) *encoding = e;
+    return enc_decode_all(e, s + bom, n - bom, out_len);
 }
