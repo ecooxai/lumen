@@ -1,88 +1,469 @@
 {
-  "candidate": 1701,
-  "status": "SOURCE MAPPING ACCEPTED after independent public inventory review",
-  "tested_source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
-  "tested_binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
-  "source_manifest_digest": "2c75e05834c127e4dc4f19b5b559e43fd6080118df146e427eb9cbb9779d9458",
-  "public_parent": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1701-20261102",
+  "candidate": 1804,
+  "status": "QUALIFIED focused unchanged WPT, native218 and retained45/1318; full1248 replay pending",
+  "tested_source_commit": "c55bd95010c37c7907020f951ac40c6420788a43",
+  "tested_binary_sha256": "6d44ae80424d1a102829a185be6b6dd322603e1d605a2f50000b467367f89ebe",
+  "source_manifest_digest": "d4cbc36fb6b52bf2d11998edeb63ccbc07b19a0822168fd94c634718f2334084",
+  "public_parent": "2ec6af183597791985b48c6a9c2689c4a8ef3cf2",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1804-20261103",
   "all_recorded_inputs_exact": true,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
   "private_history_included": false,
+  "publication_performed": false,
   "validation_summary": {
-    "build_startup": {
-      "passed": true,
-      "elapsed_seconds": 51.14
+    "qualification_scope": "Focused unchangedWPT cohorts + original218native + unchangedretained45/1318 + qualified authored semantic controls. Full1248 replay required and pending; no broad promotion.",
+    "incremental_acceptance_receipt_sha256": "168657a971bddbc04e096709b0dabee85f89e3da328c344f784886278eb13904",
+    "focused_wpt": {
+      "integer-regressions3": {
+        "facts": {
+          "before": {
+            "files": 3,
+            "fully_passing_files": 3,
+            "registered_assertions": 188,
+            "passing_assertions": 188,
+            "assertion_statuses": {
+              "PASS": 188
+            },
+            "harness_statuses": {
+              "OK": 3
+            }
+          },
+          "current": {
+            "files": 3,
+            "fully_passing_files": 3,
+            "registered_assertions": 188,
+            "passing_assertions": 188,
+            "assertion_statuses": {
+              "PASS": 188
+            },
+            "harness_statuses": {
+              "OK": 3
+            }
+          },
+          "reference": {
+            "files": 3,
+            "fully_passing_files": 3,
+            "registered_assertions": 188,
+            "passing_assertions": 188,
+            "assertion_statuses": {
+              "PASS": 188
+            },
+            "harness_statuses": {
+              "OK": 3
+            }
+          }
+        },
+        "shared_assertions": 188,
+        "prior_pass_losses": 0,
+        "existing_assertion_gains": 0,
+        "missing_assertions": 0,
+        "new_assertions": 0
+      },
+      "charset": {
+        "facts": {
+          "before": {
+            "files": 21,
+            "fully_passing_files": 4,
+            "registered_assertions": 21,
+            "passing_assertions": 4,
+            "assertion_statuses": {
+              "FAIL": 17,
+              "PASS": 4
+            },
+            "harness_statuses": {
+              "OK": 21
+            }
+          },
+          "current": {
+            "files": 21,
+            "fully_passing_files": 20,
+            "registered_assertions": 21,
+            "passing_assertions": 20,
+            "assertion_statuses": {
+              "PASS": 20,
+              "FAIL": 1
+            },
+            "harness_statuses": {
+              "OK": 21
+            }
+          },
+          "reference": {
+            "files": 21,
+            "fully_passing_files": 20,
+            "registered_assertions": 21,
+            "passing_assertions": 20,
+            "assertion_statuses": {
+              "PASS": 20,
+              "FAIL": 1
+            },
+            "harness_statuses": {
+              "OK": 21
+            }
+          }
+        },
+        "shared_assertions": 21,
+        "prior_pass_losses": 0,
+        "existing_assertion_gains": 16,
+        "missing_assertions": 0,
+        "new_assertions": 0
+      },
+      "background9": {
+        "facts": {
+          "before": {
+            "files": 9,
+            "fully_passing_files": 1,
+            "registered_assertions": 50,
+            "passing_assertions": 31,
+            "assertion_statuses": {
+              "PASS": 31,
+              "FAIL": 19
+            },
+            "harness_statuses": {
+              "OK": 9
+            }
+          },
+          "current": {
+            "files": 9,
+            "fully_passing_files": 8,
+            "registered_assertions": 50,
+            "passing_assertions": 48,
+            "assertion_statuses": {
+              "PASS": 48,
+              "FAIL": 2
+            },
+            "harness_statuses": {
+              "OK": 9
+            }
+          },
+          "reference": {
+            "files": 9,
+            "fully_passing_files": 8,
+            "registered_assertions": 50,
+            "passing_assertions": 47,
+            "assertion_statuses": {
+              "PASS": 47,
+              "FAIL": 3
+            },
+            "harness_statuses": {
+              "OK": 9
+            }
+          }
+        },
+        "shared_assertions": 50,
+        "prior_pass_losses": 0,
+        "existing_assertion_gains": 17,
+        "missing_assertions": 0,
+        "new_assertions": 0
+      },
+      "numeric3": {
+        "facts": {
+          "before": {
+            "files": 3,
+            "fully_passing_files": 1,
+            "registered_assertions": 199,
+            "passing_assertions": 132,
+            "assertion_statuses": {
+              "PASS": 132,
+              "FAIL": 67
+            },
+            "harness_statuses": {
+              "OK": 3
+            }
+          },
+          "current": {
+            "files": 3,
+            "fully_passing_files": 1,
+            "registered_assertions": 199,
+            "passing_assertions": 134,
+            "assertion_statuses": {
+              "PASS": 134,
+              "FAIL": 65
+            },
+            "harness_statuses": {
+              "OK": 3
+            }
+          },
+          "reference": {
+            "files": 3,
+            "fully_passing_files": 3,
+            "registered_assertions": 183,
+            "passing_assertions": 183,
+            "assertion_statuses": {
+              "PASS": 183
+            },
+            "harness_statuses": {
+              "OK": 3
+            }
+          }
+        },
+        "shared_assertions": 199,
+        "prior_pass_losses": 0,
+        "existing_assertion_gains": 2,
+        "missing_assertions": 0,
+        "new_assertions": 0
+      },
+      "keyframe18": {
+        "facts": {
+          "before": {
+            "files": 18,
+            "fully_passing_files": 7,
+            "registered_assertions": 129,
+            "passing_assertions": 91,
+            "assertion_statuses": {
+              "PASS": 91,
+              "FAIL": 38
+            },
+            "harness_statuses": {
+              "OK": 18
+            }
+          },
+          "current": {
+            "files": 18,
+            "fully_passing_files": 8,
+            "registered_assertions": 129,
+            "passing_assertions": 92,
+            "assertion_statuses": {
+              "PASS": 92,
+              "FAIL": 37
+            },
+            "harness_statuses": {
+              "OK": 18
+            }
+          },
+          "reference": {
+            "files": 18,
+            "fully_passing_files": 16,
+            "registered_assertions": 129,
+            "passing_assertions": 123,
+            "assertion_statuses": {
+              "PASS": 123,
+              "FAIL": 6
+            },
+            "harness_statuses": {
+              "OK": 18
+            }
+          }
+        },
+        "shared_assertions": 129,
+        "prior_pass_losses": 0,
+        "existing_assertion_gains": 1,
+        "missing_assertions": 0,
+        "new_assertions": 0
+      },
+      "medialist10": {
+        "facts": {
+          "before": {
+            "files": 10,
+            "fully_passing_files": 10,
+            "registered_assertions": 47,
+            "passing_assertions": 47,
+            "assertion_statuses": {
+              "PASS": 47
+            },
+            "harness_statuses": {
+              "OK": 10
+            }
+          },
+          "current": {
+            "files": 10,
+            "fully_passing_files": 10,
+            "registered_assertions": 47,
+            "passing_assertions": 47,
+            "assertion_statuses": {
+              "PASS": 47
+            },
+            "harness_statuses": {
+              "OK": 10
+            }
+          },
+          "reference": {
+            "files": 10,
+            "fully_passing_files": 10,
+            "registered_assertions": 47,
+            "passing_assertions": 47,
+            "assertion_statuses": {
+              "PASS": 47
+            },
+            "harness_statuses": {
+              "OK": 10
+            }
+          }
+        },
+        "shared_assertions": 47,
+        "prior_pass_losses": 0,
+        "existing_assertion_gains": 0,
+        "missing_assertions": 0,
+        "new_assertions": 0
+      },
+      "cssom-neighbors13": {
+        "facts": {
+          "before": {
+            "files": 13,
+            "fully_passing_files": 9,
+            "registered_assertions": 113,
+            "passing_assertions": 76,
+            "assertion_statuses": {
+              "PASS": 76,
+              "FAIL": 37
+            },
+            "harness_statuses": {
+              "OK": 13
+            }
+          },
+          "current": {
+            "files": 13,
+            "fully_passing_files": 9,
+            "registered_assertions": 113,
+            "passing_assertions": 76,
+            "assertion_statuses": {
+              "PASS": 76,
+              "FAIL": 37
+            },
+            "harness_statuses": {
+              "OK": 13
+            }
+          },
+          "reference": {
+            "files": 13,
+            "fully_passing_files": 13,
+            "registered_assertions": 113,
+            "passing_assertions": 113,
+            "assertion_statuses": {
+              "PASS": 113
+            },
+            "harness_statuses": {
+              "OK": 13
+            }
+          }
+        },
+        "shared_assertions": 113,
+        "prior_pass_losses": 0,
+        "existing_assertion_gains": 0,
+        "missing_assertions": 0,
+        "new_assertions": 0
+      }
     },
-    "native_suite": {
+    "authored": {
+      "large-integers12": {
+        "passed": 12,
+        "registered": 12,
+        "all_checks_passed": true
+      },
+      "declarations38": {
+        "passed": 38,
+        "registered": 38,
+        "all_checks_passed": true
+      },
+      "numeric28": {
+        "passed": 28,
+        "registered": 28,
+        "all_checks_passed": true
+      },
+      "keyframe-declarations31": {
+        "passed": 31,
+        "registered": 31,
+        "all_checks_passed": true
+      },
+      "opacity10": {
+        "passed": 10,
+        "registered": 10,
+        "all_checks_passed": true
+      },
+      "image-longhands44": {
+        "passed": 44,
+        "registered": 44,
+        "all_checks_passed": true
+      },
+      "image-slice-boundaries10": {
+        "passed": 10,
+        "registered": 10,
+        "all_checks_passed": true
+      },
+      "image-slice-nested4": {
+        "passed": 4,
+        "registered": 4,
+        "all_checks_passed": true
+      },
+      "medialist15": {
+        "passed": 15,
+        "registered": 15,
+        "all_checks_passed": true
+      },
+      "owner8": {
+        "passed": 8,
+        "registered": 8,
+        "all_checks_passed": true
+      },
+      "keyframe34": {
+        "passed": 32,
+        "registered": 34,
+        "all_checks_passed": false
+      },
+      "keyframe-eof-numeric13": {
+        "passed": 13,
+        "registered": 13,
+        "all_checks_passed": true
+      },
+      "keyframe-runtime2": {
+        "passed": 2,
+        "registered": 2,
+        "all_checks_passed": true
+      },
+      "css-property-rule21": {
+        "passed": 21,
+        "registered": 21,
+        "all_checks_passed": true
+      },
+      "descriptor-comparison13": {
+        "passed": 13,
+        "registered": 13,
+        "all_checks_passed": true
+      }
+    },
+    "native": {
+      "sha256": "c9d76e999e5d3c847e25db7273c2fb0757ecb09c61847916981f851c0eae1427",
       "passed": 218,
-      "total": 218,
-      "elapsed_seconds": 137.13
+      "registered": 218
     },
-    "retained_authored": {
-      "fixtures": 45,
-      "passed_assertions": 1318,
-      "total_assertions": 1318,
-      "independent_audit_checks_passed": 542,
-      "independent_audit_checks_total": 542,
-      "elapsed_seconds": 98.7633
+    "retained": {
+      "sha256": "a51416377110c9ba4617550f9a724d2bb868d19b938dd386c963ccd40d9f6190",
+      "passed": 1318,
+      "registered": 1318,
+      "independent_checks": 334
     },
-    "css_property_rule_authored": {
-      "passed": 21,
-      "total": 21,
-      "baseline1603_passed": 2,
-      "baseline1603_total": 21
+    "full1248_replayed": false,
+    "full1248_status": "Pending complete replay; no broad promotion inferred",
+    "last_regression_free_full_sample": {
+      "candidate": 1705,
+      "files_passed": 714,
+      "files_total": 1248,
+      "assertions_passed": 22637,
+      "assertions_total": 26245,
+      "not_full_official_WPT": true
     },
-    "descriptor_exact_object_comparison": {
-      "native_passed": 13,
-      "chromium_passed": 13,
-      "total_each": 13
-    },
-    "css_properties_values_api_wpt41": {
-      "passed_files": 18,
-      "total_files": 41,
-      "passed_assertions": 589,
-      "total_assertions": 813,
-      "baseline1603_passed_files": 16,
-      "baseline1603_passed_assertions": 521,
-      "baseline1603_total_assertions": 813,
-      "shared_fail_to_pass": 68,
-      "shared_pass_to_fail": 0,
-      "missing_or_new_assertion_identities": 0
-    },
-    "last_fixed1248_measurement": {
-      "candidate": 1603,
-      "candidate1701_rerun": false,
-      "lumen_passed_files": 703,
-      "total_files": 1248,
-      "lumen_passed_assertions": 22604,
-      "lumen_total_assertions": 26245,
-      "chromium_version": "150.0.7871.114",
-      "chromium_passed_files": 1062,
-      "chromium_passed_assertions": 24541,
-      "chromium_total_assertions": 26064,
-      "scope": "Fixed HTTP default-timeout testharness sample, not the full official WPT suite"
+    "previous1802_full_replay": {
+      "files_passed": 724,
+      "files_total": 1248,
+      "assertions_passed": 22676,
+      "assertions_total": 26245,
+      "prior_pass_losses": 5,
+      "status": "Historical HOLD; exact losses recovered by targeted1803/1804 integer gates, fresh full replay remains required"
     }
   },
   "limitations": [
-    "Candidate 1701 incremental scopes passed; the last full fixed 1248 sample remains candidate 1603 and was not rerun for 1701.",
-    "Full official WPT conformance and Chromium parity remain unmeasured and are not claimed.",
-    "Only approved public source ancestry and exact tested source inputs are exported; private working history and validation machinery are excluded.",
-    "External build dependencies and browser profiles are not bundled.",
-    "Public packaging and offline Git recovery checks are not an independent rebuild.",
-    "Android and display :0 runtime qualification for the final integrated session candidate will be recorded separately."
+    "Focused/native218/retained45-1318 gates qualify this checkpoint; complete frozen1248 replay is pending and broader regression-free promotion is not claimed.",
+    "Official charset21 is20/21; XML stylesheet processing-instruction loading remains absent at this exact source. Existing import/external-CSSOM source loading is not newly implemented.",
+    "Image longhand grammar and serialization pass the focused controls; border-image rendering, background text/border-area rendering and full computed slice math are not newly implemented. Two official computed slice assertions remain failing.",
+    "Two prior named-timeline-range authored cases remain visible; keyframe declaration context and opacity serialization controls pass separately.",
+    "Native stylesheet.media rendering applicability is not connected to MediaList mutation; known-feature media math remains partial and semantic depth is bounded.",
+    "Normative readonly indexed MediaList false results and empty-value CSSOM priority removal differ from the pinned Chromium reference and remain explicit.",
+    "Full official WPT conformance, Chromium parity and whole-browser95quality are not claimed.",
+    "Only approved public source ancestry and exact tested inputs are exported; private working history, guarded validation machinery, profiles, inbox and credentials are excluded.",
+    "External dependencies are not bundled; offline Git recovery is not an independent rebuild.",
+    "Final Android and display0 runtime promotion remain pending the final integrated candidate."
   ],
-  "publication_evidence": "Public commit, offline bundle recovery and external publication receipts are recorded separately after this source tree is committed.",
-  "independent_source_review": {
-    "reviewer": "engine_improvements GPT-6 Astra Pro builtin agent",
-    "review_sha256": "88ca3101d6d7b67f6038bf2d5dd17801b88b170b804fb036b00443597d56d91a",
-    "preparation_sha256": "a128dc9688a290a092f7008299f190a45c8de01f4c3f403dfb73619c72e94862",
-    "recorded_inputs": 734,
-    "public_files": 834,
-    "approved_public_history_commits": 217,
-    "all_recorded_inputs_exact": true,
-    "private_history_excluded": true,
-    "scope": "Independent review of full public-source inventory, generated metadata and source pins; not a rebuild or publication receipt"
-  }
+  "independent_export_review_sha256": "28f0743099019c03479c45771495674db5b35f7d33a976c6eeef52b53bf196bd",
+  "incremental_acceptance_receipt_sha256": "168657a971bddbc04e096709b0dabee85f89e3da328c344f784886278eb13904",
+  "publication_note": "Metadata frozen before reviewed public Git push; archive publication is recorded separately. Full official WPT and Chromium parity are not claimed."
 }

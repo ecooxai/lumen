@@ -43,4 +43,10 @@ bool enc_valid_utf8(const uint8_t *s, size_t n);
    encoding. NULL when the bytes are UTF-8 without a BOM and are used as they are. */
 char *enc_document(const uint8_t *s, size_t n, const char *content_type, bool xml, int *enc, size_t *out_len);
 
+/* CSS bytes as newly allocated UTF-8: BOM, transport, exact initial @charset,
+   environment, then UTF-8. environment is an encoding id or -1; encoding may
+   be NULL. Always uses the whole byte length and replaces malformed input. */
+char *enc_stylesheet(const uint8_t *s, size_t n, const char *content_type, int environment,
+                     int *encoding, size_t *out_len);
+
 #endif

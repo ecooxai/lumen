@@ -61,7 +61,7 @@ function cssUnicodeRangeText(value) {
     }
     return null;
 }
-function parseDecls(s, fontFace = false) {
+function parseDecls(s, fontFace = false, keyframe = false) {
     const m = new SMap(); if (!s) return m;
     let depth = 0, q = '', colon = -1, name = ''; const parts = [];
     const finish = end => {
@@ -99,7 +99,7 @@ function parseDecls(s, fontFace = false) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
     return m;
 }
 /* The native enum parser owns acceptance; authored pending tokens remain opaque. */
@@ -120,6 +120,18 @@ function cssInterpolateSizeSet(map, value, priority, cascade = false) {
     if (cascade && old && old[1] && !priority) return true;
     map.delete(property); map.set(property, [parsed, priority ? 'important' : '']);
     return true;
+}
+
+const CSS_IMAGE_LONGHAND = /^(background-clip|border-image-repeat|border-image-slice)$/;
+function cssImageLonghandSet(map, property, value, priority, cascade = false) {
+    if (value === '') { if (cascade) return false; map.delete(property); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
+    const parsed = N.cssImageLonghand(property, value);
+    if (parsed === null) return false;
+    const old = map.get(property);
+    if (cascade && old && old[1] && !priority) return true;
+    if (cascade) map.delete(property);
+    map.set(property, [parsed, priority ? 'important' : '']); return true;
 }
 
 /* Physical border declarations are stored as real longhands. The native
@@ -876,6 +888,8 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
     if (p === 'interpolate-size') return cssInterpolateSizeParse(v) !== null;
+    if (p === 'z-index') return N.cssSupports('(z-index:' + v + ')');
+    if (CSS_IMAGE_LONGHAND.test(p)) return N.cssImageLonghand(p, v) !== null;
     if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
     if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
     if (cssBorderRelevant(p)) return cssBorderParse(p, v) !== null;
@@ -1138,20 +1152,21 @@ function shapeLenPx(el) {
     };
 }
 /* Raw declaration reads share the setters' scalar serialization. Normalize
- * only complete length/percentage literals (or line-height numbers), after
+ * only complete length/percentage literals or line-height/opacity numbers, after
  * the property's existing parser has seen its original token spelling. */
 function cssScalarSpecified(property, value) {
-    if (!CSS_PROP_NAMES.has(property) || !(TOM_LENGTH_PROPS.test(property) ||
+    const opacity = /^(?:fill-|stroke-|stop-|flood-)?opacity$/.test(property);
+    if (!CSS_PROP_NAMES.has(property) || !(TOM_LENGTH_PROPS.test(property) || opacity ||
         property === 'baseline-shift' || property === 'border-spacing')) return value;
     const scalar = /^([+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?)([a-z]+|%)?$/i.exec(value);
     if (!scalar || !Number.isFinite(Number(scalar[1]))) return value;
     const unit = (scalar[2] || '').toLowerCase();
-    if (!TOM_LEN_UNITS.has(unit)) return value;
+    if (opacity ? unit !== '' && unit !== '%' : !TOM_LEN_UNITS.has(unit)) return value;
     /* Keep unitless tokens on their existing property grammar path. In
        particular, underflow must not manufacture a valid zero length, and
        number-valued border-image widths must not become px values. */
-    if (!unit && property !== 'line-height') return value;
-    const canonical = specNormalize(property, scalar[1] + unit);
+    if (!unit && property !== 'line-height' && !opacity) return value;
+    const canonical = specNormalize(property, opacity && unit === '%' ? String(Number(scalar[1]) / 100) : scalar[1] + unit);
     if (canonical === value || !mathValid(property, value)) return value;
     if (N.cssSupports('(' + property + ':initial)') &&
         !N.cssSupports('(' + property + ':' + value + ')')) return value;
@@ -1159,6 +1174,16 @@ function cssScalarSpecified(property, value) {
 }
 
 function specNormalize(p, v) {
+    if (p === 'z-index') {
+        /* Preserve integer token syntax across CSSOM serialization. Converting
+         * long decimal integers through Number/String creates exponent tokens,
+         * which are not valid authored <integer> values. */
+        const integer = /^([+-]?)([0-9]+)$/.exec(v.trim());
+        if (integer) {
+            const digits = integer[2].replace(/^0+(?=[0-9])/, '');
+            return (integer[1] === '-' && digits !== '0' ? '-' : '') + digits;
+        }
+    }
     if ((p === 'shape-outside' || p === 'clip-path') && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, null);
     if ((p === 'shape-outside' || p === 'clip-path') && /inset\(/i.test(v)) v = insetNorm(v, null);
     if (/-gradient\(\s*in\s/i.test(v))   /* "in <space> <direction>" serializes as "<direction> in <space>" */
@@ -1322,6 +1347,11 @@ class CSSStyleDeclaration {
         if (p === 'interpolate-size') {
             const m = new SMap(this._m());
             if (!cssInterpolateSizeSet(m, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (CSS_IMAGE_LONGHAND.test(p)) {
+            const m = new SMap(this._m());
+            if (!cssImageLonghandSet(m, p, v, pri)) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
         if (p === 'overflow') {

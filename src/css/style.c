@@ -3334,6 +3334,19 @@ char *css_numeric_dimension_parse(const char *prop, const char *value) {
     return buffer;
 }
 bool css_numeric_dimension_valid(const char *prop, const char *value) {
+    if (!strcmp(prop, "z-index")) {
+        /* Share the computed integer grammar with declarations and supports.
+         * Keep CSS-wide and pending substitution tokens for the normal cascade. */
+        if (!css_var_syntax_valid(value)) return false;
+        if (min_size_deferred(value)) return true;
+        if (!css_math_spacing_valid(value)) return false;
+        char *buffer = min_size_parser_text(value); if (!buffer) return false;
+        char *text = str_trim(buffer); int ignored;
+        ACtx context = { .em = 16, .rem = 16, .validation_only = true };
+        bool valid = str_ieq(text, "auto") || var_wide_keyword(text) != NULL ||
+            application_integer(&context, text, INT_MIN, &ignored);
+        free(buffer); return valid;
+    }
     if (!numeric_dimension_kind(prop)) return true;
     char *parsed = css_numeric_dimension_parse(prop, value); bool valid = parsed != NULL;
     free(parsed); return valid;
@@ -3589,6 +3602,131 @@ invalid:
 bool css_border_valid(const char *property, const char *value) {
     if (border_decl_kind(property) < 0) return true;
     char *parsed = css_border_parse(property, value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
+/* These image longhands share token grammar and canonical serialization across
+ * stylesheet parsing, support queries, CSSOM mutation and computed storage. */
+static int image_longhand_kind(const char *property) {
+    if (!strcmp(property, "background-clip")) return 1;
+    if (!strcmp(property, "border-image-repeat")) return 2;
+    if (!strcmp(property, "border-image-slice")) return 3;
+    return 0;
+}
+/* CLexer's numeric scratch buffer is intentionally small. Reparse the complete
+ * original number token before serializing it, including numbers inside math,
+ * so a long prefix of zeroes cannot change either its magnitude or its sign. */
+static bool image_token_text(SB *out, const CTok *token, bool literal) {
+    if (token->type != CT_NUMBER && token->type != CT_PERCENT && token->type != CT_DIM)
+        return shadow_token_text(out, token);
+    char *end; double number = strtod(token->start, &end);
+    size_t consumed = (size_t)(end - token->start);
+    if (!consumed || consumed > token->len) return false;
+    if (token->type == CT_NUMBER && consumed != token->len) return false;
+    if (token->type == CT_PERCENT && (consumed + 1 != token->len || *end != '%')) return false;
+    if (token->type == CT_DIM && consumed == token->len) return false;
+    CTok canonical = *token;
+    canonical.num = literal && number == 0 ? 0 : number;
+    return shadow_token_text(out, &canonical);
+}
+static char *image_component_text(CLexer *lexer, const CTok *first) {
+    if (first->type != CT_IDENT && first->type != CT_NUMBER && first->type != CT_PERCENT &&
+        first->type != CT_DIM && first->type != CT_FUNC) return NULL;
+    SB out = {0};
+    if (!image_token_text(&out, first, first->type != CT_FUNC)) { sb_free(&out); return NULL; }
+    unsigned depth = first->type == CT_FUNC; size_t copied = lexer->i;
+    while (depth) {
+        CTok token = clex_next(lexer); int type = token.type;
+        size_t offset = (size_t)(token.start - lexer->s);
+        if (offset > copied && out.n && out.s[out.n - 1] != ' ' && out.s[out.n - 1] != '(') sb_putc(&out, ' ');
+        bool ok = type != CT_EOF && image_token_text(&out, &token, false);
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) depth--;
+        copied = lexer->i; free(token.str);
+        if (!ok || depth > 256) { sb_free(&out); return NULL; }
+    }
+    return sb_take(&out);
+}
+static bool image_slice_component(const char *text, int token_type) {
+    if (token_type != CT_NUMBER && token_type != CT_PERCENT && token_type != CT_FUNC) return false;
+    CssNumber number;
+    if (!css_number_parse_context(text, 16, 16, NULL, false, NULL, true, &number)) return false;
+    bool percentage = true;
+    for (int i = 0; i < CN_DIMS; i++) if (number.power[i] != (i == CN_PERCENT)) percentage = false;
+    if (!percentage && !css_number_scalar(&number)) return false;
+    /* Calculations are range-clamped at computed-value time; literal negatives
+     * are invalid declarations and must not replace an earlier valid value. */
+    return token_type == CT_FUNC || number.value >= 0;
+}
+char *css_image_longhand_parse(const char *property, const char *value) {
+    int kind = image_longhand_kind(property);
+    if (!kind || !value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    if (!css_math_spacing_valid(value)) return NULL;
+    char *buffer = css_math_value_text(value); if (!buffer) return NULL;
+    CLexer lexer; clex_init(&lexer, buffer, strlen(buffer));
+    SB out = {0}; char *parts[5] = {0}; int types[5] = {0}; unsigned count = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_COMMA || type == CT_EOF) {
+            free(token.str);
+            if (!count || (type == CT_COMMA && kind != 1)) goto invalid;
+            if (var_wide_keyword(parts[0])) {
+                if (count != 1 || out.n || type != CT_EOF) goto invalid;
+                sb_puts(&out, parts[0]);
+            } else if (kind == 1) {
+                if (out.n) sb_puts(&out, ", ");
+                if (count == 1 && (bg_box_kind(parts[0]) >= 0 || !strcmp(parts[0], "text") ||
+                                  !strcmp(parts[0], "border-area"))) sb_puts(&out, parts[0]);
+                else if (count == 2 && ((!strcmp(parts[0], "text") && !strcmp(parts[1], "border-area")) ||
+                                       (!strcmp(parts[1], "text") && !strcmp(parts[0], "border-area"))))
+                    sb_puts(&out, "border-area text");
+                else goto invalid;
+            } else if (kind == 2) {
+                if (count > 2) goto invalid;
+                for (unsigned i = 0; i < count; i++)
+                    if (strcmp(parts[i], "stretch") && strcmp(parts[i], "repeat") &&
+                        strcmp(parts[i], "round") && strcmp(parts[i], "space")) goto invalid;
+                sb_puts(&out, parts[0]);
+                if (count == 2 && strcmp(parts[0], parts[1])) { sb_putc(&out, ' '); sb_puts(&out, parts[1]); }
+            } else {
+                unsigned first = 0, last = count; bool fill = false;
+                if (!strcmp(parts[first], "fill")) { fill = true; first++; }
+                if (last > first && !strcmp(parts[last - 1], "fill")) {
+                    if (fill) goto invalid;
+                    fill = true; last--;
+                }
+                if (last <= first || last - first > 4) goto invalid;
+                for (unsigned i = first; i < last; i++)
+                    if (!image_slice_component(parts[i], types[i])) goto invalid;
+                unsigned used = last - first;
+                if (used == 4 && !strcmp(parts[first + 1], parts[first + 3])) used--;
+                if (used == 3 && !strcmp(parts[first], parts[first + 2])) used--;
+                if (used == 2 && !strcmp(parts[first], parts[first + 1])) used--;
+                for (unsigned i = 0; i < used; i++) {
+                    if (i) sb_putc(&out, ' ');
+                    sb_puts(&out, parts[first + i]);
+                }
+                if (fill) sb_puts(&out, " fill");
+            }
+            for (unsigned i = 0; i < count; i++) { free(parts[i]); parts[i] = NULL; }
+            count = 0;
+            if (type == CT_EOF) { free(buffer); return sb_take(&out); }
+            continue;
+        }
+        char *component = image_component_text(&lexer, &token);
+        free(token.str);
+        if (!component || count == 5) { free(component); goto invalid; }
+        types[count] = type; parts[count++] = component;
+    }
+invalid:
+    for (unsigned i = 0; i < count; i++) free(parts[i]);
+    free(buffer); sb_free(&out); return NULL;
+}
+bool css_image_longhand_valid(const char *property, const char *value) {
+    if (!image_longhand_kind(property)) return true;
+    char *parsed = css_image_longhand_parse(property, value); bool valid = parsed != NULL;
     free(parsed); return valid;
 }
 
@@ -4231,6 +4369,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     if (!css_interpolate_size_valid(prop, value_in)) return;
     if (!css_box_shadow_valid(prop, value_in)) return;
     if (!css_border_valid(prop, value_in)) return;
+    if (!css_image_longhand_valid(prop, value_in)) return;
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
@@ -4253,7 +4392,8 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
         !strcmp(prop, "interpolate-size") ? interpolate_size_parse(v) :
         !strcmp(prop, "transition-property") ? css_transition_property_parse(v) :
         !strcmp(prop, "box-shadow") ? css_box_shadow_parse(v) :
-        border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) : xstrdup(v);
+        border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) :
+        image_longhand_kind(prop) ? css_image_longhand_parse(prop, v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);
     if (min_size_property(prop) && (str_ieq(val, "-webkit-min-content") ||
@@ -4935,7 +5075,18 @@ apply:
         else if (!strcmp(P, "writing-mode")) st->writing_mode = str_ieq(val, "vertical-rl") ? 2 : str_ieq(val, "vertical-lr") ? 1 : 0;   /* 2: vertical-rl; sideways layout remains unsupported */
         break;
     case 'z':
-        if (!strcmp(P, "z-index")) { if (str_ieq(val, "auto")) st->z_auto = true; else { st->z_auto = false; st->z_index = atoi(val); if (isalpha((unsigned char)val[0])) { LCtx lc = { st->font_size, 16, NULL }; const char *q = val; Length L; if (parse_dim(&q, &L, &lc) && !L.pct && isfinite(L.px)) st->z_index = (int)lroundf(L.px); } } }
+        if (!strcmp(P, "z-index")) {
+            if (str_ieq(val, "auto")) st->z_auto = true;
+            else {
+                int value;
+                /* Shared typed integer conversion rounds CSS ties toward +infinity
+                 * and clamps to the supported range before converting to int. */
+                if (application_integer(&c, val, INT_MIN, &value)) {
+                    st->z_auto = false;
+                    st->z_index = value;
+                }
+            }
+        }
         break;
     }
 out:

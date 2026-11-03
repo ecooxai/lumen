@@ -413,6 +413,21 @@ static NetRequest *sheet_request(const Document *doc, const Node *link, const ch
         link && node_attr(link, "crossorigin") ? "cors" : "no-cors");
     return rq;
 }
+/* External sheets are byte streams; inline styles and CSSOM strings have
+   already Unicode text and never enter here. */
+static StyleSheet *sheet_from_response(const NetResponse *response, const Document *doc,
+                                       const Node *link, const MediaCtx *media) {
+    const char *label = link ? node_attr(link, "charset") : NULL;
+    int environment = label ? enc_label(label, strlen(label)) : -1;
+    if (environment < 0 && doc) environment = doc->charset;
+    const uint8_t *bytes = (const uint8_t *)(response->body ? response->body : "");
+    size_t length = 0;
+    char *text = enc_stylesheet(bytes, response->body ? response->body_len : 0,
+        headers_get(&response->headers, "content-type"), environment, NULL, &length);
+    StyleSheet *sheet = css_parse_sheet(text, length, response->url, 1, media);
+    free(text);
+    return sheet;
+}
 typedef struct { char **urls; Node **nodes; Document *doc; NetResponse **out; int n; SDL_AtomicInt next; } FetchBatch;
 static int batch_worker(void *arg) {
     FetchBatch *b = arg;
@@ -464,12 +479,14 @@ static int loader(void *arg) {
     if (rq->html) { body = rq->html; blen = strlen(body); }
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
     const char *ctype = r && r->status > 0 && !rq->html ? headers_get(&r->headers, "content-type") : NULL;
+    const char *document_ctype = ctype;   /* viewer markup must not replace the response's document metadata */
     if (r && r->status == 200 && !rq->html) {
         char *viewer = local_viewer_html(r->url, ctype, kind == 2);
         if (viewer) { free(r->body); r->body = viewer; r->body_len = strlen(viewer); body = viewer; blen = r->body_len; ctype = NULL; }
     }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
+    p->d->content_type = mime_essence(document_ctype);
     if (r && r->status > 0 && !rq->html) { p->d->csp = headers_join(&r->headers, "content-security-policy"); p->d->csp_ro = headers_join(&r->headers, "content-security-policy-report-only"); p->d->referrer_policy = headers_join(&r->headers, "referrer-policy"); }
     bool xml = xml_mime(ctype), js = !getenv("LUMEN_NO_JS");
     char *decoded = NULL;
@@ -478,7 +495,7 @@ static int loader(void *arg) {
         if ((decoded = enc_document((const uint8_t *)body, blen, ctype, xml, &enc, &dn))) { body = decoded; blen = dn; }
         p->d->charset = enc;
     }
-    if (xml) { xml_parse(p->d, body, blen); p->d->content_type = mime_essence(ctype); }
+    if (xml) { xml_parse(p->d, body, blen); }
     else if (js) {
         /* Keep the existing head-policy bootstrap, but expose only the real
            parser prefix. No nodes or resource owners survive the metadata pass. */
@@ -542,7 +559,7 @@ static int loader(void *arg) {
             NetResponse *cr = NULL;
             for (int i = 0; u && i < nurl; i++) if (got[i] && urls[i] && !strcmp(urls[i], u)) { cr = got[i]; got[i] = NULL; break; }
             if (!cr && u) cr = net_fetch_sync(sheet_request(p->d, n, u));
-            if (cr && !cr->error && cr->status == 200 && net_response_mime_allowed(cr, NET_MIME_STYLE)) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
+            if (cr && !cr->error && cr->status == 200 && net_response_mime_allowed(cr, NET_MIME_STYLE)) { StyleSheet *s = sheet_from_response(cr, p->d, n, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
             if (cr) net_response_free(cr); free(u);
         }   /* images load asynchronously once the page is shown (sync_images) */
     }
@@ -3100,7 +3117,7 @@ static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
     bool allowed = r && !r->error && r->status == 200 && r->body &&
         net_response_mime_allowed(r, NET_MIME_STYLE);
     if (p && (l->n->flags & NF_CONNECTED) && is_sheet_link(l->n) && allowed) {
-        StyleSheet *s = css_parse_sheet(r->body, r->body_len, r->url, 1, &p->e->media); s->owner = l->n; style_engine_add_sheet(p->e, s);
+        StyleSheet *s = sheet_from_response(r, p->d, l->n, &p->e->media); s->owner = l->n; style_engine_add_sheet(p->e, s);
         /* sheets arriving together share one full recalc (restyle runs after net_poll or on a JS style read) */
         p->sheets_pending = true;
         if (p->frame_el) p->frelayout = true;
@@ -3584,7 +3601,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
         } else if (is_sheet_link(n)) {
             char *u = url_join(doc_base(d), node_attr(n, "href"));
             NetResponse *cr = u ? net_fetch_sync(sheet_request(d, n, u)) : NULL;
-            if (cr && !cr->error && cr->status == 200 && cr->body && net_response_mime_allowed(cr, NET_MIME_STYLE)) { StyleSheet *sh = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
+            if (cr && !cr->error && cr->status == 200 && cr->body && net_response_mime_allowed(cr, NET_MIME_STYLE)) { StyleSheet *sh = sheet_from_response(cr, p->d, n, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
             if (cr) net_response_free(cr);
             free(u);
         }

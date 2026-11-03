@@ -172,7 +172,7 @@ function submitForm(form, submitter) {
         else navigatePost(u.href, urlencoded(pairs()), 'application/x-www-form-urlencoded');
     }
 }
-function cssSplit(s) {
+function cssSplit(s, rawPrelude = false) {
     const out = []; const n = s.length; let i = 0, pre = '', start = 0;
     const skipStr = (j, q) => { j++; while (j < n && s[j] !== q) { if (s[j] === '\\') j++; j++; } return j; };
     while (i < n) {
@@ -187,7 +187,11 @@ function cssSplit(s) {
                original prelude: comment removal and whitespace folding would
                otherwise change escaped identifiers or invent separators. */
             const text = pre.trim(), pagePre = /^@page(?:\s|:|$)/i.test(text) ? s.slice(start, i) : null;
-            out.push({ pre: text, pagePre, body: s.slice(i + 1, d ? j : j - 1) }); pre = ''; i = j; start = j; continue;
+            const item = { pre: text, pagePre, body: s.slice(i + 1, d ? j : j - 1) };
+            /* Keyframe selectors need original token boundaries; appendRule
+             * also needs to reject anything outside its single parsed block. */
+            if (rawPrelude) { item.rawPre = s.slice(start, i); item.start = start; item.end = Math.min(j, n); }
+            out.push(item); pre = ''; i = j; start = j; continue;
         }
         if (c === ';' && pre.trim()[0] === '@') { out.push({ pre: pre.trim(), body: null }); pre = ''; i++; start = i; continue; }
         if (c === '}') { pre = ''; i++; start = i; continue; }
@@ -227,26 +231,325 @@ function cssReplaceSheet(sheet, text) {
     sheet._sync();
 }
 class CSSRuleList extends Array { static get [Symbol.species]() { return Array; } item(i) { return this[i] ?? null; } }
+/* MediaList stores parsed query serializations privately. Splitting and
+ * normalization operate on CSS component values, so a comma in a function or
+ * string cannot become a list separator. Native matching stays unchanged.
+ * https://drafts.csswg.org/cssom/#the-medialist-interface */
+const cssMediaStates = new WeakMap();
+const cssMediaGet = Function.prototype.call.bind(WeakMap.prototype.get, cssMediaStates);
+const cssMediaSet = Function.prototype.call.bind(WeakMap.prototype.set, cssMediaStates);
+var cssMediaOwnerStates = new WeakMap();
+const cssMediaOwnerGet = Function.prototype.call.bind(WeakMap.prototype.get, cssMediaOwnerStates);
+const cssMediaOwnerSet = Function.prototype.call.bind(WeakMap.prototype.set, cssMediaOwnerStates);
+const cssMediaReflect = {get: Reflect.get, set: Reflect.set, has: Reflect.has,
+    ownKeys: Reflect.ownKeys, descriptor: Reflect.getOwnPropertyDescriptor,
+    define: Reflect.defineProperty, remove: Reflect.deleteProperty};
+const cssMediaStringValue = String, cssMediaNumber = Number, cssMediaFinite = Number.isFinite;
+const cssMediaArrayJoin = Function.prototype.call.bind(Array.prototype.join);
+const cssMediaArraySlice = Function.prototype.call.bind(Array.prototype.slice);
+const cssMediaArraySome = Function.prototype.call.bind(Array.prototype.some);
+const cssMediaArrayMap = Function.prototype.call.bind(Array.prototype.map);
+const cssMediaArrayConcat = Function.prototype.call.bind(Array.prototype.concat);
+const cssMediaArrayIncludes = Function.prototype.call.bind(Array.prototype.includes);
+const cssMediaArrayFilter = Function.prototype.call.bind(Array.prototype.filter);
+let cssMediaRuleChanged;
+function cssMediaString(value) {
+    if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol to a CSSOMString.');
+    return cssMediaStringValue(value);
+}
+const cssMediaLower = value => value.replace(/[A-Z]/g, c => c.toLowerCase());
+function cssMediaEscape(value) {
+    let result = '';
+    for (let i = 0; i < value.length; i++) {
+        const c = value[i], code = value.charCodeAt(i);
+        if (!code) result += '\ufffd';
+        else if (code < 32 || code === 127 || i === 0 && code >= 48 && code <= 57 ||
+                 i === 1 && code >= 48 && code <= 57 && value[0] === '-')
+            result += '\\' + code.toString(16) + ' ';
+        else if (i === 0 && c === '-' && value.length === 1) result += '\\-';
+        else result += code >= 128 || /[-_a-z0-9]/i.test(c) ? c : '\\' + c;
+    }
+    return result;
+}
+function cssMediaTokens(input) {
+    const text = input.replace(/\r\n?|\f/g, '\n').replace(/\0|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, '\ufffd');
+    let i = 0;
+    const start = c => c !== undefined && (/[_a-z]/i.test(c) || c.charCodeAt(0) >= 128);
+    const escape = at => text[at] === '\\' && text[at + 1] !== '\n';
+    const identAt = at => start(text[at]) || escape(at) ||
+        text[at] === '-' && (text[at + 1] === '-' || start(text[at + 1]) || escape(at + 1));
+    const ident = () => {
+        const first = i;
+        while (i < text.length) {
+            if (start(text[i]) || /[-0-9]/.test(text[i])) { i++; continue; }
+            if (!escape(i)) break;
+            i++; const hex = i;
+            while (i < text.length && i - hex < 6 && /[0-9a-f]/i.test(text[i])) i++;
+            if (i !== hex) { if (/[ \t\n]/.test(text[i] || 'x')) i++; }
+            else if (i < text.length) i++;
+        }
+        return N.cssPropertyIdentifier(text.slice(first, i));
+    };
+    const result = [], frames = [{body: result, close: '', token: null}];
+    const append = token => { const frame = frames[frames.length - 1]; if (frame.body) apush(frame.body, token); };
+    const open = (token, first, close) => {
+        const frame = frames[frames.length - 1];
+        /* Keep arbitrary input nesting off the JavaScript call stack. The
+         * semantic parser conservatively rejects depth beyond this bound. */
+        if (!frame.body || frames.length >= 128) {
+            append({kind: 'bad'}); apush(frames, {body: null, close, token: null}); return;
+        }
+        token.body = []; append(token); apush(frames, {body: token.body, close, token, first});
+    };
+    while (i < text.length) {
+        const c = text[i], frame = frames[frames.length - 1];
+        if (/[ \t\n]/.test(c)) { i++; continue; }
+        if (c === '/' && text[i + 1] === '*') {
+            const end = text.indexOf('*/', i + 2); i = end < 0 ? text.length : end + 2; continue;
+        }
+        if (c === frame.close) {
+            i++; if (frame.token) frame.token.raw = text.slice(frame.first, i);
+            frames.length--; continue;
+        }
+        if (c === ')' || c === ']' || c === '}') { append({kind: 'bad'}); i++; continue; }
+        if (c === '"' || c === "'") {
+            const first = i++; let bad = false;
+            while (i < text.length && text[i] !== c) {
+                if (text[i] === '\n') { bad = true; break; }
+                if (text[i] === '\\' && i + 1 < text.length) i++;
+                i++;
+            }
+            if (text[i] === c) i++;
+            append(bad ? {kind: 'bad'} : {kind: 'string', text: text.slice(first, i) + (text[i - 1] === c ? '' : c)});
+            continue;
+        }
+        if (c === '(' || c === '[' || c === '{') {
+            const first = i++; open({kind: 'block', open: c}, first, c === '(' ? ')' : c === '[' ? ']' : '}'); continue;
+        }
+        const number = /^[+-]?(?:\d*\.\d+|\d+)(?:[eE][+-]?\d+)?/.exec(text.slice(i));
+        if (number) {
+            i += number[0].length; let unit = '';
+            if (identAt(i)) unit = ident();
+            else if (text[i] === '%') { unit = '%'; i++; }
+            append(unit === null ? {kind: 'bad'} : {kind: 'number', text: number[0], unit}); continue;
+        }
+        if (identAt(i)) {
+            const first = i, value = ident();
+            if (value === null) { append({kind: 'bad'}); continue; }
+            if (text[i] === '(') { i++; open({kind: 'function', value}, first, ')'); }
+            else append({kind: 'ident', value});
+            continue;
+        }
+        let value = c; i++;
+        if ((c === '<' || c === '>') && text[i] === '=') { value += '='; i++; }
+        append({kind: 'delim', value});
+    }
+    return result; // CSS Syntax closes component-value blocks at EOF.
+}
+const cssMediaKnownValue = /^(?:(?:min|max)-)?(?:width|height|device-width|device-height|aspect-ratio|device-aspect-ratio|resolution|color|color-index|monochrome|grid|orientation|scan|hover|any-hover|pointer|any-pointer|scripting|update|color-gamut|dynamic-range|video-dynamic-range|display-mode|display-state|overflow-block|overflow-inline|prefers-color-scheme|prefers-reduced-motion|prefers-reduced-data|prefers-reduced-transparency|prefers-contrast|forced-colors|inverted-colors|environment-blending|resizable|navigation-controls)$/;
+function cssMediaComponentText(token, lower = false) {
+    if (token.kind === 'ident') return cssMediaEscape(lower ? cssMediaLower(token.value) : token.value);
+    if (token.kind === 'number') {
+        const number = cssMediaNumber(token.text);
+        const value = lower && cssMediaFinite(number) ? cssMediaStringValue(number) : token.text;
+        return value + (token.unit === '%' ? '%' : cssMediaEscape(lower ? cssMediaLower(token.unit) : token.unit));
+    }
+    if (token.kind === 'string') return token.text;
+    if (token.kind === 'delim') return token.value;
+    if (token.kind === 'function' && !lower && token.raw !== undefined) return token.raw;
+    if (token.kind === 'function') return cssMediaEscape(lower ? cssMediaLower(token.value) : token.value) + '(' + cssMediaValueText(token.body, lower) + ')';
+    if (token.kind === 'block') return token.open + cssMediaValueText(token.body, lower) + (token.open === '(' ? ')' : token.open === '[' ? ']' : '}');
+    return '';
+}
+function cssMediaValueText(tokens, lower = false) {
+    let result = '', previous = '';
+    for (const token of tokens) {
+        const text = cssMediaComponentText(token, lower), punct = token.kind === 'delim' ? token.value : '';
+        if (result && punct !== ',' && punct !== ':' && previous !== '') result += ' ';
+        result += text; previous = text;
+    }
+    return result;
+}
+function cssMediaInParens(token) {
+    if (token.kind === 'function') return cssMediaComponentText(token);
+    if (token.kind !== 'block' || token.open !== '(' || !token.body.length) return null;
+    const body = token.body, condition = cssMediaCondition(body, true);
+    if (condition !== null) return '(' + condition + ')';
+    if (cssMediaArraySome(body, t => t.kind === 'delim' && /^(?:[<>]=?|=)$/.test(t.value)) &&
+        cssMediaArraySome(body, t => t.kind === 'ident' && cssMediaKnownValue.test(cssMediaLower(t.value))))
+        return '(' + cssMediaValueText(body, true) + ')';
+    if (body[0].kind === 'ident') {
+        const name = cssMediaLower(body[0].value), first = cssMediaEscape(name);
+        if (body.length === 1) return cssMediaKnownValue.test(name) ? '(' + first + ')' : (token.raw ?? '(' + first + ')');
+        if (body[1].kind === 'delim' && body[1].value === ':') {
+            if (body.length === 2 || !cssMediaKnownValue.test(name)) return token.raw ?? '(' + cssMediaValueText(body) + ')';
+            return '(' + first + ': ' + cssMediaValueText(cssMediaArraySlice(body, 2), true) + ')';
+        }
+        return token.raw ?? '(' + cssMediaValueText(body) + ')'; // general-enclosed: preserve unknown values.
+    }
+    return null;
+}
+function cssMediaCondition(tokens, allowOr) {
+    if (!tokens.length) return null;
+    if (tokens[0].kind === 'ident' && cssMediaLower(tokens[0].value) === 'not') {
+        if (tokens.length !== 2) return null;
+        const value = cssMediaInParens(tokens[1]); return value === null ? null : 'not ' + value;
+    }
+    const first = cssMediaInParens(tokens[0]); if (first === null) return null;
+    let result = first, operator = '';
+    for (let i = 1; i < tokens.length; i += 2) {
+        if (i + 1 >= tokens.length || tokens[i].kind !== 'ident') return null;
+        const op = cssMediaLower(tokens[i].value);
+        if (op !== 'and' && (op !== 'or' || !allowOr) || operator && op !== operator) return null;
+        const next = cssMediaInParens(tokens[i + 1]); if (next === null) return null;
+        operator = op; result += ' ' + op + ' ' + next;
+    }
+    return result;
+}
+function cssMediaQuery(tokens) {
+    const invalid = list => cssMediaArraySome(list, t => t.kind === 'bad' || t.body && invalid(t.body));
+    if (!tokens.length || invalid(tokens)) return 'not all';
+    const condition = cssMediaCondition(tokens, true);
+    if (condition !== null) return N.mediaValid(condition) ? condition : 'not all';
+    let i = 0, prefix = '';
+    if (tokens[i].kind === 'ident' && /^(not|only)$/i.test(tokens[i].value)) prefix = cssMediaLower(tokens[i++].value);
+    if (i >= tokens.length || tokens[i].kind !== 'ident' || /^(not|only|and|or)$/i.test(tokens[i].value)) return 'not all';
+    const type = cssMediaLower(tokens[i++].value);
+    if (i === tokens.length) return (prefix ? prefix + ' ' : '') + cssMediaEscape(type);
+    if (tokens[i].kind !== 'ident' || cssMediaLower(tokens[i++].value) !== 'and') return 'not all';
+    const tail = cssMediaCondition(cssMediaArraySlice(tokens, i), false); if (tail === null) return 'not all';
+    const result = type === 'all' && !prefix ? tail : (prefix ? prefix + ' ' : '') + cssMediaEscape(type) + ' and ' + tail;
+    return N.mediaValid(result) ? result : 'not all';
+}
+function cssMediaParse(text) {
+    const tokens = cssMediaTokens(text); if (!tokens.length) return [];
+    const queries = []; let start = 0;
+    for (let i = 0; i <= tokens.length; i++) {
+        if (i === tokens.length || tokens[i].kind === 'delim' && tokens[i].value === ',') {
+            apush(queries, cssMediaQuery(cssMediaArraySlice(tokens, start, i))); start = i + 1;
+        }
+    }
+    return queries;
+}
+function cssMediaData(object) {
+    const data = cssMediaGet(object);
+    if (!data) throw new TypeError('Illegal invocation');
+    return data;
+}
+function cssMediaChanged(data) {
+    if (data.owner) cssMediaRuleChanged(data.owner);
+}
+function cssMediaAttributeChanged(element) {
+    if (!cssMediaOwnerStates) return;
+    const data = cssMediaOwnerGet(element);
+    if (data) data.queries = cssMediaParse(N.attrNS(element, null, 'media') || '');
+}
+const cssMediaIndex = key => typeof key === 'string' && /^(?:0|[1-9][0-9]*)$/.test(key) && +key < 4294967295;
+const cssMediaHandler = {
+    get(target, key, receiver) {
+        if (cssMediaIndex(key)) {
+            const values = cssMediaData(target).queries;
+            if (+key < values.length) return values[+key];
+        }
+        return cssMediaReflect.get(target, key, receiver);
+    },
+    has(target, key) { return cssMediaIndex(key) && +key < cssMediaData(target).queries.length || cssMediaReflect.has(target, key); },
+    ownKeys(target) { return cssMediaArrayConcat(cssMediaArrayMap(cssMediaData(target).queries, (_, i) => '' + i), cssMediaReflect.ownKeys(target)); },
+    getOwnPropertyDescriptor(target, key) {
+        const values = cssMediaData(target).queries;
+        if (cssMediaIndex(key) && +key < values.length) return {value: values[+key], writable: false, enumerable: true, configurable: true};
+        return cssMediaReflect.descriptor(target, key);
+    },
+    set(target, key, value, receiver) { return cssMediaIndex(key) ? false : cssMediaReflect.set(target, key, value, receiver); },
+    defineProperty(target, key, descriptor) { return cssMediaIndex(key) ? false : cssMediaReflect.define(target, key, descriptor); },
+    deleteProperty(target, key) { return cssMediaIndex(key) && +key < cssMediaData(target).queries.length ? false : cssMediaReflect.remove(target, key); },
+    preventExtensions() { return false; }
+};
+function cssCreateMediaList(text, owner = null, element = null) {
+    const target = Object.create(MediaList.prototype), data = {queries: cssMediaParse(text), owner};
+    const proxy = new Proxy(target, cssMediaHandler);
+    cssMediaSet(target, data); cssMediaSet(proxy, data);
+    if (element) cssMediaOwnerSet(element, data);
+    return proxy;
+}
 class MediaList {
-    constructor(t, o) { def(this, '_m', []); def(this, '_o', o); this._set(t); }
-    _set(t) { this._m = String(t || '').split(',').map(x => x.trim().replace(/\s+/g, ' ')).filter(Boolean).map(x => /supports\(|layer\b/i.test(x) || N.mediaValid(x) ? x : 'not all'); }
-    get mediaText() { return this._m.join(', '); } set mediaText(v) { this._set(v); this._o && this._o._changed(); }
-    get length() { return this._m.length; } item(i) { return this._m[i] ?? null; } toString() { return this.mediaText; }
-    appendMedium(m) { m = String(m).trim(); if (!this._m.includes(m)) { this._m.push(m); this._o && this._o._changed(); } }
-    deleteMedium(m) { const i = this._m.indexOf(String(m).trim()); if (i < 0) throw new DOMException('Failed to delete the medium.', 'NotFoundError'); this._m.splice(i, 1); this._o && this._o._changed(); }
+    constructor() { throw new TypeError('Illegal constructor'); }
+    get mediaText() { return cssMediaArrayJoin(cssMediaData(this).queries, ', '); }
+    set mediaText(value) {
+        const data = cssMediaData(this), text = value === null ? '' : cssMediaString(value);
+        data.queries = cssMediaParse(text); cssMediaChanged(data);
+    }
+    get length() { return cssMediaData(this).queries.length; }
+    item(index) {
+        const data = cssMediaData(this);
+        if (!arguments.length) throw new TypeError('item requires an index.');
+        index = (+index) >>> 0; return index < data.queries.length ? data.queries[index] : null;
+    }
+    toString() { return cssMediaArrayJoin(cssMediaData(this).queries, ', '); }
+    appendMedium(value) {
+        const data = cssMediaData(this);
+        if (!arguments.length) throw new TypeError('appendMedium requires a medium.');
+        const parsed = cssMediaParse(cssMediaString(value));
+        if (parsed.length !== 1 || cssMediaArrayIncludes(data.queries, parsed[0])) return;
+        apush(data.queries, parsed[0]); cssMediaChanged(data);
+    }
+    deleteMedium(value) {
+        const data = cssMediaData(this);
+        if (!arguments.length) throw new TypeError('deleteMedium requires a medium.');
+        const parsed = cssMediaParse(cssMediaString(value));
+        if (parsed.length !== 1) return;
+        const next = cssMediaArrayFilter(data.queries, query => query !== parsed[0]);
+        if (next.length === data.queries.length) throw new DOMException('Failed to delete the medium.', 'NotFoundError');
+        data.queries = next; cssMediaChanged(data);
+    }
+}
+Object.defineProperty(MediaList.prototype, Symbol.toStringTag, {value: 'MediaList', configurable: true});
+Object.defineProperty(MediaList.prototype, Symbol.iterator, {value: Array.prototype.values, writable: true, configurable: true});
+/* A keyframe block has its own declaration context. Animation controls do
+ * not nest animations, while timing/composition describe the keyframe itself.
+ * Priority must be rejected before duplicate declarations are resolved. */
+function cssKeyframePropertyAllowed(property) {
+    const name = property.toLowerCase().replace(/^-webkit-/, '');
+    return !/^animation(?:-|$)/.test(name) ||
+        name === 'animation-timing-function' || name === 'animation-composition';
+}
+function cssKeyframeImportant(value) {
+    const tokens = cssMediaTokens(value), count = tokens.length;
+    return count >= 2 && tokens[count - 2].kind === 'delim' &&
+        tokens[count - 2].value === '!' && tokens[count - 1].kind === 'ident' &&
+        tokens[count - 1].value.toLowerCase() === 'important';
+}
+function cssRuleDeclarations(rule, text) {
+    return parseDecls(text, rule instanceof CSSFontFaceRule, cssOwnerGet(rule).type === 8);
 }
 class CSSRuleStyle extends CSSStyleDeclaration {
-    constructor(rule, text) { super(null); def(this, '_rule', rule); def(this, '_map', parseDecls(text || '', rule instanceof CSSFontFaceRule)); }
+    constructor(rule, text) { super(null); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
     _m() { return new SMap(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
-    get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v), this._rule instanceof CSSFontFaceRule)); }
+    get cssText() { return serDecls(this._map); } set cssText(v) { this._w(cssRuleDeclarations(this._rule, String(v))); }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
         v = v == null ? '' : String(v);
+        if (cssOwnerGet(this._rule).type === 8) {
+            if (!cssKeyframePropertyAllowed(p)) return;
+            if (v !== '') {
+                pri = pri == null ? '' : String(pri);
+                if (pri && !/^important$/i.test(pri) || cssKeyframeImportant(v)) return;
+            }
+        }
         if (v !== '' && !cssVarSyntax(v)) return;
+        if (p === 'z-index' && v !== '') {
+            pri = pri == null ? '' : String(pri);
+            if (pri && !/^important$/i.test(pri) || !mathValid(p, v)) return;
+        }
         const m = this._m();
         if (p === 'interpolate-size') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (!cssInterpolateSizeSet(m, value, priority)) return;
+            this._w(m); return;
+        }
+        if (CSS_IMAGE_LONGHAND.test(p)) {
+            const priority = pri == null ? '' : String(pri);
+            if (!cssImageLonghandSet(m, p, v, priority)) return;
             this._w(m); return;
         }
         if (p === 'overflow') {
@@ -303,7 +606,7 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             const value = cssMathValueText(String(v));
             if (value === null || !mathValid(p, value)) return;
             m.set(p, [specNormalize(p, value), priority ? 'important' : '']);
-        } else m.set(p, [String(v), pri ? 'important' : '']); this._w(m);
+        } else m.set(p, [/^(?:fill-|stroke-|stop-|flood-)?opacity$/.test(p) ? cssScalarSpecified(p, String(v)) : String(v), pri ? 'important' : '']); this._w(m);
     }
     removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
 }
@@ -316,7 +619,8 @@ class CSSRule {
 }
 for (const [k, v] of Object.entries({ STYLE_RULE: 1, CHARSET_RULE: 2, IMPORT_RULE: 3, MEDIA_RULE: 4, FONT_FACE_RULE: 5, PAGE_RULE: 6, KEYFRAMES_RULE: 7, KEYFRAME_RULE: 8, MARGIN_RULE: 9, NAMESPACE_RULE: 10, COUNTER_STYLE_RULE: 11, SUPPORTS_RULE: 12, FONT_FEATURE_VALUES_RULE: 14 })) { Object.defineProperty(CSSRule, k, { value: v, enumerable: true }); Object.defineProperty(CSSRule.prototype, k, { value: v, enumerable: true }); }
 const ruleStyle = (r) => r._style || (r._style = new Proxy(new CSSRuleStyle(r, r._body), styleHandler));
-const blockText = (r) => { const d = r._style ? r._style.cssText : serDecls(parseDecls(r._body || '', r instanceof CSSFontFaceRule)); return d ? `{ ${d} }` : '{ }'; };
+const blockText = (r) => { const d = r._style ? r._style.cssText : serDecls(cssRuleDeclarations(r, r._body || '')); return d ? `{ ${d} }` : '{ }'; };
+cssMediaRuleChanged = Function.prototype.call.bind(CSSRule.prototype._changed);
 class CSSStyleRule extends CSSRule {
     get type() { return 1; }
     get selectorText() { return this._sel; }
@@ -482,17 +786,101 @@ class CSSPageRule extends CSSRule {
     get style() { return ruleStyle(this); }
     get cssText() { return `@page ${this._sel ? this._sel + ' ' : ''}${blockText(this)}`; }
 }
-class CSSKeyframeRule extends CSSRule { get type() { return 8; } get keyText() { return this._key; } set keyText(v) { this._key = String(v); this._changed(); } get style() { return ruleStyle(this); } get cssText() { return `${this._key} ${blockText(this)}`; } }
+/* One selector parser is shared by stylesheet parsing, keyText mutation and
+ * keyframes lookup. Comments remain token boundaries; percentages are CSS
+ * number tokens, including exponents, and are normalized only after validation. */
+/* Numeric offsets remain separate from their CSSOM display representation.
+ * Lookup and animation sampling must not use the rounded keyText string. */
+const cssKeyframeValues = new WeakMap();
+const cssKeyframeGet = Function.prototype.call.bind(WeakMap.prototype.get, cssKeyframeValues);
+const cssKeyframeSet = Function.prototype.call.bind(WeakMap.prototype.set, cssKeyframeValues);
+const cssKeyframePrecision = Function.prototype.call.bind(Number.prototype.toPrecision);
+const cssKeyframeNumber = number => {
+    const text = cssKeyframePrecision(number, 6);
+    return text.includes('e') ? text : text.includes('.') ? text.replace(/0+$/, '').replace(/\.$/, '') : text;
+};
+function cssKeyframeSkipTrivia(text, offset) {
+    while (offset < text.length) {
+        if (/[\t\n\f\r ]/.test(text[offset])) { offset++; continue; }
+        if (text[offset] === '/' && text[offset + 1] === '*') {
+            const end = text.indexOf('*/', offset + 2); offset = end < 0 ? text.length : end + 2; continue;
+        }
+        break;
+    }
+    return offset;
+}
+function cssKeyframeString(value) {
+    if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol to a CSSOMString.');
+    return String(value);
+}
+function cssKeyframeSelectorData(input) {
+    const text = cssKeyframeString(input), parts = []; let start = 0;
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] === '\\') { i++; continue; }
+        if (text[i] === '/' && text[i + 1] === '*') {
+            const end = text.indexOf('*/', i + 2); i = end < 0 ? text.length : end + 1;
+        } else if (text[i] === ',') { parts.push(text.slice(start, i)); start = i + 1; }
+    }
+    parts.push(text.slice(start));
+    const values = [], offsets = [];
+    for (const part of parts) {
+        const first = cssKeyframeSkipTrivia(part, 0), match = /^[+-]?(?:\d*\.\d+|\d+)(?:[eE][+-]?\d+)?%/.exec(part.slice(first));
+        if (match && cssKeyframeSkipTrivia(part, first + match[0].length) === part.length) {
+            const number = Number(match[0].slice(0, -1));
+            if (!Number.isFinite(number) || number < 0 || number > 100) return null;
+            const offset = number / 100;
+            offsets.push(offset); values.push(cssKeyframeNumber(offset * 100) + '%');
+        } else {
+            const keyword = N.cssPropertyIdentifier(part);
+            if (keyword === null || !/^(from|to)$/i.test(keyword)) return null;
+            const offset = /^from$/i.test(keyword) ? 0 : 1;
+            offsets.push(offset); values.push(offset ? '100%' : '0%');
+        }
+    }
+    return {text: values.join(', '), offsets};
+}
+function cssKeyframeIndex(list, input) {
+    const selector = cssKeyframeSelectorData(input);
+    if (selector !== null) for (let i = list.length - 1; i >= 0; i--) {
+        const offsets = cssKeyframeGet(list[i]).offsets;
+        if (offsets.length === selector.offsets.length && offsets.every((offset, index) => offset === selector.offsets[index])) return i;
+    }
+    return -1;
+}
+class CSSKeyframeRule extends CSSRule {
+    get type() { return 8; }
+    get keyText() { return cssKeyframeGet(this).text; }
+    set keyText(value) {
+        const selector = cssKeyframeSelectorData(value);
+        if (selector === null) throw new DOMException('Invalid keyframe selector.', 'SyntaxError');
+        cssKeyframeSet(this, selector); this._changed();
+    }
+    get style() { return ruleStyle(this); } set style(value) { this.style.cssText = value; }
+    get cssText() { return `${cssKeyframeGet(this).text} ${blockText(this)}`; }
+}
 class CSSKeyframesRule extends CSSRule {
     get type() { return 7; } get name() { return this._name; } set name(v) { this._name = String(v); this._changed(); }
     get cssRules() { return this._list; } get length() { return this._list.length; }
-    appendRule(t) { const it = cssSplit(String(t)); const r = it.length === 1 && cssMkKeyframe(it[0], cssRuleSheet(this), this); if (r) { this._list.push(r); this._changed(); } }
-    deleteRule(k) {
-        const key = String(k).trim();
-        const i = this._list.findIndex(r => r._key === key);
-        if (i >= 0) { cssDelete(this._list, i); this._changed(); }
+    appendRule(value) {
+        if (!arguments.length) throw new TypeError('appendRule requires a rule.');
+        const text = cssKeyframeString(value), items = cssSplit(text, true);
+        if (items.length !== 1) return;
+        const item = items[0];
+        if (item.body === null || cssKeyframeSkipTrivia(text.slice(0, item.start), 0) !== item.start ||
+            cssKeyframeSkipTrivia(text, item.end) !== text.length) return;
+        const rule = cssMkKeyframe(item, cssRuleSheet(this), this);
+        if (rule) { this._list.push(rule); this._changed(); }
     }
-    findRule(k) { return this._list.find(r => r._key === String(k).trim()) || null; }
+    deleteRule(selector) {
+        if (!arguments.length) throw new TypeError('deleteRule requires a selector.');
+        const index = cssKeyframeIndex(this._list, selector);
+        if (index >= 0) { cssDelete(this._list, index); this._changed(); }
+    }
+    findRule(selector) {
+        if (!arguments.length) throw new TypeError('findRule requires a selector.');
+        const index = cssKeyframeIndex(this._list, selector);
+        return index < 0 ? null : this._list[index];
+    }
     get cssText() { return `@keyframes ${this._name} ${CSSGroupingRule.prototype._inner.call(this)}`; }
 }
 function cssMk(C, props) {
@@ -505,10 +893,11 @@ function cssMk(C, props) {
     def(r, '_text', null); return r;
 }
 function cssMkKeyframe(it, sheet, parent) {
-    if (it.body == null || !it.pre) return null;
-    const key = it.pre.split(',').map(k => { k = k.trim().toLowerCase(); return k === 'from' ? '0%' : k === 'to' ? '100%' : k; });
-    if (!key.every(k => /^[+-]?(\d+\.?\d*|\.\d+)%$/.test(k))) return null;
-    return cssMk(CSSKeyframeRule, { _key: key.join(', '), _body: it.body, _style: null, _sheet: sheet, _parent: parent });
+    if (it.body == null) return null;
+    const key = cssKeyframeSelectorData(it.rawPre === undefined ? it.pre : it.rawPre);
+    if (key === null) return null;
+    const rule = cssMk(CSSKeyframeRule, { _body: it.body, _style: null, _sheet: sheet, _parent: parent });
+    cssKeyframeSet(rule, key); return rule;
 }
 function cssMkRule(it, sheet, parent) {
     const p = it.pre, base = { _sheet: sheet, _parent: parent };
@@ -520,13 +909,13 @@ function cssMkRule(it, sheet, parent) {
     const m = /^@([-\w]+)\s*([\s\S]*)$/.exec(p); if (!m) return null;
     const kw = m[1].toLowerCase(), rest = m[2].trim().replace(/\s+/g, ' '), blk = it.body != null;
     let r = null;
-    if (kw === 'media' && blk) { r = cssMk(CSSMediaRule, { ...base, _media: null }); r._media = new MediaList(rest, r); }
+    if (kw === 'media' && blk) { r = cssMk(CSSMediaRule, { ...base, _media: null }); r._media = cssCreateMediaList(rest, r); }
     else if (kw === 'supports' && blk) r = cssMk(CSSSupportsRule, { ...base, _cond: rest });
     else if (kw === 'container' && blk) r = cssMk(CSSContainerRule, { ...base, _cond: rest });
     else if (kw === 'layer') { if (blk) r = cssMk(CSSLayerBlockRule, { ...base, _name: rest }); else return cssMk(CSSLayerStatementRule, { ...base, _names: rest.split(',').map(x => x.trim()).filter(Boolean) }); }
     else if (kw === 'import' && !blk) {
         const u = /^(?:url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*?))\s*\)|"([^"]*)"|'([^']*)')\s*([\s\S]*)$/.exec(rest); if (!u) return null;
-        r = cssMk(CSSImportRule, { ...base, _href: u[1] ?? u[2] ?? u[3] ?? u[4] ?? u[5], _media: null }); r._media = new MediaList(u[6], r); return r;
+        r = cssMk(CSSImportRule, { ...base, _href: u[1] ?? u[2] ?? u[3] ?? u[4] ?? u[5], _media: null }); r._media = cssCreateMediaList(u[6] || '', r); return r;
     }
     else if (kw === 'namespace' && !blk) { const q = /^(?:([-\w]+)\s+)?(?:url\(\s*["']?([^"')]*)["']?\s*\)|"([^"]*)"|'([^']*)')$/.exec(rest); if (!q) return null; return cssMk(CSSNamespaceRule, { ...base, _prefix: q[1] || '', _ns: q[2] ?? q[3] ?? q[4] }); }
     else if (kw === 'font-face' && blk) return cssMk(CSSFontFaceRule, { ...base, _body: it.body, _style: null });
@@ -537,7 +926,7 @@ function cssMkRule(it, sheet, parent) {
         if (selector === null) return null;
         return cssMk(CSSPageRule, { ...base, _sel: selector, _body: it.body, _style: null });
     }
-    else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { r = cssMk(CSSKeyframesRule, { ...base, _name: rest, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
+    else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { r = cssMk(CSSKeyframesRule, { ...base, _name: rest, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body, true)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
     else return null;
     def(r, '_list', cssParseList(it.body, sheet, r));
     return r;
@@ -561,11 +950,11 @@ function cssDelete(list, i) {
 }
 class StyleSheet {}
 class CSSStyleSheet extends StyleSheet {
-    constructor(opts) { super(); const list = new CSSRuleList(); cssOwnerSet(this, { owner: { sheet: this }, list }); def(this, '_owner', null); def(this, '_src', null); def(this, '_list', list); def(this, '_media', new MediaList(opts && opts.media != null ? String(opts.media) : '', null)); this.disabled = false; }
+    constructor(opts) { super(); const list = new CSSRuleList(); cssOwnerSet(this, { owner: { sheet: this }, list }); def(this, '_owner', null); def(this, '_src', null); def(this, '_list', list); def(this, '_media', cssCreateMediaList(opts && opts.media != null ? cssMediaString(opts.media) : '')); this.disabled = false; }
     get ownerNode() { return this._owner; } get type() { return 'text/css'; } get parentStyleSheet() { return null; } get ownerRule() { return null; }
     get href() { const o = this._owner; return o && N.name(o) === 'link' ? o.href : null; }
     get title() { const o = this._owner; return (o && N.attr(o, 'title')) || null; }
-    get media() { return this._media; }
+    get media() { return this._media; } set media(value) { this._media.mediaText = value; }
     _load() { const o = this._owner; if (o && N.name(o) === 'style') { const t = N.text(o); if (t !== this._src) { cssReplaceRules(this, cssParseList(t, this, null)); this._src = t; } } }
     get cssRules() { this._load(); return this._list; } get rules() { return this.cssRules; }
     insertRule(rule, i = 0) {
@@ -602,7 +991,7 @@ function adoptSheets(scope, v) {
 function readopt(scope) { if (scope.__ass.some(s => { const n = s._mirrors && s._mirrors.get(scope); return !n || !n.parentNode; })) adoptSheets(scope, scope.__ass); }
 function adoptedGet(scope) { return new Proxy((scope.__ass || []).slice(), { set(t, k, val) { t[k] = val; adoptSheets(scope, t); return true; } }); }
 function scopeSheets(scope) { return N.query(scope, 'style,link[rel~=stylesheet]', true).filter(el => !el.__mirror).map(sheetFor); }
-function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); def(s, '_owner', el); def(el, '__sheet', s); } return el.__sheet; }
+function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); def(s, '_owner', el); def(s, '_media', cssCreateMediaList(N.attrNS(el, null, 'media') || '', null, el)); def(el, '__sheet', s); } return el.__sheet; }
 /* CSS.registerProperty: validates the definition (name, syntax, a computationally independent initial value) */
 const registeredProps = new SMap();
 const RP_TYPES = new SSet(['length', 'number', 'percentage', 'length-percentage', 'color', 'image', 'url', 'integer', 'angle', 'time', 'resolution', 'transform-function', 'custom-ident', 'transform-list', 'string']);
