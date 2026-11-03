@@ -537,6 +537,10 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             }
         }
         if (v !== '' && !cssVarSyntax(v)) return;
+        if (p === 'z-index' && v !== '') {
+            pri = pri == null ? '' : String(pri);
+            if (pri && !/^important$/i.test(pri) || !mathValid(p, v)) return;
+        }
         const m = this._m();
         if (p === 'interpolate-size') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
