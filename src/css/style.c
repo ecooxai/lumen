@@ -3334,6 +3334,19 @@ char *css_numeric_dimension_parse(const char *prop, const char *value) {
     return buffer;
 }
 bool css_numeric_dimension_valid(const char *prop, const char *value) {
+    if (!strcmp(prop, "z-index")) {
+        /* Share the computed integer grammar with declarations and supports.
+         * Keep CSS-wide and pending substitution tokens for the normal cascade. */
+        if (!css_var_syntax_valid(value)) return false;
+        if (min_size_deferred(value)) return true;
+        if (!css_math_spacing_valid(value)) return false;
+        char *buffer = min_size_parser_text(value); if (!buffer) return false;
+        char *text = str_trim(buffer); int ignored;
+        ACtx context = { .em = 16, .rem = 16, .validation_only = true };
+        bool valid = str_ieq(text, "auto") || var_wide_keyword(text) != NULL ||
+            application_integer(&context, text, INT_MIN, &ignored);
+        free(buffer); return valid;
+    }
     if (!numeric_dimension_kind(prop)) return true;
     char *parsed = css_numeric_dimension_parse(prop, value); bool valid = parsed != NULL;
     free(parsed); return valid;

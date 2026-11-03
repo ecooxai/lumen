@@ -876,6 +876,7 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
     if (p === 'interpolate-size') return cssInterpolateSizeParse(v) !== null;
+    if (p === 'z-index') return N.cssSupports('(z-index:' + v + ')');
     if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
     if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
     if (cssBorderRelevant(p)) return cssBorderParse(p, v) !== null;
