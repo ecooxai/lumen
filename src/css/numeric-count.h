@@ -11,6 +11,7 @@ typedef struct { const char *p; float em, rem; const MediaCtx *media; unsigned d
     const LCtx *font_context; /* borrowed for the synchronous parse only */
 } CssNumberParser;
 static bool css_number_sum(CssNumberParser *p, CssNumber *out);
+static bool css_number_value(CssNumberParser *p, CssNumber *out);
 static void css_number_ws(CssNumberParser *p) { while (is_ws((unsigned char)*p->p)) p->p++; }
 static bool css_number_scalar(const CssNumber *n) { for (int i = 0; i < CN_DIMS; i++) if (n->power[i]) return false; return true; }
 static bool css_number_same(const CssNumber *a, const CssNumber *b) { return !memcmp(a->power, b->power, sizeof a->power); }
@@ -87,6 +88,51 @@ static bool css_number_function(const char *name, CssNumber *args, int n, int st
     else return false;
     out->value = nan ? NAN : v; return true;
 }
+/* A random key is not a numeric calculation. Parse its token grammar before
+ * the ordinary same-dimension argument list. This is syntax-only support: the
+ * caller rejects random() in evaluation mode until real cache sampling exists.
+ * https://drafts.csswg.org/css-values-5/#random-value-sharing */
+static bool css_number_random_key(CssNumberParser *p) {
+    CLexer lexer; clex_init(&lexer, p->p, strlen(p->p));
+    CTok token;
+    do { token = clex_next(&lexer); if (token.type == CT_WS) free(token.str); } while (token.type == CT_WS);
+    if (token.type != CT_IDENT) { free(token.str); return true; }
+    const char *id = token.str;
+    /* These identifiers begin calc-sum arguments, not an optional cache key. */
+    if (str_ieq(id, "pi") || str_ieq(id, "e") || str_ieq(id, "infinity") ||
+        str_ieq(id, "-infinity") || str_ieq(id, "nan")) { free(token.str); return true; }
+    if (str_ieq(id, "auto") || str_ieq(id, "fixed")) {
+        bool fixed = str_ieq(id, "fixed"); free(token.str);
+        p->p = lexer.s + lexer.i;
+        if (fixed) {
+            CLexer numbers; clex_init(&numbers, p->p, strlen(p->p)); CTok first;
+            do { first = clex_next(&numbers); if (first.type == CT_WS) free(first.str); } while (first.type == CT_WS);
+            bool math = first.type == CT_FUNC, numeric = first.type == CT_NUMBER || math;
+            free(first.str); CssNumber value;
+            if (!numeric || !css_number_value(p, &value) || !css_number_scalar(&value)) return false;
+            /* A function defers range clamping; bare constants and grouping
+             * do not match the <number> component required after fixed. */
+            if (!math && !(value.value >= 0 && value.value <= 1)) return false;
+        }
+        css_number_ws(p); if (*p->p != ',') return false;
+        p->p++; return true;
+    }
+    unsigned seen = 0;
+    for (;;) {
+        id = token.str; unsigned kind = 0;
+        if (token.type == CT_IDENT && id) {
+            if (id[0] == '-' && id[1] == '-' && id[2]) kind = 1;
+            else if (str_ieq(id, "element-scoped")) kind = 2;
+            else if (str_ieq(id, "property-scoped") || str_ieq(id, "property-index-scoped") || !strncmp(id, "ua-", 3)) kind = 4;
+        }
+        free(token.str);
+        if (!kind || (seen & kind)) return false;
+        seen |= kind;
+        do { token = clex_next(&lexer); if (token.type == CT_WS) free(token.str); } while (token.type == CT_WS);
+        if (token.type == CT_COMMA) { free(token.str); p->p = lexer.s + lexer.i; return true; }
+        if (token.type != CT_IDENT) { free(token.str); return false; }
+    }
+}
 static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
     css_number_ws(p); memset(out, 0, sizeof *out);
     if (++p->terms > 4096) return false;
@@ -139,6 +185,8 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
         return true;
     }
     p->p++; int strategy = 0; bool no_clamp = false;
+    bool random = !strcmp(name, "random");
+    if (random && (!p->validation_only || !css_number_random_key(p))) return false;
     if (p->validation_only && (!strcmp(name, "sibling-index") || !strcmp(name, "sibling-count"))) {
         /* Syntax-only scalar typing. No fabricated tree value may escape
            into evaluation; actual tree-scoped resolution is a separate path. */
@@ -181,6 +229,13 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
         for (int i = 0; i < 3; i += 2) if (unbounded & (1u << i)) {
             args[i] = args[1]; args[i].value = i == 0 ? -INFINITY : INFINITY;
         }
+    }
+    if (random) {
+        if (n != 2 && n != 3) return false;
+        for (int i = 1; i < n; i++) if (!css_number_same(&args[0], &args[i])) return false;
+        /* No sampled or nominal value can escape to computation: random was
+         * rejected above unless this entire parse is validation-only. */
+        *out = args[0]; out->value = 0; return true;
     }
     return css_number_function(name, args, n, strategy, no_clamp, out);
 }
