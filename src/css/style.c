@@ -4935,7 +4935,18 @@ apply:
         else if (!strcmp(P, "writing-mode")) st->writing_mode = str_ieq(val, "vertical-rl") ? 2 : str_ieq(val, "vertical-lr") ? 1 : 0;   /* 2: vertical-rl; sideways layout remains unsupported */
         break;
     case 'z':
-        if (!strcmp(P, "z-index")) { if (str_ieq(val, "auto")) st->z_auto = true; else { st->z_auto = false; st->z_index = atoi(val); if (isalpha((unsigned char)val[0])) { LCtx lc = { st->font_size, 16, NULL }; const char *q = val; Length L; if (parse_dim(&q, &L, &lc) && !L.pct && isfinite(L.px)) st->z_index = (int)lroundf(L.px); } } }
+        if (!strcmp(P, "z-index")) {
+            if (str_ieq(val, "auto")) st->z_auto = true;
+            else {
+                int value;
+                /* Shared typed integer conversion rounds CSS ties toward +infinity
+                 * and clamps to the supported range before converting to int. */
+                if (application_integer(&c, val, INT_MIN, &value)) {
+                    st->z_auto = false;
+                    st->z_index = value;
+                }
+            }
+        }
         break;
     }
 out:
