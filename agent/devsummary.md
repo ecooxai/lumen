@@ -415,3 +415,46 @@ Public1804 preparation08:48:26.754022–08:48:32.861752Z took6.10589s. Initial p
 Monitored archive/offline restore09:24:09.643203–09:24:15.719207Z took6.073881s;839 tracked members recovered exactly. External HTTPS readback took18.463361s, verified09:25:16.978038Z:10322694 bytes, SHA68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6, HTTP200 and healthy status. Public and dashboard labels explicitly HOLD1804 with2 losses. Previous artifacts preserved.
 
 Total session wall elapsed at this checkpoint:8887.661s; overlapping subagent/draft/test/publication durations are not summed as elapsed or compute effort. Native/source/testing/ops acceptance limits remain explicit; no overall95 claim.
+
+## Session18 iteration5 scoped acceptance and iteration6 integration — 2026-11-03T09:54:00.485545+00:00
+
+Iteration5 earliest retained draft start2026-11-03T08:38:48.662739+00:00, scoped acceptance end2026-11-03T09:44:07.307374+00:00, elapsed3918.645s including overlapping iteration4/review work. Frozen source0415871ac9ed76e69b85acf8430765c97bcc539f; binarySHAfcf8016299063b119d48df212e4d262cd4f382aae29ee051e5a64568241360d4; input manifest7faeddce9d30fde7681ba2e2acff5ca348c31825f3c41438a9f53161f16d9eaa; acceptanceSHA7055dc1aa3d055b488b48dbf40f0ff68cdbeecfdb9e78ed5c6766c57221fad8f.
+
+Measured task wall833.243s from2026-11-03T09:28:03.642018+00:00 to2026-11-03T09:41:56.884683+00:00; active serial22-task sum450.849s and cleanup audit/controller gap382.394s. The >5-minute aggregate was investigated:382.394s is the retained empty-shard cleanup audit/controller pause, not a hung build. Original exit2 is preserved and independently reconciled; no test rerun erased it. No individual build/test exceeded5minutes.
+
+| Task | StartUTC | EndUTC | Seconds | Originalexit |
+|---|---|---|---:|---:|
+| build-startup | 2026-11-03T09:28:03.658525+00:00 | 2026-11-03T09:28:52.804569+00:00 | 49.146 | 0 |
+| random-regression1 | 2026-11-03T09:28:52.843270+00:00 | 2026-11-03T09:28:57.952737+00:00 | 5.109 | 2 |
+| random36 | 2026-11-03T09:35:19.287974+00:00 | 2026-11-03T09:35:25.937557+00:00 | 6.650 | 0 |
+| timing106 | 2026-11-03T09:35:25.952943+00:00 | 2026-11-03T09:35:34.965332+00:00 | 9.012 | 0 |
+| timing5 | 2026-11-03T09:35:34.983984+00:00 | 2026-11-03T09:35:43.227590+00:00 | 8.244 | 0 |
+| timing-old42 | 2026-11-03T09:35:43.379413+00:00 | 2026-11-03T09:35:50.339621+00:00 | 6.960 | 0 |
+| integer-regressions3 | 2026-11-03T09:35:50.356250+00:00 | 2026-11-03T09:35:56.554093+00:00 | 6.198 | 0 |
+| medialist10 | 2026-11-03T09:35:56.770141+00:00 | 2026-11-03T09:36:09.038702+00:00 | 12.269 | 0 |
+| cssom-neighbors13 | 2026-11-03T09:36:09.172344+00:00 | 2026-11-03T09:36:26.368973+00:00 | 17.197 | 0 |
+| background9 | 2026-11-03T09:36:26.465951+00:00 | 2026-11-03T09:36:37.624724+00:00 | 11.159 | 0 |
+| keyframe18 | 2026-11-03T09:36:37.752738+00:00 | 2026-11-03T09:37:00.939433+00:00 | 23.187 | 0 |
+| keyframe-declarations31 | 2026-11-03T09:37:01.033369+00:00 | 2026-11-03T09:37:03.492306+00:00 | 2.459 | 0 |
+| image-longhands44 | 2026-11-03T09:37:03.508698+00:00 | 2026-11-03T09:37:07.213643+00:00 | 3.705 | 0 |
+| numeric28 | 2026-11-03T09:37:07.233568+00:00 | 2026-11-03T09:37:10.747172+00:00 | 3.514 | 0 |
+| opacity10 | 2026-11-03T09:37:10.756896+00:00 | 2026-11-03T09:37:13.109477+00:00 | 2.353 | 0 |
+| medialist15 | 2026-11-03T09:37:13.121380+00:00 | 2026-11-03T09:37:15.468112+00:00 | 2.347 | 0 |
+| native218 | 2026-11-03T09:37:15.480938+00:00 | 2026-11-03T09:40:06.635121+00:00 | 171.154 | 0 |
+| authored38 | 2026-11-03T09:40:06.644323+00:00 | 2026-11-03T09:41:37.786193+00:00 | 91.142 | 0 |
+| retained-additional14 | 2026-11-03T09:41:37.799549+00:00 | 2026-11-03T09:41:42.319775+00:00 | 4.520 | 0 |
+| retained-extras143 | 2026-11-03T09:41:42.330764+00:00 | 2026-11-03T09:41:51.102907+00:00 | 8.772 | 0 |
+| retained-universal40 | 2026-11-03T09:41:51.114605+00:00 | 2026-11-03T09:41:53.480731+00:00 | 2.366 | 0 |
+| retained-frame4 | 2026-11-03T09:41:53.497250+00:00 | 2026-11-03T09:41:56.884178+00:00 | 3.387 | 0 |
+
+Random wholefile27/71 recovers both1804 lost identities and preserves all27 prior passes; new random36/36 passes. Timing102/106 (before40/106) meets the declared102-row scope; four live sibling initial/mutation failures remain unchanged. TimingWPT5 gains48 assertions to170/204 and3/5 files, with no lost/missing/new identities. Original timing42 remains28/42 diagnostic. Integer188/188, native218/218 and retained45/1318 pass with334/334 independent retained checks.
+
+candidate1805-build-startup-monitor: 49 one-second samples, medianCPU57.487%,maxCPU193.006%,peakRSS727.212MiB,peakPSS576.220MiB. Snapshot sampling can miss short-lived children and RSS can double-count shared pages.
+
+candidate1805-native218-monitor: 171 one-second samples, medianCPU40.504%,maxCPU134.003%,peakRSS275.300MiB,peakPSS247.985MiB. Snapshot sampling can miss short-lived children and RSS can double-count shared pages.
+
+Full1248 started09:44:08UTC against immutable1805 while later sources advance; binary/runtime/WPT pins are unchanged. Score remains57.21/100 selected-file baseline1705 until complete no-loss evidence. Acceptance: focused/native/retained PASS; full RUNNING; desktop/Android PENDING.
+
+Iteration6 XML draft began08:46:13Z and overlaps prior work; integrated09:45:49.812Z under both locks, commit39e511c at09:49:10.217Z. Exact independent patch2ab9302c and staged59/59 gate retained. UA-case/Unicode correction committed87b2438 at09:49:38.362Z; its unchanged16-row runtime gate is pending. Tree inline-v2 is reviewed but unapplied pending actual ABI/runtime checks. These are new source candidates, not1805 evidence.
+
+Public preview probe09:51:55.464–09:52:02.667UTC took7.199s under monitors; public WS returnedfour snapshots andpong, RTT853ms, intervals844/1296/2157ms. HTTPS archive1804 remains explicitly held. Progress queue empty at the last09:50 check. Total elapsed session wall10501.486s; overlapping agent/draft/testing durations are not summed into wall time or claimed compute effort.

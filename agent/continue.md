@@ -1,74 +1,74 @@
-# Continue Lumen Linux session18 — qualify repaired candidate1805
+# Continue Lumen Linux session18 — immutable1805 replay and1806 integration
 
 Read AGENTS.md and agent/devsummary.md first. Full user request: agent/task.md.
 Workspace: /mnt/p3/project/browser/lumen-android/lumen-android.
 Branch: gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103.
 Session start2026-11-03T06:58:59Z; nominal deadline11:58:59Z, optional extra hour only
 for an important unresolved bug. Root is CTO; same-model source/test/ops agents own work.
-Preserve locks, quota480%,1-second monitors, immutable WPT/framework pins and all prior work.
+Preserve locks, shared480%quota, one-second monitors and immutable WPT/framework pins.
 
-## Current source and immediate gate
+## Current qualified candidate and running full replay
 
-Engine source3a085028fa78f1a5d3b01a6c6f1009df72dc4980 includes reviewed easing75eaba06,
-native computed timing defaultsb9278d15, and syntax-only random typing3a085028. The next
-metadata snapshot changes no compiled input. Candidate1805 has not yet been built/tested.
-Tester owns its22 serial qualification jobs and must receive final clean HEAD before freeze.
+Candidate1805 source0415871ac9ed76e69b85acf8430765c97bcc539f, binary
+fcf8016299063b119d48df212e4d262cd4f382aae29ee051e5a64568241360d4, source manifest
+7faeddce9d30fde7681ba2e2acff5ca348c31825f3c41438a9f53161f16d9eaa.
+Scoped acceptance receipt: agent/validation/linux-wpt-20261103-session18/candidate1805-incremental-acceptance.json
+SHA7055dc1aa3d055b488b48dbf40f0ff68cdbeecfdb9e78ed5c6766c57221fad8f.
+Random wholefile27/71 retains all27 priorPASSs; authored36/36. Timing102/106 meets the
+predeclared102-row scope, with four unchanged live sibling-index/count failures retained.
+Official timing5 gains48 assertions to170/204 and3/5 files. Integer188, native218/218,
+retained45/1318 and independent334-check audit pass. Oldtiming42 remains28/42 diagnostic.
+No random sampling/cache computation or linear()/WebAnimations solver claim is made.
 
-Required: whole upstream random71 retains all27 prior passes; typed random36; all106 timing
-rows execute unchanged, with102 acceptance rows and4 explicit pre-existing unsupported live
-sibling-index/count rows; timing5/old42 diagnostic comparisons; integer188; focused regression
-families; native218 and retained45/1318. Do not rewrite or suppress any row. Current-spec
-math range/step serialization differences from pinned Chromium remain separate. Real random
-sampling/cache computation is absent and no placeholder may enter runtime. linear() and
-Web Animations solver remain unchanged. Actual tree-count element context plus mutation
-invalidation is a separate bounded follow-up after1805 if time permits.
+The original random wrapper exit2 came from an empty second shard cleanup return value;
+actual PID/profile cleanup and guard/monitor exits were independently reconciled. Preserve
+its original failure and reconciliation483877f22ac2ec86a6255841e9729f9fc336e88bf0a784022b741b058dbe52bd.
+No browser rerun or protected runner alteration was used to erase that evidence.
 
-## Last broad replay is held
+Immutable full1248 started09:44:08UTC, expected around10:06. Source/Git freeze is released,
+but1805 binary/buildrecords and all WPT/framework/runtime pins must remain unchanged.
+No next heavy build until tester releases its lane. Broad acceptance/score remains pending.
 
-Candidate1804 sourcec55bd95010c37c7907020f951ac40c6420788a43, binary
-6d44ae80424d1a102829a185be6b6dd322603e1d605a2f50000b467367f89ebe, manifest
-d4cbc36fb6b52bf2d11998edeb63ccbc07b19a0822168fd94c634718f2334084.
-Focused controls/native218/retained1318 passed, with334 independent audit checks.
-Full1248 ran08:48:55.229–09:10:31.421Z (1296.192s):751/1248 files,22735/26245 assertions,
-100 gains and2 prior-PASS losses. Both losses are named-cache random() z-index declaration
-retention; all5 prior1802 numeric regressions recovered. Required passing union is22737.
-Raw results, comparisons to1705 and1802, independent recount and immutable provenance are
-under agent/validation/linux-wpt-20261103-session18/. The live checkout advanced during
-replay, so the old source-frozen flag is false; immutable binary/runtime pins were verified.
-Do not alter historical HOLD receipts or replace this with a passing label.
+## Current source for1806
 
-Last regression-free selected sample remains1705:714/1248 files,22637/26245 assertions,
-57.21/100 selected-file score. The experimental1804 score60.1763 does not pass the no-loss
-gate. Chromium150:1062/1248 files,24541/26064 assertions with its own denominator.
-No full official WPT, Chromium parity, or whole-browser95 quality claim is established.
+XML PI sparse-state lifecycle commit39e511c090fff545423212516506c414dbc63229 follows1805.
+It is exact independently reviewed v3 patch2ab9302c49492ab324adf4dd635e9d243177d42c9a1b9fc0992a6f0e5afbdab0;
+59 staged parser cases pass, integrated native59/browser31 and unchanged charset21 gates pending.
+Fresh Chromium passes27/31 lifecycle rows; post-root/invalid-label differences are separately
+explained. Ignoring a doctype PI is the selected allowed policy, not a universal Chromium violation.
+Ordinary Node layout is unchanged; no @import, stylesheet-set selection or full external CSSOM source reflection.
 
-## Staged XML follow-up
+Current source87b2438c11184d255799ece196a61702b26351e5 adds reviewed random-key case/Unicode
+normalization while preserving evaluation rejection. Separate boundary16 stays unchanged;
+1805 baseline7/16. The broad full replay does not include these later source changes.
 
-Charset engine's xml-pi-v3 patch2ab9302c49492ab324adf4dd635e9d243177d42c9a1b9fc0992a6f0e5afbdab0
-is independently reviewed; source remains unapplied. It uses sparse branded PI state and a
-private header, preserving ordinary Node layout. Native59 and browser31 controls are staged
-with tester. Integrate narrowly after1805 release; keep new timing/style changes intact.
-No @import loader, full external CSSOM source reflection or stylesheet-set selection is added.
+Inline tree-count v2 is independently reviewed but UNAPPLIED. It grants typed scalar/integer
+context only to the exact original property/value owned by element.inline_decls, excluding pending
+substitution, stylesheet, copied/expanded, inherited, pseudo-rule and shadow-subject sources.
+Existing child-list invalidation is used. Actual64-bit ABI and immutable tree36/timing106 runtime
+gates are required before claiming support. Keep all out-of-scope expectations visible. XML has priority.
 
-## Publication and operations
+## Broad baseline, held observations and delivery
 
-Current download is explicitly a HOLD development checkpoint1804. Public source commit
-4064675364488ee6583c3cc50dd8a907ab1c3997 has metadata-only successor
-2a8c99e6f80455618ffcf9cfd71afe64e2c57feb, pushed and remote-verified. Approved public ancestry
-and all739 tested inputs/839 inventory files were independently checked; private Git/test/profile
-material is excluded. Archive offline restore passed; public HTTPS returned all10,322,694 bytes
-with SHA25668affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6.
-Receipts: agent/ops/session18/artifacts1804/ and public-checkpoint1804/ under build tools.
-Offline Git recovery is not an independent rebuild. Old1802/1801 checkpoints stay preserved.
+Last regression-free frozen1248 baseline:1705,714/1248 files and22637/26245 assertions,
+57.21/100 selected-file score. Chromium150:1062/1248 files,24541/26064 assertions with a
+separate denominator. No full official WPT, Chromium parity or whole-browser95 claim.
+1804 full751/1248,22735/26245 has two random priorPASS losses; union required22737. Both
+are repaired in1805 focused tests, pending complete replay. Earlier1802 five numeric losses
+are fully recovered. Preserve all held raw receipts; do not rewrite historical status.
+
+Current public download is explicitly held1804 development source. Tested sourcec55bd950 maps
+to public4064675364488ee6583c3cc50dd8a907ab1c3997 and metadata-only2a8c99e6f80455618ffcf9cfd71afe64e2c57feb.
+Curated739inputs/839files and approved public ancestry were independently checked; private Git/test/profile
+material is excluded. Offline Git restore and HTTPS readback passed10,322,694bytes with
+SHA68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6. This is source recovery, not a rebuild.
 
 Live preview: https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/
-Ops handoff: agent/ops/session18/handoff.md. Repo lead temporarily owns progress/status and
-node agent/progress/manage.mjs poll; relay genuine new messages promptly. Do not print access
-secrets/profile history. Surge is unauthenticated and FileHarbor returned403; do not claim success.
+Ops handoff: agent/ops/session18/handoff.md. Repo lead owns temporary progress/status and
+node agent/progress/manage.mjs poll. Relay real messages; do not print access secrets/profile history.
+Public HTTPS/WS probe09:52UTC passed. Surge lacks authentication; FileHarbor returned403.
 
-Final Android/display0 promotion remains pending the final integrated candidate. Reserve the
-last45–60 minutes for full replay, Android build/install-r, verified task-owned desktop restart,
-actual-browser short showcase, publication and final notes. Preserve phone/browser profiles and
-data; no uninstall, clear-data or blanket process killing. Freeze engine source through final
-runtime promotion, then commit final docs. Prior architecture/authorization boundaries in
-AGENTS.md remain controlling; do not revive blocked broad cascade or failed timing1704 wholesale.
+Reserve the final45–60minutes for final full replay, Android build/install-r and verified display0
+restart, isolated actual-browser showcase, source publication and final notes. Preserve profiles/data;
+no uninstall, clear-data or blanket process killing. Freeze engine source through runtime promotion.
+Retained architecture/authorization boundaries in AGENTS.md apply; no broad cascade/provenance rewrite.

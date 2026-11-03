@@ -100,102 +100,83 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session18, held1804 and repaired1805 qualification
+## Current development handoff — session18, scoped1805 accepted and1806 integration
 
 Canonical checkout: `/mnt/p3/project/browser/lumen-android/lumen-android`.
-Current branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
-The complete current user request is preserved verbatim in `agent/task.md`.
-Session start **2026-11-03T06:58:59Z**; nominal five-hour deadline **11:58:59Z**,
-with up to one additional hour only for an important unresolved bug.
+Branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
+Full request: `agent/task.md`. Session06:58:59–11:58:59UTC on2026-11-03, with at most
+one extra hour for an important unresolved bug. Root is CTO; same-model built-in agents
+own source/Git, independent tests and operations. Repo lead alone owns canonical Git.
+Coordinate ownership and freezes, use the shared480%quota and one-second monitors, and
+preserve all historical work, exact WPT/framework pins and original expectations.
 
-Root is CTO. Same-model built-in agents own implementation/Git, independent WPT/build
-qualification, and operations/delivery. Direct RubyWebTerm calls work; prior relay
-queues are historical. Repo lead owns canonical Git operations. Coordinate source
-ownership and freeze before every build. Preserve shared locks, quota 480%, jobs 2,
-one-second CPU/RSS/cgroup monitoring, all untracked historical work and unchanged WPT
-oracles/harnesses. Reserve the final hour for integrated verification and delivery.
+### Candidate1805 scope and immutable full replay
 
-### Candidate1804 focused/native/retained gates passed
+Scoped source `0415871ac9ed76e69b85acf8430765c97bcc539f`, binarySHA
+`fcf8016299063b119d48df212e4d262cd4f382aae29ee051e5a64568241360d4`, input manifest
+`7faeddce9d30fde7681ba2e2acff5ca348c31825f3c41438a9f53161f16d9eaa`.
+Acceptance: `agent/validation/linux-wpt-20261103-session18/candidate1805-incremental-acceptance.json`,
+SHA `7055dc1aa3d055b488b48dbf40f0ff68cdbeecfdb9e78ed5c6766c57221fad8f`.
 
-Tested source `c55bd95010c37c7907020f951ac40c6420788a43`, binary SHA-256
-`6d44ae80424d1a102829a185be6b6dd322603e1d605a2f50000b467367f89ebe`, input manifest
-`d4cbc36fb6b52bf2d11998edeb63ccbc07b19a0822168fd94c634718f2334084`. Scope receipt:
-`agent/validation/linux-wpt-20261103-session18/candidate1804-incremental-acceptance.json`.
-The immutable full1248 replay completed08:48:55.229–09:10:31.421Z. It measured **751/1248 files,22735/26245 assertions**, but **2 prior-PASS losses** hold broad promotion. Both losses are valid named-cache random() z-index declarations; all5 earlier numeric losses are recovered. Exact raw/comparison/recount/provenance receipts remain immutable under session18.
+- Whole random serialization retains27/71 prior passes; typed random36/36 passes.
+- Timing102/106 satisfies the predeclared102-row scope; four original live sibling rows
+  remain failing and visible. TimingWPT gains48 existing assertions to170/204,3/5 files.
+- Integer188/188, native218/218 and retained45fixtures/1318assertions pass; retained
+  independent audit334/334. Focused MediaList/background/keyframe families lose no prior passes.
+- Original timing42 remains28/42 diagnostic. Current-spec range/serialization differences
+  from Chromium150 remain explicit. linear() and WebAnimations solver are unchanged.
+- Random syntax/type validation never supplies a value to runtime; sampling/cache computation
+  remains unimplemented. No nominal validation result may reach computed/rendered output.
 
-- integer-regressions3: **3/3 fully passing files, 188/188 assertions**; no prior-PASS loss in its focused comparison.
-- charset: **20/21 fully passing files, 20/21 assertions**; no prior-PASS loss in its focused comparison.
-- background9: **8/9 fully passing files, 48/50 assertions**; no prior-PASS loss in its focused comparison.
-- keyframe18: **8/18 fully passing files, 92/129 assertions**; no prior-PASS loss in its focused comparison.
-- medialist10: **10/10 fully passing files, 47/47 assertions**; no prior-PASS loss in its focused comparison.
-- cssom-neighbors13: **9/13 fully passing files, 76/113 assertions**; no prior-PASS loss in its focused comparison.
-- numeric3: **1/3 fully passing files, 134/199 assertions**; no prior-PASS loss in its focused comparison.
-- Native **218/218** and unchanged retained **45 fixtures/1318 assertions** pass,
-  with **334/334** independent retained checks.
-- Large integers12/12, z-index syntax38/38 and computed28/28, keyframe declarations31/31,
-  opacity10/10, image44+10+4 and canonical charset44+1 controls pass.
-- Prior keyframe contracts remain47/49 with the two named-timeline-range failures
-  explicit. MediaList15/15 and owner8/8 retain normative readonly behavior despite
-  Chromium's documented Reflect return-value deviation.
+The first random wrapper exit2 was an empty-shard cleanup return-value audit issue. Preserve
+its original receipt and independent reconciliation483877f22ac2ec86a6255841e9729f9fc336e88bf0a784022b741b058dbe52bd;
+actual PID/profile cleanup and guards passed, and no browser rerun erased the original evidence.
 
-Historical1802 full replay measured724/1248 and22676/26245 but lost5 priorPASSs.
-All5 were recovered by1803 and remain recovered in1804's complete188-row integer
-cohort. Preserve the raw1802 HOLD and failed1803 opacity evidence; never rewrite them.
-The downloadable1804 archive is explicitly a held development checkpoint with2 known
-regressions. Last regression-free full sample remains1705 until a repaired candidate
-passes the complete unchanged manifest. New charset ingress and image longhands have their stated loading/rendering
-and computed-math limits; no whole-feature or whole-browser conformance claim follows.
+Immutable full1248 began09:44:08UTC. Source/Git freeze is released for later work; do not
+change1805 binary/buildrecords, WPT/framework or runtime pins. No heavy next build during
+this replay without tester coordination. Broad acceptance and score are pending.
 
-### Sample score and ongoing work
+### Source integration and limits
 
-The last regression-free frozen1248 replay is **candidate1705: 714/1248 files
-(57.21154%), 22637/26245 assertions**. Chromium150 on that sample is1062/1248 and
-24541/26064 assertions; denominators are engine-specific. Independent baseline receipt:
-`agent/validation/linux-wpt-20261103-session18/verified-baseline1705.json`.
-Score **57.21/100** describes only this regression-free selected-file baseline. Candidate1804
-observed60.1763/100 on the same selected files, but its2-loss HOLD prevents promotion.
-The100 new passing assertions and2 losses yield a22737-assertion required union for repair.
-Preserve that binary and all pinned WPT/harness/manifest files while drafting new source.
-The live checkout may advance; distinguish source-worktree state from immutable build provenance.
+Current source87b2438 follows XML PI commit39e511c and the reviewed case/Unicode-preserving
+random-key normalizer. XML uses sparse branded PI state/private header, preserving ordinary
+Node layout. Staged parser59 passes; integrated parser59/browser31 and charset21 gates remain.
+Ignoring doctype PI is the selected allowed implementation policy; keep Chromium's differing
+behavior distinct from the normative post-root/invalid-label cases. No @import, stylesheet-set
+selection or full external CSSOM source reflection is added.
 
-Candidate1805 source is now3a085028fa78f1a5d3b01a6c6f1009df72dc4980:
--75eaba06 adds bounded steps/cubic longhand grammar and typed computation using private easing.h.
--b9278d15 repairs native computed-style timing defaults without JavaScript fallbacks.
--3a085028 restores shared random() syntax/type validation, including current key forms,
-  while rejecting random() before evaluation. Sampling/cache computation remains absent;
-  no nominal validation value is permitted to enter computed/rendered state.
+Inline tree-count v2 is independently reviewed, still unapplied pending actual64-bit ABI and
+runtime gates. Context is restricted by exact original inline property/value ownership and no
+pending substitution; stylesheet/copied/custom/inherited/pseudo/shadow routes stay unsupported.
+All36 new tree and106 existing timing controls remain fixed. Preserve measured ABI, use existing
+child-list invalidation, and do not broaden into a cascade/provenance rewrite.
 
-Candidate1805 requires unchanged whole random71 retention, typed random36, all106 timing
-rows, original timing5/old42 diagnostics, focused regressions, native218 and retained1318.
-Four pre-existing live sibling-index/count rows remain present and failing, outside the102
-accepted timing rows; do not alter or suppress expectations. Real tree-count evaluation and
-child-list invalidation are a separate future iteration. Preserve current Easing2/Values4
-math-range and step-serialization differences from pinned Chromium. linear() and the Web
-Animations solver remain unchanged. Full1248 replay follows successful scoped qualification.
+Earlier qualified gains remain: MediaList10/10 and47/47; charset20/21; background8/9 and48/50;
+keyframe declarations31/31; opacity10/10; image44+10+4; canonical charset44+1. MediaList native
+stylesheet applicability, complete media math, two background computed-math cases and keyframe
+named timeline ranges remain limited. Successful narrow gates do not establish full features.
 
-XML stylesheet-PI sparse-state v3 is independently reviewed but remains staged. It preserves
-ordinary Node layout and uses a private header; parser59/browser31 and source integration
-remain tester-coordinated. No @import or full external CSSOM reflection is claimed.
-Failed timing1704 remains separately preserved at527e190832b0ee6ff6a10def4bc42fe9b7d5cc22;
-do not revive its wholesale draft or alter tests to manufacture passes.
+### Baseline, publication and final delivery
 
-### Persistence and final promotion
+Last regression-free fixed1248 baseline remains1705:714/1248 files(57.21154%),22637/26245
+assertions. Chromium150:1062/1248 files,24541/26064 assertions; denominators remain separate.
+Selected-file score57.21/100 is not full official WPT or overall browser quality.1804 measured
+751/1248 and22735/26245 but lost2 prior passes; required union22737. The2 random losses are
+recovered in focused1805, awaiting full replay. All5 earlier1802 numeric losses are recovered.
+Preserve all historical HOLD/raw/audit receipts, including failed1803 and timing1704 evidence.
 
-Candidate1804 sourcec55bd950 was independently checked against all739 compiled inputs and839
-curated inventory files. The source commit4064675364488ee6583c3cc50dd8a907ab1c3997 and
-metadata-only HOLD follow-up2a8c99e6f80455618ffcf9cfd71afe64e2c57feb were pushed/verified on
-`gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1804-20261103`.
-Only approved public ancestry is included; private working Git objects remain excluded.
-The current download explicitly records751/1248 and22735/26245 with2 prior-PASS losses;
-focused/native/retained success does not imply full-sample acceptance.
+Current download is held1804 development source: testedc55bd950 maps to public4064675364488ee6583c3cc50dd8a907ab1c3997
+and metadata-only2a8c99e6f80455618ffcf9cfd71afe64e2c57feb, pushed/verified on the source1804
+public branch.739 exact compiled inputs,839 curated files and approved public ancestry are
+independently checked; private working Git/test/profile material is excluded. Offline Git restore
+and public HTTPS readback match10,322,694bytes, SHA68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6.
+This proves source identity/recovery, not an independent rebuild. Public preview/WS is live;
+Surge lacks authentication and FileHarbor returned403. See ops/session18/handoff.md and
+agent/continue.md for exact operational commands and private-state precautions.
 
-The1804 archive passed offline Git restore and exact public HTTPS byte/hash readback:
-**10,322,694 bytes**, SHA-256`68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6`.
-Exact receipt: `agent/ops/session18/artifacts1804/promotion-receipt.json`.
-Offline restore verifies Git recovery and source identity, not an independent rebuild.
-Desktop display:0 and connected Android promotion remain pending the final candidate.
-Keep final engine source frozen through Android build/install and desktop restart;
-use adb install-r, preserve profiles/data and verify task-owned PIDs before stopping them.
+Reserve the final45–60minutes for complete replay, final Android build/install-r and verified
+display0 restart, isolated actual-browser showcase, publication and final notes. Keep engine
+source frozen through runtime promotion; preserve user profiles/data and verify task-owned PIDs.
 
 ### Retained prior architecture and authorization boundaries
 
