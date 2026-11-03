@@ -151,7 +151,7 @@ explicit limitations. No complete MediaQueries implementation is claimed.
 
 ### Sample score and ongoing work
 
-The last completed frozen1248 replay is still **candidate1705: 714/1248 files
+The last regression-free frozen1248 replay is **candidate1705: 714/1248 files
 (57.21154%), 22637/26245 assertions**. Chromium150 on that sample is1062/1248 and
 24541/26064 assertions; denominators are engine-specific. Independent baseline receipt:
 `agent/validation/linux-wpt-20261103-session18/verified-baseline1705.json`.
@@ -160,13 +160,20 @@ Its larger raw pass count does not satisfy the no-regression acceptance gate.
 Preserve that binary and all pinned WPT/harness/manifest files while drafting new source.
 The live checkout may advance; distinguish source-worktree state from immutable build provenance.
 
-Next candidate1803 source includes separately committed z-index specified-value validation
-(2f31207 plus cssText8801d9d and CSSRule setter8b8ddc8 route fixes) and keyframe-only declaration context
-(2d9e7e1 plus setter-priority correctiona4e38c1). Both are independently reviewed;
-build and focused qualification are pending. Parsed keyframe text discards!important,
-while CSSOM setters retain recognized important priority; empty removal follows CSSOM
-before priority validation despite the documented Chromium reference difference. Background-clip and
-border-image repeat/slice validation/serialization are approved next investigations.
+Candidate1803 (eda38fd5) recovered all5 prior full-replay regressions and passed
+integer188/188, large-integer12/12, z-index syntax38/38 and computed28/28. Keyframe31
+reached28/31 without a prior-pass loss; three opacity scalar serialization failures
+stopped the worker before native/retained/full gates. Do not claim those unrun gates.
+Integrated1804 source adds reviewed charset byte decoding, opacity canonicalization
+and image-longhand grammar/serialization in separate commits. The final opacity percentage
+serialization correction is independently reviewed and committed; freeze the exact
+clean documentation HEAD with the independent tester.
+The original keyframe and WPT expectations remain unchanged; the new opacity fixture
+has an explicitly preserved unqualified v1 and separately reference-qualified v2.
+Parsed keyframe text discards!important before duplicates; CSSOM setters retain
+recognized important priority. Empty removal remains before priority validation,
+despite the documented Chromium reference difference. Charset decoder native44+1
+private controls pass, but actual candidate/browser and full regression gates remain.
 Failed timing1704 remains separately preserved at527e190832b0ee6ff6a10def4bc42fe9b7d5cc22;
 do not revive its wholesale draft or alter tests to manufacture passes.
 

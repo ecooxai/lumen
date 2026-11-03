@@ -1,8 +1,8 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session18",
-  "phase": "HOLD candidate1802: complete1248 replay found5 prior-PASS regressions. Repairing typed integer signedzero and large-integer serialization before1803 qualification.",
-  "iteration": 1803,
-  "session_iteration": 3,
+  "phase": "Qualifying candidate1804: targeted numeric regressions recovered; reviewed opacity, charset and image-longhand changes are integrated. Broad acceptance awaits all gates and fresh1248 replay.",
+  "iteration": 1804,
+  "session_iteration": 4,
   "score": 57.21153846153846,
   "selected_case_score": 57.21153846153846,
   "score_candidate": 1705,
@@ -23,8 +23,8 @@
   "overall_assessment": "Linux browser improvements underway. Full-WPT rate and whole-browser95/98score are not established.",
   "overall_result_label": "Chromium parity incomplete; full official WPT unmeasured",
   "accepted_iteration": 1705,
-  "active_iteration": 1803,
-  "active_candidate": 1803,
+  "active_iteration": 1804,
+  "active_candidate": 1804,
   "accepted_binary_sha256": "a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271",
   "accepted_binary_scope": "Last regression-free complete frozen1248 baseline is1705. Candidate1802 passed focused/native/retained gates but is held after5 full-replay prior-PASS losses.",
   "coverage": "Candidate1705 passed714/1248files and22637/26245assertions on the frozen HTTP/default-timeout sample. Chromium150 passed1062/1248files and24541/26064assertions. This is selected WPT coverage, not full official WPT.",
@@ -46,6 +46,10 @@
       "724/1248 complete files;22676/26245 assertions;5 prior-PASS losses. Focused/native218/retained1318 passed, but broad acceptance is held."
     ],
     [
+      "Candidate1803 numeric recovery",
+      "188/188 integer WPT plus12/12 large integers,38/38 syntax,28/28 computed. Keyframe28/31; broad qualification remains pending."
+    ],
+    [
       "Changes since1603",
       "11 whole-file gains and33 shared assertion gains; zero previous PASS losses and zero missing/new assertion identities."
     ],
@@ -59,9 +63,9 @@
     ]
   ],
   "findings": [
-    "Full1802 replay found4 signedzero arithmetic regressions and1 large z-index serialization regression; repairs take priority.",
-    "The last regression-free complete1248 baseline remains1705 at57.21/100. The new raw724-file result is held and not promoted.",
-    "The1802 archive is a reproducible development checkpoint with this broad-regression hold, not a final runtime release."
+    "Candidate1803 recovered all5 broad1802 regressions and passed188/188 integer WPT,12/12 large integers,38/38 syntax and28/28 computed contracts.",
+    "Three opacity serialization rows stopped the1803 quick gate at28/31; the reviewed repair and ready charset/image-longhand changes are preparing1804.",
+    "Last regression-free complete1248 baseline remains1705 at57.21/100; the1802 source archive stays a clearly labeled development checkpoint with its broad HOLD."
   ],
   "historical": {
     "label": "Previous Linux311 same frozen1248 sample:686/1248files;21992/26245assertions.",
@@ -88,9 +92,9 @@
   },
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
-  "working_commit": "c3ee07b6b0569633152934b4d8f9d102c699b77c",
-  "updated_utc": "2026-11-03T08:10:17.115943+00:00",
-  "updated_at": "2026-11-03T08:10:17.115943+00:00",
+  "working_commit": "95e8bf3b2c0f201984cf560a3725a6f5bbe39c1a",
+  "updated_utc": "2026-11-03T08:28:40.089929+00:00",
+  "updated_at": "2026-11-03T08:28:40.089929+00:00",
   "runtime_candidate": null,
   "runtime_note": "Linux display0 Lumen restart remains pending; the isolated progress control window is live. MI8 is authorized and still runs prior qualified1603 APK; SDK/NDK and prebuilt dependencies are present.",
   "qualified_prior_candidate_scope": {
@@ -228,7 +232,7 @@
     },
     "prior_pass_losses": 0,
     "identity_drift": 0,
-    "full_fixed1248_replayed": false,
+    "full_fixed1248_replayed": true,
     "limitations": [
       "Native stylesheet.media applicability is not yet connected to MediaList mutation",
       "Known-feature media math simplification remains partial",
@@ -278,5 +282,38 @@
     "prior_pass_losses": 5,
     "last_regression_free_candidate": 1705,
     "scope": "Complete frozen1248 sample; not full official WPT."
+  },
+  "candidate1803_quick_scope": {
+    "candidate": 1803,
+    "source_commit": "eda38fd5e79daf2cab3070e4890d0809aee953e5",
+    "binary_sha256": "5f8edbe982876fdaa03967b81c4fc609411fecac7b37b71e0824415197333c50",
+    "counts": {
+      "integer_wpt": [
+        188,
+        188
+      ],
+      "large_integer_contract": [
+        12,
+        12
+      ],
+      "z_index_syntax_contract": [
+        38,
+        38
+      ],
+      "z_index_computed_contract": [
+        28,
+        28
+      ],
+      "keyframe_contract": [
+        28,
+        31
+      ]
+    },
+    "all_five_prior_regressions_recovered": true,
+    "native218_ran": false,
+    "retained1318_ran": false,
+    "full1248_ran": false,
+    "accepted_for_broad_promotion": false,
+    "remaining_gate": "3 canonical opacity serialization rows"
   }
 }

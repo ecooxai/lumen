@@ -291,3 +291,35 @@ integer-regressions3 files. Corrective acceptance must preserve the union of1705
 1802 passes (at least185/188 in that cohort), then rerun focused/native/retained gates
 and a fresh full1248 replay. Last regression-free full-sample score remains57.21/100.
 The1802 archive remains available as a clearly labeled development checkpoint only.
+
+
+### Iteration3 — numeric recovery verified; canonical serialization gate remains open
+
+Iteration start2026-11-03T07:38:27.321787+00:00, end2026-11-03T08:16:21.488300+00:00, wall2274.166513s; total session wall4642.488300s. This phase includes parallel preparation and the separately retained1802 full replay; overlapping agent wall times are not summed as compute time. Source commiteda38fd5e79daf2cab3070e4890d0809aee953e5; immutable binary SHA-2565f8edbe982876fdaa03967b81c4fc609411fecac7b37b71e0824415197333c50.
+
+| Task | UTC start | UTC end | Seconds | Result |
+|---|---|---|---:|---|
+| build-startup | 2026-11-03T08:15:08.433306+00:00 | 2026-11-03T08:16:04.651144+00:00 | 56.218 | exit0 |
+| integer-regressions3 | 2026-11-03T08:16:04.661229+00:00 | 2026-11-03T08:16:11.847791+00:00 | 7.187 | exit0 |
+| large-integers12 | 2026-11-03T08:16:11.977231+00:00 | 2026-11-03T08:16:14.392922+00:00 | 2.416 | exit0 |
+| declarations38 | 2026-11-03T08:16:14.407345+00:00 | 2026-11-03T08:16:16.815408+00:00 | 2.408 | exit0 |
+| numeric28 | 2026-11-03T08:16:16.832918+00:00 | 2026-11-03T08:16:19.167281+00:00 | 2.334 | exit0 |
+| keyframe-declarations31 | 2026-11-03T08:16:19.178365+00:00 | 2026-11-03T08:16:21.488300+00:00 | 2.310 | exit1 |
+
+The entire frozen integer-regressions3 cohort passes188/188, including all185 union passes and recovery of the exact5 earlier regressions. Large integer12/12, specified z-index38/38 and computed z-index28/28 pass. The syntax gate also recovered the previously failing valid math-comment input. No WPT expectations changed. Keyframe31 reached28/31 with no prior-pass losses: three now-exposed CSSRule opacity literals serialize .5 instead of0.5. The worker stopped before native218, retained1318 and full1248; these gates did not run and candidate1803 is not broadly accepted.
+
+The portable numeric repair explicitly preserves zero ordering in min/max/clamp, the divisor sign on mod zero, and decimal integer token spelling in inline CSSOM without accepting authored decimal/exponent integer syntax. Independent review and raw identities are retained in agent/source-work/session18/integer-regression-repair-v1/ and candidate1803-quick-experimental-receipt-v1.json.
+
+Build monitoring:56 one-second samples, process-tree CPU median57.000%,max210.892%; peakRSS624.640MiB,peakPSS484.176MiB. Shared cgroup weightedmean150.566%,max185.235%,below480%quota (100%=one core). Snapshot/RSS limitations remain as documented. Every individual task lasted under5minutes; no unexplained slow task required optimization.
+
+Iteration score remains57.21/100 from the last regression-free complete1705 sample, not188/188 or a whole-browser quality claim. Acceptance statuses: focused numeric PASS; keyframe serialization HOLD; native/retained/full replay NOT RUN; desktop and Android restart PENDING.
+
+### Iteration4 — integrated reviewed source preparation
+
+Phase begins at iteration3 gate end08:16:21.488300Z; feature drafts were prepared in parallel during earlier immutable runs. Charset decoding committed69aa677, opacity scalar canonicalization dce2d612, and image-longhand grammar/serialization fb6d3bd. Charset private native matrix44/44 plus separate BOM control1/1 passed in2.121s; actual candidate library/browser gates remain required. The longhand patch was applied as narrow hunks, explicitly preserving the newer integer and opacity repairs.
+
+Fresh independent opacity controls found literal percentages require number serialization under CSS Color4 section17. The first authored draft10 is preserved with three incorrect percentage assumptions and marked unqualified; separately versioned v2 passes10/10 on Chromium. Original keyframe31 is untouched. A bounded percentage-to-number follow-up is under final review before1804 freeze.
+
+Remaining limits: stylesheet decoder covers the three existing byte ingress routes, not missing import/XML-PI/external-CSSOM loading subsystems; image longhands do not implement text/border-area or border-image rendering, shorthand expansion, or full computed slice math. Canonical source is only promoted after exact-input focused/native/retained and fresh full1248 gates.
+
+Final opacity percentage correction committed95e8bf3b2c0f201984cf560a3725a6f5bbe39c1a at2026-11-03T08:28:40.089929+00:00. Independent reviewer accepted literal percentage conversion without clamping; original author tokens still pass existing validation. Candidate1804 source is ready for exact-input qualification.
