@@ -90,4 +90,5 @@ push git and deploy to cloud like github page or cloudflare . when ouput image v
 
 you need not ended the working session to report progress instead of continuing development, need not report progress you must  keep working session and  improving util  high quality. do not pause the working session before achive goal and score for post task
 
-if goal not finish write a prompt tolet next agent to continue in a editor writting including task and dev env and rules in this prompt
+if goal not finish write a prompt tolet next agent to continue in a editor writting including task and dev env and rules in this prompt  .   use subagents to do all works, you main agent only for project manager, like cto, plan and evaluate , give all tasks to new subagents, do not coding ,debuging, testing in main agent as much as possible, only do thiese task if necessary, even for evaluatte and plan or analyze, you can start subagents for these task too,you only get most imprtant result info. keep main agent context clearn including only most important info.
+and for each iteration, main agent can start new subagent to do this iteration, do not push all context to subagent, only give necessary context to start a fresh new subagent.

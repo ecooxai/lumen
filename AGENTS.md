@@ -100,75 +100,48 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session17, qualified candidate1703
+## Current development handoff — session18, starting from candidate1705
 
 Canonical checkout: `/mnt/p3/project/browser/lumen-android/lumen-android`.
-Branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session17-20261102`.
-User request is preserved verbatim in `agent/task.md`. Session began **2026-11-02T11:45:32Z**;
-normal deadline **16:45:32Z**, optional extra hour only for an important unresolved bug.
-Root is CTO; equally capable built-in agents own implementation, testing, review and delivery.
+Current branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
+Current user request is preserved verbatim in `agent/task.md`; the prior task and
+continuation are archived with the `20261103-session18-before` suffix.
+Session start **2026-11-03T06:58:59Z**, nominal five-hour deadline **11:58:59Z**,
+with up to one additional hour only for an important unresolved bug.
 
-**Latest incrementally qualified engine is1703**, source `70d99dc0d8e9646f0a256bc3cf68aa47235b92c9`,
-immutable app `build/codex-native/lumen-astra-i1703`, SHA-256 `38f8185c73bf17b3ec625bc30945216a19950a2bf7d9f597afb53519f11122ba`,
-source-manifest digest `0ed85c68a9944a34e4ab8351a8c536348b2c5d21c97b31a06b4b63e512f41825`.
-`agent/validation/linux-wpt-20261102-session17/candidate1703-handoff/handoff.json`
-binds all raw receipts and explicitly separates historical and newly measured scopes.
+Root is CTO. Same-model built-in agents own repository/implementation, independent
+WPT/build qualification, and operations/delivery. Direct RubyWebTerm calls are
+working in this session; the previous session's relay queue is historical.
+Repo lead owns source and Git branch/index operations. WPT agent owns heavy build/test
+windows; operations owns progress service and deployment. Coordinate exact source
+freeze boundaries before builds. Keep the shared build/source-edit locks, quota480%,
+jobs2, and one-second process-tree/cgroup monitoring. Preserve all untracked prior work.
 
-| Scope | Before | Candidate1703 | Pinned Chromium150 |
-|---|---:|---:|---:|
-| Exact eight-file keyframe subset of fixed1248, complete files | 0/8 | 5/8 | 6/8 |
-| Same eight files, assertion identities | 20/55 | 44/55 | 49/55 |
-| Original authored selector/string34 | 7/34 | 32/34 | 34/34 |
-| Separate EOF/numeric13 | 7/13 | 13/13 | 13/13 |
-| Versioned real-runtime2 | 2/2 | 2/2 | 2/2 |
+Starting source is candidate1705, commit `13c22d3d28a68746fede3f265f55c5eda3247da6`,
+binary SHA-256 `a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271`.
+Incremental qualification is recorded in
+`agent/validation/linux-wpt-20261102-session17/candidate1705-incremental-acceptance.json`.
+It retained MIME27/27, native218/218, original keyframes32/34 with both named-range
+failures visible, and retained1318/1318 assertions across45 files.
 
-The fixed8 replay has **24 existing assertion gains, five whole-file gains, zero prior-PASS losses,
-zero missing/new identities, and no harness regression**. Original34 remains32/34: named timeline-range
-normalization and escaped range identifiers are deliberately unsupported and their failures remain visible.
-This is47/49 total authored rows, with no oracle removal. Ordinary selector identity preserves full parsed
-precision separately from display rounding; append/find/delete and EOF handling share validated selectors.
-The v1 immediate-getAnimations activation gap is pre-existing and remains unfixed; v2 runtime controls
-wait two frames and do not assert that unresolved named-range effect metadata is absent.
+The newer saved complete selected1248 replay, found after the prior handoff, is
+`candidate1705-expanded-first-comparison.json` in the same directory. It records
+**714/1248 complete files (57.21154%) and22637/26245 assertions**, versus prior1603
+703/1248 and22604/26245. Pinned Chromium150 is1062/1248 and24541/26064; the assertion
+denominators remain engine-specific. Saved comparison records33 assertion gains,
+11 whole-file gains and no prior-PASS losses. Independent recount is underway.
+This is the frozen selected sample, not full official WPT or a browser-quality score.
 
-Build/startup passed in46.165s; full core212.461s includes native218/218, new47/49 and retained
-CSSPropertyRule21/21 plus exact descriptor13/13. The original retained45 fixtures pass1318/1318,
-98.797s; independent raw-row/input/lifecycle audit563/563, SHA-256
-`0fbe421365ba324014f50f36daf53feb4494a41a67ba5aa35cf52adc77172329`.
+Failed timing1704 remains on its separate preserved branch at527e190832b0ee6ff6a10def4bc42fe9b7d5cc22;
+it is not merged. Do not revive its wholesale draft. Select a bounded standards
+fix using real current failures and preserve every test/oracle. The prior MediaList
+draft is a candidate for independent review, not qualified source.
 
-**The latest complete fixed1248 measurement remains candidate1603**,703/1248 files (56.33013%)
-and22604/26245 assertions; Chromium150 is1062/1248 files and24541/26064 assertions.
-Different assertion denominators must stay separate. This is a selected frozen sample, not full official WPT.
-Keep objective score56.33/100 tied to that last full-sample measurement until the integrated replay.
-1701's properties41 measured18/41 and589/813, +68 shared assertions with no losses, has **zero URL overlap**
-with fixed1248.1703 reran its owned21/13 regressions, not the entire41-file cohort.
-
-Next: integration_validation owns1704 shared easing token grammar, original timing5 and versioned42 controls;
-engine review v2 accepts static scope. Published2024/pinnedChromium150 linear semantics are explicit;
-later editor-draft single-stop/omission-preserving serialization remains future work. Preserve specified
-step-start/step-end aliases generally, compute canonical step functions, and retain the original two
-transition-valid prior-PASS rows even where Chromium fails. Original30 had27/30 Chromium passes;
-three assumption corrections are separately versioned, and all original fixtures/results are preserved.
-The proposed animation-valid sixth file is absent from fixed1248; its staging preflight failed before writes/tests.
-Keep the verified original timing5. Candidate1702 was retired unused. Delivery audits bounded navigation
-MIME metadata; javascript-navigation behavior is separate. A MediaList draft remains local behind timing/MIME.
-First integrated unchanged1248 replay is planned14:30–14:45; do not postpone it for new drafts.
-
-Only integration_validation approves `/tmp/lumen-session17-relay/approved-queue.jsonl` request rows.
-Root's dispatcher executes exact authorized connector arguments and saves immutable responses.
-Child direct Ruby calls hung initially; do not repeat that transport. Parse every generated worker layer
-locally before queueing. Preserve setup-failure logs separately from engine/test outcomes.
-One heavy task at a time; inherit canonical build/source-edit locks, use quota wrapper and one-second
-process-tree/cgroup monitoring, build jobs2. Preserve protected runners, WPT oracles, user work and unrelated jobs.
-No tracked source/Git changes during qualification; no arbitrary cleanup. Build shared quota480% of one core.
-
-Public1701 source backup is verified at `https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1701-20261102`,
-public commit2ec6af183597791985b48c6a9c2689c4a8ef3cf2. Curated834-file export preserves734 build inputs
-and approved218-commit ancestry, excludes private working history, and restores offline with exact blob IDs/modes.
-Public archive is10,260,510 bytes, SHA-25655ab04c72136c8e35a6d4878d743eb0595c91dec27c1db06390be8fd22275bf0.
-Delivery owns live telemetry/private messages, tunnel/Surge, persistence and final desktop/Android restart.
-Live desktop/Android remain1603 until final delivery. Keep final qualified engine HEAD unchanged through
-Android build/check/install and display`:0` restart; only then commit final docs/status. Preserve device data.
-Reserve at least final60min for final replay/repair, delivery and verified persistence. This session is ongoing.
+Operations will verify current live desktop/Android state and persistence before
+promotion. Keep final qualified engine source frozen through Android build/install
+and desktop:0 restart; preserve profiles and Android data. The prior public1701
+backup is historical until a newer exact source checkpoint is verified.
+Reserve at least final60min for integrated replay/repair, delivery and persistence.
 
 ### Retained prior architecture and authorization boundaries
 

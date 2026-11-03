@@ -150,3 +150,13 @@ No public private-history transfer; final newer-candidate publication still pend
 Next:1704 timing, bounded MIME if safe, first integrated1248 replay14:30–14:45. Final60min remains reserved.
 
 Checkpoint written 2026-11-02T14:05:07.616684+00:00, cumulative session wall seconds 8375.616684. Parallel intervals are not summed.
+
+
+## Session18 — 2026-11-03 continuation and baseline recovery
+
+Start UTC: **2026-11-03T06:58:59Z**. Nominal deadline **11:58:59Z**; up to one extra hour for an important bug.
+Same-model built-in lanes: root CTO, repo_lead repository/source, wpt_baseline independent qualification, ops_recovery progress/delivery.
+Tracked source was clean at13c22d3d28a68746fede3f265f55c5eda3247da6; existing committed history is the preservation checkpoint. Hundreds of prior untracked artifacts were preserved without staging or cleanup.
+Created session18 branch; archived previous task/continue and recorded current request verbatim.
+Saved1705 full selected1248 replay reports714 files/22637 assertions, +11 files/+33 assertions with no prior-pass loss; independent recount pending. This57.21% selected-file rate is not full WPT or an invented95/100 product rating.
+Iteration1 start:2026-11-03T06:58:59Z; end pending. No session18 build/browser tests yet. Parallel-agent wall intervals will not be summed; model compute time is not exposed.
