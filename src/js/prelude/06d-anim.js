@@ -1232,7 +1232,9 @@ function caStart(el, names, origin) {
                 const p = st.item(j), v = st.getPropertyValue(p);
                 if (p === 'animation-timing-function') f.easing = v; else if (p === 'animation-composition') f.composite = v; else if (!p.startsWith('animation')) f[caKey(p)] = v;
             }
-            for (const k of kr.keyText.split(',')) frames.push(Object.assign({ offset: parseFloat(k) / 100, easing }, f));
+            /* CSSOM keyText is display serialization; retain the parsed
+             * precision when constructing the actual animation offsets. */
+            for (const offset of cssKeyframeGet(kr).offsets) frames.push(Object.assign({ offset, easing }, f));
         }
         frames.sort((a, b) => a.offset - b.offset);
         const iter = at('animation-iteration-count', i, '1'), fill = at('animation-fill-mode', i, 'none');

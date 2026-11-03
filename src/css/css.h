@@ -282,6 +282,7 @@ typedef struct ComputedStyle {
     bool parent_sensitive, inherited_dynamic; /* explicit inherit, container/style-attribute rules */
     bool uses_vh; /* resolved a viewport-height unit (vh, vmin, vmax, viewport cq*), here or in a pseudo */
     uint8_t indep_set; /* independent inherited properties the cascade set (style.c INDEP_*) */
+    bool uses_tree_counts; /* owned literal inline typed math reads DOM sibling positions */
     struct ComputedStyle *before, *after, *marker; /* pseudo element styles */
 } ComputedStyle;
 
@@ -497,6 +498,8 @@ bool css_math_substitution_pending(const char *value);
 /* Physical border grammar shared by CSS source, CSSOM and supports. */
 bool css_border_valid(const char *property, const char *value);
 char *css_border_parse(const char *property, const char *value); /* caller owns result */
+bool css_image_longhand_valid(const char *property, const char *value);
+char *css_image_longhand_parse(const char *property, const char *value); /* caller owns result */
 /* Shared box-shadow list grammar; specified color tokens remain contextual. */
 bool css_box_shadow_valid(const char *property, const char *value);
 char *css_box_shadow_parse(const char *value); /* caller owns result; NULL if invalid */

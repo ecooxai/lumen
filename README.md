@@ -1,3 +1,15 @@
+# Lumen Linux checkpoint 1808
+
+**DEVELOPMENT SOURCE ONLY — scoped qualification PASSED; full1248 verification PENDING. NOT AN ACCEPTED PRODUCT RELEASE.**
+
+The last regression-free full selected sample remains1705:714/1248 selected test cases/URLs (57.21%). Source availability is separate from runtime promotion. The1,248 selected URLs come from1,247 source files across10 DOM/CSS families; pre-existing selection excludes44 long-timeout cases and1 HTTPS-only case.
+
+Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
+
+## Historical repository documentation
+
+The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
+
 # Lumen Linux checkpoint 1701
 
 Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.

@@ -2,6 +2,7 @@
    CDATA sections, comments, processing instructions and the doctype with the internal entities of its
    subset. A well-formedness error replaces the document's content with a parsererror element. */
 #include "../dom/dom.h"
+#include "xml-stylesheet.h"
 #include <ctype.h>
 
 #define XHTML_NS "http://www.w3.org/1999/xhtml"
@@ -31,11 +32,23 @@ bool xml_mime(const char *t) {
     return n > 4 && !strncasecmp(t + n - 4, "+xml", 4) && memchr(t, '/', n);
 }
 
+/* Document metadata uses a valid MIME essence, independently of the parser's
+ * HTML/XML mode. Missing or invalid response headers retain the mode default. */
 char *mime_essence(const char *t) {
-    while (*t == ' ' || *t == '\t') t++;
-    size_t n = strcspn(t, "; \t");
+    if (!t) return NULL;
+    while (*t == ' ' || *t == '\t' || *t == '\r' || *t == '\n') t++;
+    size_t n = strcspn(t, ";");
+    while (n && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\r' || t[n - 1] == '\n')) n--;
+    const char *slash = memchr(t, '/', n);
+    if (!slash || slash == t || slash == t + n - 1) return NULL;
+    for (size_t i = 0; i < n; i++) {
+        unsigned char c = (unsigned char)t[i];
+        if (t + i == slash) continue;
+        if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') ||
+              (c >= 'a' && c <= 'z') || strchr("!#$%&'*+-.^_`|~", c))) return NULL;
+    }
     char *m = xstrndup(t, n);
-    for (char *c = m; *c; c++) *c = (char)tolower((unsigned char)*c);
+    for (char *c = m; *c; c++) if (*c >= 'A' && *c <= 'Z') *c += 'a' - 'A';
     return m;
 }
 
@@ -94,6 +107,102 @@ static bool decode(XP *p, const char *s, size_t n, SB *out, bool attr, int depth
         i = j;
     }
     return true;
+}
+
+/* XML stylesheet pseudo-attributes are XML names and quoted values, not HTML
+ * attributes. Preserve literal whitespace; expand only XML's five predefined
+ * entities and legal character references. The entire input must be valid. */
+static bool pi_codepoint(const char *s, size_t n, uint32_t *cp, size_t *used) {
+    int k = utf8_decode(s, n, cp); char bytes[4];
+    if (k <= 0 || !valid_char(*cp) || utf8_encode(*cp, bytes) != k || memcmp(s, bytes, (size_t)k)) return false;
+    *used = (size_t)k; return true;
+}
+static bool pi_name_start(uint32_t c) {
+    return c == ':' || c == '_' || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+        (c >= 0xC0 && c <= 0xD6) || (c >= 0xD8 && c <= 0xF6) || (c >= 0xF8 && c <= 0x2FF) ||
+        (c >= 0x370 && c <= 0x37D) || (c >= 0x37F && c <= 0x1FFF) || (c >= 0x200C && c <= 0x200D) ||
+        (c >= 0x2070 && c <= 0x218F) || (c >= 0x2C00 && c <= 0x2FEF) || (c >= 0x3001 && c <= 0xD7FF) ||
+        (c >= 0xF900 && c <= 0xFDCF) || (c >= 0xFDF0 && c <= 0xFFFD) || (c >= 0x10000 && c <= 0xEFFFF);
+}
+static bool pi_name_char(uint32_t c) {
+    return pi_name_start(c) || c == '-' || c == '.' || (c >= '0' && c <= '9') || c == 0xB7 ||
+        (c >= 0x300 && c <= 0x36F) || (c >= 0x203F && c <= 0x2040);
+}
+static bool pi_reference(const char *s, size_t n, SB *out) {
+    static const char *const names[] = { "amp", "lt", "gt", "quot", "apos" };
+    static const char values[] = { '&', '<', '>', '"', '\'' };
+    for (size_t k = 0; k < ARRLEN(names); k++)
+        if (strlen(names[k]) == n && !memcmp(s, names[k], n)) { sb_putc(out, values[k]); return true; }
+    if (!n || s[0] != '#') return false;
+    size_t i = 1; unsigned radix = 10;
+    if (i < n && s[i] == 'x') { i++; radix = 16; }
+    if (i == n) return false;
+    uint32_t value = 0;
+    for (; i < n; i++) {
+        unsigned char c = (unsigned char)s[i];
+        int digit = c >= '0' && c <= '9' ? c - '0' : radix == 16 && c >= 'a' && c <= 'f' ? c - 'a' + 10 :
+            radix == 16 && c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+        if (digit < 0 || value > (0x10FFFFu - (unsigned)digit) / radix) return false;
+        value = value * radix + (unsigned)digit;
+    }
+    if (!valid_char(value)) return false;
+    sb_utf8(out, value); return true;
+}
+bool xml_pseudo_attributes(const char *s, size_t n, HMap *attributes) {
+    *attributes = (HMap){0}; size_t i = 0; char *name = NULL; SB value = {0};
+    while (i < n) {
+        while (i < n && ws(s[i])) i++;
+        if (i == n) break;
+        size_t start = i, used; uint32_t cp;
+        if (!pi_codepoint(s + i, n - i, &cp, &used) || !pi_name_start(cp)) goto invalid;
+        i += used;
+        while (i < n) {
+            if (!pi_codepoint(s + i, n - i, &cp, &used)) goto invalid;
+            if (!pi_name_char(cp)) break;
+            i += used;
+        }
+        name = xstrndup(s + start, i - start);
+        if (hm_get(attributes, name)) goto invalid;
+        while (i < n && ws(s[i])) i++;
+        if (i == n || s[i++] != '=') goto invalid;
+        while (i < n && ws(s[i])) i++;
+        if (i == n || (s[i] != '"' && s[i] != '\'')) goto invalid;
+        char quote = s[i++];
+        while (i < n && s[i] != quote) {
+            if (s[i] == '<') goto invalid;
+            if (s[i] == '&') {
+                size_t ref = ++i;
+                while (i < n && s[i] != ';' && s[i] != quote) i++;
+                if (i == n || s[i] != ';' || !pi_reference(s + ref, i - ref, &value)) goto invalid;
+                i++;
+            } else {
+                if (!pi_codepoint(s + i, n - i, &cp, &used)) goto invalid;
+                sb_put(&value, s + i, used); i += used;
+            }
+        }
+        if (i == n) goto invalid;
+        i++;
+        if (i < n && !ws(s[i])) goto invalid;
+        hm_put(attributes, name, sb_take(&value)); free(name); name = NULL;
+    }
+    return true;
+invalid:
+    free(name); sb_free(&value); hm_free(attributes, free); *attributes = (HMap){0}; return false;
+}
+bool xml_stylesheet_info(const Node *node, HMap *attributes) {
+    *attributes = (HMap){0};
+    if (!node_is_stylesheet_pi(node) || !node->doc || node->parent != &node->doc->node) return false;
+    for (const Node *before = node->prev; before; before = before->prev)
+        if (before->type == NODE_ELEMENT) return false;
+    if (!xml_pseudo_attributes(node->text ? node->text : "", node->text_len, attributes)) return false;
+    const char *href = hm_get(attributes, "href"), *type = hm_get(attributes, "type");
+    const char *alternate = hm_get(attributes, "alternate"), *title = hm_get(attributes, "title");
+    char *mime = type ? mime_essence(type) : NULL;
+    bool valid = href && (!type || (mime && !strcmp(mime, "text/css"))) &&
+        (!alternate || strcmp(alternate, "yes") || (title && *title));
+    free(mime);
+    if (!valid) { hm_free(attributes, free); *attributes = (HMap){0}; }
+    return valid;
 }
 
 static const char *lookup(XP *p, const char *pfx) {

@@ -1,5 +1,7 @@
 /* CSS Syntax Level 3 tokenizer, stylesheet & selector parser */
 #include "css.h"
+#include "easing.h"
+#include "animation-aliases.h"
 #include "../base/url.h"
 #include <ctype.h>
 #include <math.h>
@@ -943,12 +945,13 @@ static DeclList *css_parse_declarations(const char *s, size_t n, bool property_d
             free(val); val = text; v = str_trim(val);
         }
         const char *property = name_valid ? custom ? atom(name.str) : atom_lower(name.str, strlen(name.str)) : NULL;
+        if (property && !property_descriptors) property = atom(css_animation_property_name(property));
         free(name.str); free(name_end.str);
         Decl dc; dc.prop = property; dc.value = xstrdup(v); dc.important = imp;
         /* A stray closing token invalidates the declaration, not just its
            suffix. Continue to the next semicolon so later declarations survive. */
         if (name_valid && !bad_close && math_valid && (arbitrary || v[0]) && css_var_syntax_valid(v) &&
-            (arbitrary || (css_numeric_dimension_valid(property, v) && css_transition_property_valid(property, v) && css_box_shadow_valid(property, v) && css_border_valid(property, v) && css_interpolate_size_valid(property, v)))) vec_push(*d, dc); else free(dc.value);
+            (arbitrary || (css_numeric_dimension_valid(property, v) && css_transition_property_valid(property, v) && css_easing_valid(property, v) && css_box_shadow_valid(property, v) && css_border_valid(property, v) && css_image_longhand_valid(property, v) && css_interpolate_size_valid(property, v)))) vec_push(*d, dc); else free(dc.value);
         free(val);
     }
     return d;
@@ -1316,6 +1319,7 @@ bool css_container_eval(const char *q, const CQEnv *env) {
 extern bool css_property_known(const char *prop);
 bool css_supports_declaration(const char *p, const char *v, bool quirks) {
     if (!p || !v || !*p) return false;
+    p = css_animation_property_name(p);
     bool custom = p[0] == '-' && p[1] == '-' && p[2];
     if (!custom && !*v) return false;
     bool r;
@@ -1327,8 +1331,10 @@ bool css_supports_declaration(const char *p, const char *v, bool quirks) {
     if (r && minimum) r = css_min_size_valid(p, v);
     if (r) r = css_numeric_dimension_valid(p, v);
     if (r) r = css_transition_property_valid(p, v);
+    if (r) r = css_easing_valid(p, v);
     if (r) r = css_box_shadow_valid(p, v);
     if (r) r = css_border_valid(p, v);
+    if (r) r = css_image_longhand_valid(p, v);
     if (r) r = css_interpolate_size_valid(p, v);
     if (r) r = css_supports_native_value(p, v, quirks);
     if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;

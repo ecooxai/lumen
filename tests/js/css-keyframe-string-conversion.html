@@ -1,0 +1,52 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CSS keyframe CSSOMString input conversion</title>
+<body><script>
+(() => {
+    'use strict';
+    const marker = 'css-keyframe-string-conversion', rows = [];
+    function setup() {
+        const sheet = new CSSStyleSheet(); sheet.replaceSync('@keyframes owned { from { opacity: 0.25; } }');
+        const keyframes = sheet.cssRules[0], rule = keyframes.cssRules[0];
+        return {keyframes, rule, calls: [value => { rule.keyText = value; }, value => keyframes.appendRule(value), value => keyframes.findRule(value), value => keyframes.deleteRule(value)]};
+    }
+    const unchanged = state => {
+        if (state.rule.keyText !== '0%' || state.keyframes.cssRules.length !== 1 || state.keyframes.cssRules[0] !== state.rule)
+            throw new Error('Conversion failure changed the rule or its list');
+    };
+    function test(name, fn) {
+        try { fn(); rows.push({name, pass: true}); }
+        catch (error) { rows.push({name, pass: false, observations: {error: String(error && error.stack || error)}}); }
+        console.log('CSS_KEYFRAME_CONVERSION_ROW ' + JSON.stringify(rows[rows.length - 1]));
+    }
+    test('all four CSSOMString inputs reject primitive Symbols', () => {
+        const state = setup();
+        for (const call of state.calls) {
+            let error; try { call(Symbol('selector')); } catch (caught) { error = caught; }
+            if (!(error instanceof TypeError)) throw new Error('Expected TypeError, received ' + error);
+            unchanged(state);
+        }
+    });
+    test('all four CSSOMString inputs reject a Symbol from primitive conversion', () => {
+        const state = setup();
+        for (const call of state.calls) {
+            let error, conversions = 0;
+            try { call({[Symbol.toPrimitive]() { conversions++; return Symbol('selector'); }}); } catch (caught) { error = caught; }
+            if (!(error instanceof TypeError) || conversions !== 1) throw new Error('Incorrect primitive-conversion behavior');
+            unchanged(state);
+        }
+    });
+    test('conversion exceptions propagate unchanged with no mutation', () => {
+        const state = setup();
+        for (const call of state.calls) {
+            const expected = new Error('owned conversion failure'); let actual, conversions = 0;
+            try { call({toString() { conversions++; throw expected; }}); } catch (caught) { actual = caught; }
+            if (actual !== expected || conversions !== 1) throw new Error('Conversion exception was replaced or repeated');
+            unchanged(state);
+        }
+    });
+    const passed = rows.filter(row => row.pass).length, status = passed === rows.length ? 'PASS' : 'FAIL';
+    console.log('RESULTS ' + marker + ':' + status + ' ' + JSON.stringify({passed, total: rows.length}));
+    document.documentElement.setAttribute('data-' + marker, status);
+})();
+</script></body>

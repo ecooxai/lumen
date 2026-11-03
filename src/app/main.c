@@ -37,6 +37,7 @@
 #include "../net/net.h"
 #include "../base/url.h"
 #include "../base/encoding.h"
+#include "../html/xml-stylesheet.h"
 #include "../gpu/gpu.h"
 #include "../gpu/webgpu.h"
 #include "../js/js.h"
@@ -413,6 +414,24 @@ static NetRequest *sheet_request(const Document *doc, const Node *link, const ch
         link && node_attr(link, "crossorigin") ? "cors" : "no-cors");
     return rq;
 }
+/* External sheets are byte streams; inline styles and CSSOM strings have
+   already Unicode text and never enter here. */
+static StyleSheet *sheet_from_response(const NetResponse *response, const Document *doc,
+                                       const Node *link, const MediaCtx *media) {
+    HMap pi = {0}; bool processing = xml_stylesheet_info(link, &pi);
+    const char *label = processing ? hm_get(&pi, "charset") : link ? node_attr(link, "charset") : NULL;
+    int environment = label ? enc_label(label, strlen(label)) : -1;
+    if (environment < 0 && doc) environment = doc->charset;
+    const uint8_t *bytes = (const uint8_t *)(response->body ? response->body : "");
+    size_t length = 0;
+    char *text = enc_stylesheet(bytes, response->body ? response->body_len : 0,
+        headers_get(&response->headers, "content-type"), environment, NULL, &length);
+    StyleSheet *sheet = css_parse_sheet(text, length, response->url, 1, media);
+    const char *alternate = processing ? hm_get(&pi, "alternate") : NULL;
+    if (alternate && !strcmp(alternate, "yes")) sheet->disabled = true;
+    hm_free(&pi, free); free(text);
+    return sheet;
+}
 typedef struct { char **urls; Node **nodes; Document *doc; NetResponse **out; int n; SDL_AtomicInt next; } FetchBatch;
 static int batch_worker(void *arg) {
     FetchBatch *b = arg;
@@ -464,12 +483,14 @@ static int loader(void *arg) {
     if (rq->html) { body = rq->html; blen = strlen(body); }
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
     const char *ctype = r && r->status > 0 && !rq->html ? headers_get(&r->headers, "content-type") : NULL;
+    const char *document_ctype = ctype;   /* viewer markup must not replace the response's document metadata */
     if (r && r->status == 200 && !rq->html) {
         char *viewer = local_viewer_html(r->url, ctype, kind == 2);
         if (viewer) { free(r->body); r->body = viewer; r->body_len = strlen(viewer); body = viewer; blen = r->body_len; ctype = NULL; }
     }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
+    p->d->content_type = mime_essence(document_ctype);
     if (r && r->status > 0 && !rq->html) { p->d->csp = headers_join(&r->headers, "content-security-policy"); p->d->csp_ro = headers_join(&r->headers, "content-security-policy-report-only"); p->d->referrer_policy = headers_join(&r->headers, "referrer-policy"); }
     bool xml = xml_mime(ctype), js = !getenv("LUMEN_NO_JS");
     char *decoded = NULL;
@@ -478,7 +499,7 @@ static int loader(void *arg) {
         if ((decoded = enc_document((const uint8_t *)body, blen, ctype, xml, &enc, &dn))) { body = decoded; blen = dn; }
         p->d->charset = enc;
     }
-    if (xml) { xml_parse(p->d, body, blen); p->d->content_type = mime_essence(ctype); }
+    if (xml) { xml_parse(p->d, body, blen); }
     else if (js) {
         /* Keep the existing head-policy bootstrap, but expose only the real
            parser prefix. No nodes or resource owners survive the metadata pass. */
@@ -493,13 +514,16 @@ static int loader(void *arg) {
      * fetches start after context creation and never join this blocking batch. */
     char **urls = NULL, **mods = NULL; Node **url_nodes = NULL; NetResponse **got = NULL; int nurl = 0, nmod = 0;
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
-        if (n->type != NODE_ELEMENT) continue;
+        HMap pi = {0}; bool processing = xml_stylesheet_info(n, &pi);
+        if (n->type != NODE_ELEMENT && !processing) continue;
         const char *rel = n->tag == A_link ? node_attr(n, "rel") : NULL, *href = NULL;
         bool module = false;
-        if (jsg_is_script(n) && js && (module = jsg_module_script(n))) { href = jsg_script_src(n); if (href && !*href) href = NULL; }
+        if (processing) href = hm_get(&pi, "href");
+        else if (jsg_is_script(n) && js && (module = jsg_module_script(n))) { href = jsg_script_src(n); if (href && !*href) href = NULL; }
         else if (rel && strstr(rel, "modulepreload")) { href = js ? node_attr(n, "href") : NULL; module = true; }
         else if (rel && strstr(rel, "stylesheet")) href = node_attr(n, "href");
         char *u = href ? url_join(doc_base(p->d), href) : NULL;
+        hm_free(&pi, free);
         if (!u) continue;
         char ***v = module ? &mods : &urls; int *k = module ? &nmod : &nurl;
         *v = xrealloc(*v, sizeof **v * (size_t)(*k + 1)); (*v)[(*k)++] = u;
@@ -534,17 +558,19 @@ static int loader(void *arg) {
     p->e = style_engine_new(p->d); p->e->media.vw = rq->vw; p->e->media.vh = rq->vh; p->e->media.dpr = rq->dpr;
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
-        if (n->type != NODE_ELEMENT) continue;
-        if (n->tag == A_style) {
+        HMap pi = {0}; bool processing = xml_stylesheet_info(n, &pi);
+        if (n->type != NODE_ELEMENT && !processing) continue;
+        if (n->type == NODE_ELEMENT && n->tag == A_style) {
             char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); free(t);
-        } else if (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href")) {
-            char *u = url_join(doc_base(p->d), node_attr(n, "href"));
+        } else if (processing || (n->tag == A_link && node_attr(n, "rel") && strstr(node_attr(n, "rel"), "stylesheet") && node_attr(n, "href"))) {
+            char *u = url_join(doc_base(p->d), processing ? hm_get(&pi, "href") : node_attr(n, "href"));
             NetResponse *cr = NULL;
             for (int i = 0; u && i < nurl; i++) if (got[i] && urls[i] && !strcmp(urls[i], u)) { cr = got[i]; got[i] = NULL; break; }
             if (!cr && u) cr = net_fetch_sync(sheet_request(p->d, n, u));
-            if (cr && !cr->error && cr->status == 200 && net_response_mime_allowed(cr, NET_MIME_STYLE)) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
+            if (cr && !cr->error && cr->status == 200 && net_response_mime_allowed(cr, NET_MIME_STYLE)) { StyleSheet *s = sheet_from_response(cr, p->d, n, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
             if (cr) net_response_free(cr); free(u);
         }   /* images load asynchronously once the page is shown (sync_images) */
+        hm_free(&pi, free);
     }
     for (int i = 0; i < nurl; i++) { free(urls[i]); net_response_free(got[i]); }
     for (int i = 0; i < nmod; i++) free(mods[i]);
@@ -3024,12 +3050,16 @@ static bool css_rule_boundary(const char *s, size_t n) {
     return depth == 0 && last == '}';
 }
 static bool is_sheet_link(Node *n) { const char *r = node_attr(n, "rel"); return n->tag == A_link && r && strstr(r, "stylesheet") && node_attr(n, "href"); }
-typedef struct LinkLoad { uint64_t gen; Node *n; bool complete; struct LinkLoad *next; } LinkLoad;
+typedef struct LinkLoad {
+    uint64_t gen; Node *n; bool complete; struct LinkLoad *next;
+    uint64_t pi_version; NetRequest *pi_request; bool processing;
+} LinkLoad;
 static uint64_t g_link_generation;
 static LinkLoad *g_link_loads;
 static LinkLoad *link_load_new(Page *p, Node *n) {
     if (!p->link_generation) p->link_generation = ++g_link_generation;
-    LinkLoad *l = xmalloc(sizeof *l); l->gen = p->link_generation; l->n = n; l->complete = false; n->refcount++;
+    LinkLoad *l = xcalloc(1, sizeof *l); l->gen = p->link_generation; l->n = n; n->refcount++;
+    l->processing = node_is_stylesheet_pi(n); l->pi_version = xml_stylesheet_version(n);
     l->next = g_link_loads; g_link_loads = l;
     return l;
 }
@@ -3039,12 +3069,29 @@ static void link_load_release(LinkLoad *l) {
     if (l->n) node_release(l->n);
     free(l);
 }
+/* No PI request has work/head/chunk callbacks. Detach done before cancelling,
+ * so an already queued completion cannot access the retired callback record. */
+static void pi_load_cancel(LinkLoad *load) {
+    NetRequest *request = load->pi_request; load->pi_request = NULL;
+    if (request) { request->done = NULL; request->ud = NULL; net_cancel(request->id); }
+    link_load_release(load);
+}
+static void pi_cancel_owner(Page *page, Node *owner) {
+    for (LinkLoad *load = g_link_loads, *next; load; load = next) {
+        next = load->next;
+        if (load->processing && !load->complete && load->gen == page->link_generation && load->n == owner)
+            pi_load_cancel(load);
+    }
+}
 static void link_forget_page(Page *p) {
     /* Nodes must release their owning-document-dependent references before
        teardown. Keep only the empty callback record until the real request
        completes; cancellation alone cannot remove already queued callbacks.
        Records remain registered during dispatch, including self-navigation. */
-    for (LinkLoad *l = g_link_loads; l; l = l->next) if (l->gen == p->link_generation || (l->n && l->n->doc == p->d)) {
+    for (LinkLoad *l = g_link_loads, *next; l; l = next) {
+        next = l->next;
+        if (l->gen != p->link_generation && (!l->n || l->n->doc != p->d)) continue;
+        if (l->processing && !l->complete) { pi_load_cancel(l); continue; }
         Node *n = l->n; l->n = NULL; l->gen = 0;
         if (n) node_release(n);
     }
@@ -3071,14 +3118,16 @@ static bool page_pending_sheets(Page *p, bool parser) {
     if (!p || !p->e || !p->link_generation) return false;
     for (LinkLoad *l = g_link_loads; l; l = l->next) {
         Node *n = l->n;
-        if (l->complete || l->gen != p->link_generation || !n || n->doc != p->d || !(n->flags & NF_CONNECTED) || !is_sheet_link(n)) continue;
-        if (node_attr(n, "disabled")) continue;
-        if (parser) {
-            const char *rel = node_attr(n, "rel"), *media = node_attr(n, "media");
-            if (rel && strstr(rel, "alternate")) continue;
-            if (media && *media && !css_media_matches(media, &p->e->media)) continue;
-        }
-        return true;
+        if (l->complete || l->gen != p->link_generation || !n || n->doc != p->d || !(n->flags & NF_CONNECTED)) continue;
+        HMap pi = {0}; bool processing = l->processing && l->pi_version == xml_stylesheet_version(n) && xml_stylesheet_info(n, &pi);
+        if (!processing && !is_sheet_link(n)) continue;
+        const char *rel = processing ? hm_get(&pi, "alternate") : node_attr(n, "rel");
+        const char *media = processing ? hm_get(&pi, "media") : node_attr(n, "media");
+        bool pending = !node_attr(n, "disabled");
+        if (parser && ((rel && (processing ? !strcmp(rel, "yes") : strstr(rel, "alternate") != NULL)) ||
+            (media && *media && !css_media_matches(media, &p->e->media)))) pending = false;
+        hm_free(&pi, free);
+        if (pending) return true;
     }
     return false;
 }
@@ -3094,13 +3143,16 @@ static void preload_done(NetRequest *rq, NetResponse *r, void *ud) {
     link_load_release(l);
 }
 static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
-    (void)rq; LinkLoad *l = ud; l->complete = true; Page *p = link_owner(l);
+    (void)rq; LinkLoad *l = ud; l->complete = true; l->pi_request = NULL; Page *p = link_owner(l);
+    HMap pi = {0};
+    bool current_pi = l->processing && l->n && l->pi_version == xml_stylesheet_version(l->n) && xml_stylesheet_info(l->n, &pi);
+    hm_free(&pi, free);
     /* Completion can still notify a detached link, but its stylesheet must
        not become active in a live document after the link was removed. */
     bool allowed = r && !r->error && r->status == 200 && r->body &&
         net_response_mime_allowed(r, NET_MIME_STYLE);
-    if (p && (l->n->flags & NF_CONNECTED) && is_sheet_link(l->n) && allowed) {
-        StyleSheet *s = css_parse_sheet(r->body, r->body_len, r->url, 1, &p->e->media); s->owner = l->n; style_engine_add_sheet(p->e, s);
+    if (p && (l->n->flags & NF_CONNECTED) && (current_pi || is_sheet_link(l->n)) && allowed) {
+        StyleSheet *s = sheet_from_response(r, p->d, l->n, &p->e->media); s->owner = l->n; style_engine_add_sheet(p->e, s);
         /* sheets arriving together share one full recalc (restyle runs after net_poll or on a JS style read) */
         p->sheets_pending = true;
         if (p->frame_el) p->frelayout = true;
@@ -3108,7 +3160,7 @@ static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
         g_app->dirty = true;
     }
     JsCtx *js = link_context(p);
-    if (js)
+    if (js && !l->processing)
         js_dispatch(js, l->n, allowed ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
     /* A handler may detach or replace the owner. Resolve it again while the
        callback record is still registered, then retire this load before recheck. */
@@ -3352,16 +3404,17 @@ static void fire_img_events(Page *p) {
     free(ev); free(ok);
     if (p->js) js_load_recheck(p->js);   /* after this document's own image events, including frames */
 }
-/* Reconcile engine sheets with <style>/<link rel=stylesheet> currently in the tree; seed only records them. */
+/* Reconcile element stylesheets and eligible XML PIs; seed only records loaded owners. */
 static bool sync_sheets(Page *p, bool seed) {
     if (!seed && p->seen_sheet_ver == p->d->sheet_version) return false;
     p->seen_sheet_ver = p->d->sheet_version;
     SheetRef *cur = NULL; int nc = 0, cap = 0; bool changed = false;
     int n_tail = 0, n_full = 0, n_gone = 0; size_t parsed = 0;
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
-        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n) && !is_preload_link(n))) continue;
-        char *t = n->tag == A_style ? node_text_content(n) : NULL;
-        uint64_t h = t ? fnv(t) : fnv(node_attr(n, "href"));
+        HMap pi = {0}; bool processing = xml_stylesheet_info(n, &pi);
+        if (!processing && (n->type != NODE_ELEMENT || n->ns != NS_HTML || (n->tag != A_style && !is_sheet_link(n) && !is_preload_link(n)))) continue;
+        char *t = n->type == NODE_ELEMENT && n->tag == A_style ? node_text_content(n) : NULL;
+        uint64_t h = processing ? xml_stylesheet_version(n) : t ? fnv(t) : fnv(node_attr(n, "href"));
         if (!t && is_sheet_link(n)) h ^= 0x9e3779b97f4a7c15ull;
         int k = 0; while (k < p->nsref && p->sref[k].n != n) k++;
         bool known = k < p->nsref;
@@ -3372,20 +3425,26 @@ static bool sync_sheets(Page *p, bool seed) {
             n_tail++; parsed += len - old;
         } else if ((!seed && (!known || p->sref[k].h != h)) ||
             (seed && !known && is_preload_link(n) && !is_sheet_link(n))) {
-            if (known) { style_engine_remove_owner(p->e, n); changed = true; }
+            if (known) { pi_cancel_owner(p, n); style_engine_remove_owner(p->e, n); changed = true; }
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; n_full++; parsed += len; }
             else {
-                char *u = url_join(doc_base(p->d), node_attr(n, "href"));
-                if (u) { NetRequest *rq = is_sheet_link(n) ? sheet_request(p->d, n, u) : net_request_new("GET", u); LinkLoad *l = link_load_new(p, n); rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
+                char *u = url_join(doc_base(p->d), processing ? hm_get(&pi, "href") : node_attr(n, "href"));
+                if (u) {
+                    bool sheet = processing || is_sheet_link(n);
+                    NetRequest *rq = sheet ? sheet_request(p->d, n, u) : net_request_new("GET", u);
+                    LinkLoad *l = link_load_new(p, n); rq->done = sheet ? link_done : preload_done; rq->ud = l;
+                    if (processing) l->pi_request = rq;
+                    net_fetch(rq); free(u);
+                }
             }
         }
-        free(t);
+        free(t); hm_free(&pi, free);
         if (nc == cap) { cap = cap ? cap * 2 : 16; cur = xrealloc(cur, sizeof *cur * (size_t)cap); }
         cur[nc++] = (SheetRef){ n, h, len };
     }
     if (!seed) for (int i = 0; i < p->nsref; i++) {
         int k = 0; while (k < nc && cur[k].n != p->sref[i].n) k++;
-        if (k == nc) { style_engine_remove_owner(p->e, p->sref[i].n); changed = true; n_gone++; }
+        if (k == nc) { pi_cancel_owner(p, p->sref[i].n); style_engine_remove_owner(p->e, p->sref[i].n); changed = true; n_gone++; }
     }
     if (changed && g_load_trace_until > now_ms()) LOAD_TRACE("sheets tail=%d full=%d gone=%d parsed_kb=%zu refs=%d", n_tail, n_full, n_gone, parsed >> 10, nc);
     free(p->sref); p->sref = cur; p->nsref = nc;
@@ -3578,16 +3637,18 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     p->e = style_engine_new(d); p->e->media.vw = p->fw; p->e->media.vh = p->fh;
     p->e->media.dpr = g_app->scale * tab_zoom(tab_of_doc(g_app, f->doc));
     if (!d->parser_meta_captured) for (Node *n = d->node.first; n; n = node_next_deep(n, &d->node)) {
-        if (n->type != NODE_ELEMENT || n->ns != NS_HTML) continue;
-        if (n->tag == A_style) {
+        HMap pi = {0}; bool processing = xml_stylesheet_info(n, &pi);
+        if (!processing && (n->type != NODE_ELEMENT || n->ns != NS_HTML)) continue;
+        if (n->type == NODE_ELEMENT && n->tag == A_style) {
             char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);
-        } else if (is_sheet_link(n)) {
-            char *u = url_join(doc_base(d), node_attr(n, "href"));
+        } else if (processing || is_sheet_link(n)) {
+            char *u = url_join(doc_base(d), processing ? hm_get(&pi, "href") : node_attr(n, "href"));
             NetResponse *cr = u ? net_fetch_sync(sheet_request(d, n, u)) : NULL;
-            if (cr && !cr->error && cr->status == 200 && cr->body && net_response_mime_allowed(cr, NET_MIME_STYLE)) { StyleSheet *sh = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
+            if (cr && !cr->error && cr->status == 200 && cr->body && net_response_mime_allowed(cr, NET_MIME_STYLE)) { StyleSheet *sh = sheet_from_response(cr, p->d, n, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
             if (cr) net_response_free(cr);
             free(u);
         }
+        hm_free(&pi, free);
     }
     /* Prefix HTML discovers its real sheet owners asynchronously. XML keeps
        the existing completed-document initialization above. */

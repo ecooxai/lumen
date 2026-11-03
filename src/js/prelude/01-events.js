@@ -349,6 +349,7 @@ class MutationObserver {
     takeRecords() { const r = this._records; this._records = []; return r; }
 }
 function notify(type, target, extra) {
+    if (type === 'attributes' && extra.attributeName === 'media' && extra.attributeNamespace == null) cssMediaAttributeChanged(target);
     if (type === 'attributes' && extra.attributeName === 'commandfor') commandTargets.delete(target);
     if (type !== 'characterData') slotMutated(type, target, extra);
     if (!observers.length) return;

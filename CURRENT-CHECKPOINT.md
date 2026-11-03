@@ -1,8 +1,12 @@
-# Lumen Linux source checkpoint 1701
+# Lumen Linux source checkpoint 1808
 
-Prepared with GPT-6 Astra Pro, built-in agents and RubyWebTerm on 2026-11-02.
+**DEVELOPMENT SOURCE ONLY — scoped qualification PASSED; full1248 verification PENDING. NOT AN ACCEPTED PRODUCT RELEASE.**
 
-This tree reproduces the recorded inputs from tested working source `bcdefe495f5c0f975204731ebd609cd4494cf2d0`.
+The last regression-free full selected sample remains1705:714/1248 selected test cases/URLs (57.21%). Source availability is separate from runtime promotion. The1,248 selected URLs come from1,247 source files across10 DOM/CSS families; pre-existing selection excludes44 long-timeout cases and1 HTTPS-only case.
+
+Prepared with GPT-6 Astra Pro, built-in agents and RubyWebTerm on 2026-11-03.
+
+This tree reproduces the recorded inputs from tested working source `fcf2d2d83686a554f492fbaf992173b12d924b64`.
 The public commit has separate, previously approved public ancestry. Private task
 history, profiles, credentials, inbox records and guarded validation machinery
 are excluded. Existing older validation documents are historical snapshots;

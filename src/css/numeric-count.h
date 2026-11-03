@@ -11,6 +11,7 @@ typedef struct { const char *p; float em, rem; const MediaCtx *media; unsigned d
     const LCtx *font_context; /* borrowed for the synchronous parse only */
 } CssNumberParser;
 static bool css_number_sum(CssNumberParser *p, CssNumber *out);
+static bool css_number_value(CssNumberParser *p, CssNumber *out);
 static void css_number_ws(CssNumberParser *p) { while (is_ws((unsigned char)*p->p)) p->p++; }
 static bool css_number_scalar(const CssNumber *n) { for (int i = 0; i < CN_DIMS; i++) if (n->power[i]) return false; return true; }
 static bool css_number_same(const CssNumber *a, const CssNumber *b) { return !memcmp(a->power, b->power, sizeof a->power); }
@@ -27,6 +28,14 @@ static bool css_number_length_unit(const char *unit) {
     for (size_t i = 0; i < ARRLEN(units); i++) if (!strcmp(unit, units[i])) return true;
     return false;
 }
+/* CSS orders negative zero below positive zero. C fmin/fmax do not give a
+ * portable choice of zero sign on ties, so handle that case explicitly. */
+static double css_number_minimum(double a, double b) {
+    return a == 0 && b == 0 ? (signbit(a) ? a : b) : fmin(a, b);
+}
+static double css_number_maximum(double a, double b) {
+    return a == 0 && b == 0 ? (signbit(a) ? b : a) : fmax(a, b);
+}
 static bool css_number_function(const char *name, CssNumber *args, int n, int strategy, bool no_clamp, CssNumber *out) {
     if (!n) return false;
     *out = args[0]; double a = args[0].value, b = n > 1 ? args[1].value : 1, v = a;
@@ -37,7 +46,7 @@ static bool css_number_function(const char *name, CssNumber *args, int n, int st
         if (!same) return false;
         bool lo = !strcmp(name, "min"), hi = !strcmp(name, "max");
         if (!lo && !hi) v = fabs(a);
-        for (int i = 1; i < n; i++) v = lo ? fmin(v, args[i].value) : hi ? fmax(v, args[i].value) : hypot(v, args[i].value);
+        for (int i = 1; i < n; i++) v = lo ? css_number_minimum(v, args[i].value) : hi ? css_number_maximum(v, args[i].value) : hypot(v, args[i].value);
     } else if (!strcmp(name, "progress")) {
         if (n != 3 || !same) return false;
         int dimensions = 0;
@@ -48,7 +57,7 @@ static bool css_number_function(const char *name, CssNumber *args, int n, int st
         if (dimensions > 1) return false;
         memset(out->power, 0, sizeof out->power);
         v = calculation_progress(a, b, args[2].value, no_clamp);
-    } else if (!strcmp(name, "clamp")) { if (n != 3 || !same) return false; v = fmax(a, fmin(b, args[2].value)); }
+    } else if (!strcmp(name, "clamp")) { if (n != 3 || !same) return false; v = css_number_maximum(a, css_number_minimum(b, args[2].value)); }
     else if (!strcmp(name, "abs")) { if (n != 1) return false; v = fabs(a); }
     else if (!strcmp(name, "sign")) { if (n != 1) return false; memset(out->power, 0, sizeof out->power); v = a > 0 ? 1 : a < 0 ? -1 : a; }
     else if (!strcmp(name, "round")) {
@@ -63,6 +72,7 @@ static bool css_number_function(const char *name, CssNumber *args, int n, int st
         if (!b || isinf(a)) v = NAN;
         else if (isinf(b)) v = !strcmp(name, "mod") && signbit(a) != signbit(b) ? NAN : a;
         else v = !strcmp(name, "mod") ? a - b * floor(a / b) : fmod(a, b);
+        if (!strcmp(name, "mod") && v == 0) v = copysign(0, b);
     } else if (!strcmp(name, "sin") || !strcmp(name, "cos") || !strcmp(name, "tan")) {
         if (n != 1 || (!scalar && !css_number_angle(&args[0]))) return false;
         if (!scalar) a *= M_PI / 180; memset(out->power, 0, sizeof out->power);
@@ -77,6 +87,51 @@ static bool css_number_function(const char *name, CssNumber *args, int n, int st
     else if (!strcmp(name, "log")) { if ((n != 1 && n != 2) || !scalar) return false; v = n == 1 ? log(a) : log(a) / log(b); }
     else return false;
     out->value = nan ? NAN : v; return true;
+}
+/* A random key is not a numeric calculation. Parse its token grammar before
+ * the ordinary same-dimension argument list. This is syntax-only support: the
+ * caller rejects random() in evaluation mode until real cache sampling exists.
+ * https://drafts.csswg.org/css-values-5/#random-value-sharing */
+static bool css_number_random_key(CssNumberParser *p) {
+    CLexer lexer; clex_init(&lexer, p->p, strlen(p->p));
+    CTok token;
+    do { token = clex_next(&lexer); if (token.type == CT_WS) free(token.str); } while (token.type == CT_WS);
+    if (token.type != CT_IDENT) { free(token.str); return true; }
+    const char *id = token.str;
+    /* These identifiers begin calc-sum arguments, not an optional cache key. */
+    if (str_ieq(id, "pi") || str_ieq(id, "e") || str_ieq(id, "infinity") ||
+        str_ieq(id, "-infinity") || str_ieq(id, "nan")) { free(token.str); return true; }
+    if (str_ieq(id, "auto") || str_ieq(id, "fixed")) {
+        bool fixed = str_ieq(id, "fixed"); free(token.str);
+        p->p = lexer.s + lexer.i;
+        if (fixed) {
+            CLexer numbers; clex_init(&numbers, p->p, strlen(p->p)); CTok first;
+            do { first = clex_next(&numbers); if (first.type == CT_WS) free(first.str); } while (first.type == CT_WS);
+            bool math = first.type == CT_FUNC, numeric = first.type == CT_NUMBER || math;
+            free(first.str); CssNumber value;
+            if (!numeric || !css_number_value(p, &value) || !css_number_scalar(&value)) return false;
+            /* A function defers range clamping; bare constants and grouping
+             * do not match the <number> component required after fixed. */
+            if (!math && !(value.value >= 0 && value.value <= 1)) return false;
+        }
+        css_number_ws(p); if (*p->p != ',') return false;
+        p->p++; return true;
+    }
+    unsigned seen = 0;
+    for (;;) {
+        id = token.str; unsigned kind = 0;
+        if (token.type == CT_IDENT && id) {
+            if (id[0] == '-' && id[1] == '-' && id[2]) kind = 1;
+            else if (str_ieq(id, "element-scoped")) kind = 2;
+            else if (str_ieq(id, "property-scoped") || str_ieq(id, "property-index-scoped") || !strncmp(id, "ua-", 3)) kind = 4;
+        }
+        free(token.str);
+        if (!kind || (seen & kind)) return false;
+        seen |= kind;
+        do { token = clex_next(&lexer); if (token.type == CT_WS) free(token.str); } while (token.type == CT_WS);
+        if (token.type == CT_COMMA) { free(token.str); p->p = lexer.s + lexer.i; return true; }
+        if (token.type != CT_IDENT) { free(token.str); return false; }
+    }
 }
 static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
     css_number_ws(p); memset(out, 0, sizeof *out);
@@ -130,11 +185,28 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
         return true;
     }
     p->p++; int strategy = 0; bool no_clamp = false;
-    if (p->validation_only && (!strcmp(name, "sibling-index") || !strcmp(name, "sibling-count"))) {
-        /* Syntax-only scalar typing. No fabricated tree value may escape
-           into evaluation; actual tree-scoped resolution is a separate path. */
+    bool random = !strcmp(name, "random");
+    if (random && (!p->validation_only || !css_number_random_key(p))) return false;
+    if (!strcmp(name, "sibling-index") || !strcmp(name, "sibling-count")) {
         css_number_ws(p); if (*p->p != ')') return false;
-        p->p++; out->value = 1; return true;
+        p->p++;
+        if (p->validation_only) { out->value = 1; return true; }
+        const LCtx *context = p->font_context;
+        const Node *element = context ? context->tree_count_element : NULL;
+        if (!element || element->type != NODE_ELEMENT) return false;
+        /* Only an owned literal inline source supplies an element. All
+         * stylesheet/custom/pseudo-rule values remain unsupported until their
+         * source tree scope is available; shadow subjects are excluded too. */
+        const Node *root = element; while (root->parent) root = root->parent;
+        if (root->type == NODE_FRAGMENT && root->host) return false;
+        size_t count = 1;
+        for (const Node *node = element->prev; node; node = node->prev)
+            count += node->type == NODE_ELEMENT;
+        if (!strcmp(name, "sibling-count"))
+            for (const Node *node = element->next; node; node = node->next)
+                count += node->type == NODE_ELEMENT;
+        if (context->used_tree_counts) *context->used_tree_counts = true;
+        out->value = (double)count; return true;
     }
     if (!strcmp(name, "progress")) {
         css_number_ws(p);
@@ -172,6 +244,13 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
         for (int i = 0; i < 3; i += 2) if (unbounded & (1u << i)) {
             args[i] = args[1]; args[i].value = i == 0 ? -INFINITY : INFINITY;
         }
+    }
+    if (random) {
+        if (n != 2 && n != 3) return false;
+        for (int i = 1; i < n; i++) if (!css_number_same(&args[0], &args[i])) return false;
+        /* No sampled or nominal value can escape to computation: random was
+         * rejected above unless this entire parse is validation-only. */
+        *out = args[0]; out->value = 0; return true;
     }
     return css_number_function(name, args, n, strategy, no_clamp, out);
 }

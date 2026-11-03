@@ -1,3 +1,19 @@
+/* Legacy names share one declaration identity, including CSSOM accessors. */
+const CSS_LEGACY_ANIMATION_NAMES = /^(?:animation(?:-(?:delay|direction|duration|fill-mode|iteration-count|name|play-state|timing-function))?|transition(?:-(?:delay|duration|property|timing-function))?)$/;
+function cssAnimationPropertyName(property) {
+    const name = property.startsWith('-webkit-') ? property.slice(8) : property;
+    return name !== property && CSS_LEGACY_ANIMATION_NAMES.test(name) ? name : property;
+}
+/* Descriptor declarations keep descriptor names, even where this engine still
+ * preserves an unsupported descriptor. Private brands avoid public owner hooks. */
+const cssDescriptorStyles = new WeakSet();
+const cssDescriptorStyleHas = WeakSet.prototype.has.bind(cssDescriptorStyles);
+const cssDescriptorStyleAdd = WeakSet.prototype.add.bind(cssDescriptorStyles);
+function cssStylePropertyName(style, property) {
+    const name = property.startsWith('--') ? property : property.includes('-') ?
+        property.replace(/[A-Z]/g, c => c.toLowerCase()) : camelToKebab(property);
+    return cssDescriptorStyleHas(style) ? name : cssAnimationPropertyName(name);
+}
 const kebabCache = new SMap();
 const camelToKebab = (p) => {
     let r = kebabCache.get(p);
@@ -61,7 +77,7 @@ function cssUnicodeRangeText(value) {
     }
     return null;
 }
-function parseDecls(s, fontFace = false) {
+function parseDecls(s, fontFace = false, keyframe = false, supportedNames = true) {
     const m = new SMap(); if (!s) return m;
     let depth = 0, q = '', colon = -1, name = ''; const parts = [];
     const finish = end => {
@@ -99,7 +115,7 @@ function parseDecls(s, fontFace = false) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
     return m;
 }
 /* The native enum parser owns acceptance; authored pending tokens remain opaque. */
@@ -120,6 +136,31 @@ function cssInterpolateSizeSet(map, value, priority, cascade = false) {
     if (cascade && old && old[1] && !priority) return true;
     map.delete(property); map.set(property, [parsed, priority ? 'important' : '']);
     return true;
+}
+
+const CSS_EASING_LONGHAND = /^(?:-webkit-)?(?:animation|transition)-timing-function$/;
+function cssEasingSet(map, property, value, priority, cascade = false) {
+    if (value === '') { if (cascade) return false; map.delete(property); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
+    const parsed = N.cssEasing(value);
+    if (parsed === null) return false;
+    const old = map.get(property);
+    if (cascade && old && old[1] && !priority) return true;
+    if (cascade) map.delete(property);
+    map.set(property, [parsed, priority ? 'important' : '']);
+    return true;
+}
+
+const CSS_IMAGE_LONGHAND = /^(background-clip|border-image-repeat|border-image-slice)$/;
+function cssImageLonghandSet(map, property, value, priority, cascade = false) {
+    if (value === '') { if (cascade) return false; map.delete(property); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
+    const parsed = N.cssImageLonghand(property, value);
+    if (parsed === null) return false;
+    const old = map.get(property);
+    if (cascade && old && old[1] && !priority) return true;
+    if (cascade) map.delete(property);
+    map.set(property, [parsed, priority ? 'important' : '']); return true;
 }
 
 /* Physical border declarations are stored as real longhands. The native
@@ -745,6 +786,45 @@ function transformComponentsValid(rawValue) {
     }
     return true;
 }
+const CSS_SIZE_SHORTHAND = /^(?:size|min-size|max-size)$/;
+function cssSizeShorthandParse(property, value) {
+    /* Complete valid EOF tokens, then reuse the lexical component tokenizer:
+     * comments are trivia and identifier escapes are decoded before grammar. */
+    const text = N.cssMathText(value);
+    if (text === null) return null;
+    const tokens = cssMediaTokens(text), scan = cssMediaArraySlice(tokens);
+    let pending = false;
+    for (let i = 0; i < scan.length; i++) {
+        const token = scan[i];
+        if (token.kind === 'bad') return null;
+        if (token.kind === 'function' && (/^(?:var|env|attr|if)$/i.test(token.value) || token.value.startsWith('--'))) pending = true;
+        if (token.body) for (let j = 0; j < token.body.length; j++) apush(scan, token.body[j]);
+    }
+    if (pending) return N.cssMinSize(text);
+    if (!tokens.length || tokens.length > 2) return null;
+    if (tokens.length === 1 && tokens[0].kind === 'ident' && cssFlexWide(tokens[0].value)) return cssMediaLower(tokens[0].value);
+    const values = [];
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        if (token.kind !== 'ident' && token.kind !== 'number' && token.kind !== 'function') return null;
+        if (token.kind === 'ident' && cssFlexWide(token.value)) return null;
+        const part = cssMediaComponentText(token, false);
+        if (property === 'max-size' && token.kind === 'ident' && cssMediaLower(token.value) === 'none') { apush(values, 'none'); continue; }
+        const scalar = cssMinSizeParse(property === 'size' ? 'width' : property === 'min-size' ? 'min-width' : 'max-width', part);
+        if (scalar === null || property === 'max-size' && scalar === 'auto') return null;
+        apush(values, scalar);
+    }
+    return values.length === 1 || values[0] === values[1] ? values[0] : values[0] + ' ' + values[1];
+}
+function cssSizeShorthandSet(map, property, value, priority, cascading = false) {
+    if (value === '') { map.delete(property); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
+    const parsed = cssSizeShorthandParse(property, value);
+    if (parsed === null) return false;
+    const old = map.get(property);
+    if (cascading && old && old[1] && !priority) return false;
+    map.delete(property); map.set(property, [parsed, priority ? 'important' : '']); return true;
+}
 const CSS_MIN_SIZE = /^min-(width|height|block-size|inline-size)$/;
 const MATH_LEN_PROPS = /^((min-|max-)?(width|height|block-size|inline-size))$/;
 /* Canonical nonnegative px sizes below 1e9 with at most six fractional digits
@@ -876,6 +956,9 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
     if (p === 'interpolate-size') return cssInterpolateSizeParse(v) !== null;
+    if (p === 'z-index') return N.cssSupports('(z-index:' + v + ')');
+    if (CSS_IMAGE_LONGHAND.test(p)) return N.cssImageLonghand(p, v) !== null;
+    if (CSS_EASING_LONGHAND.test(p)) return N.cssEasing(v) !== null;
     if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
     if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
     if (cssBorderRelevant(p)) return cssBorderParse(p, v) !== null;
@@ -1138,20 +1221,21 @@ function shapeLenPx(el) {
     };
 }
 /* Raw declaration reads share the setters' scalar serialization. Normalize
- * only complete length/percentage literals (or line-height numbers), after
+ * only complete length/percentage literals or line-height/opacity numbers, after
  * the property's existing parser has seen its original token spelling. */
 function cssScalarSpecified(property, value) {
-    if (!CSS_PROP_NAMES.has(property) || !(TOM_LENGTH_PROPS.test(property) ||
+    const opacity = /^(?:fill-|stroke-|stop-|flood-)?opacity$/.test(property);
+    if (!CSS_PROP_NAMES.has(property) || !(TOM_LENGTH_PROPS.test(property) || opacity ||
         property === 'baseline-shift' || property === 'border-spacing')) return value;
     const scalar = /^([+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?)([a-z]+|%)?$/i.exec(value);
     if (!scalar || !Number.isFinite(Number(scalar[1]))) return value;
     const unit = (scalar[2] || '').toLowerCase();
-    if (!TOM_LEN_UNITS.has(unit)) return value;
+    if (opacity ? unit !== '' && unit !== '%' : !TOM_LEN_UNITS.has(unit)) return value;
     /* Keep unitless tokens on their existing property grammar path. In
        particular, underflow must not manufacture a valid zero length, and
        number-valued border-image widths must not become px values. */
-    if (!unit && property !== 'line-height') return value;
-    const canonical = specNormalize(property, scalar[1] + unit);
+    if (!unit && property !== 'line-height' && !opacity) return value;
+    const canonical = specNormalize(property, opacity && unit === '%' ? String(Number(scalar[1]) / 100) : scalar[1] + unit);
     if (canonical === value || !mathValid(property, value)) return value;
     if (N.cssSupports('(' + property + ':initial)') &&
         !N.cssSupports('(' + property + ':' + value + ')')) return value;
@@ -1159,6 +1243,16 @@ function cssScalarSpecified(property, value) {
 }
 
 function specNormalize(p, v) {
+    if (p === 'z-index') {
+        /* Preserve integer token syntax across CSSOM serialization. Converting
+         * long decimal integers through Number/String creates exponent tokens,
+         * which are not valid authored <integer> values. */
+        const integer = /^([+-]?)([0-9]+)$/.exec(v.trim());
+        if (integer) {
+            const digits = integer[2].replace(/^0+(?=[0-9])/, '');
+            return (integer[1] === '-' && digits !== '0' ? '-' : '') + digits;
+        }
+    }
     if ((p === 'shape-outside' || p === 'clip-path') && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, null);
     if ((p === 'shape-outside' || p === 'clip-path') && /inset\(/i.test(v)) v = insetNorm(v, null);
     if (/-gradient\(\s*in\s/i.test(v))   /* "in <space> <direction>" serializes as "<direction> in <space>" */
@@ -1313,15 +1407,31 @@ class CSSStyleDeclaration {
     get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
-    getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); return e ? e[0] : shorthandPart(m, p); }
-    getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
+    getPropertyValue(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); return e ? e[0] : shorthandPart(m, p); }
+    getPropertyPriority(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = cssStylePropertyName(this, p);
         v = v == null ? '' : String(v);
         pri = pri == null ? '' : String(pri);
+        if (!p.startsWith('--') && !cssPropKnown(p)) return;
         if (v !== '' && ((pri && !/^important$/i.test(pri)) || !cssVarSyntax(v))) return;
+        if (CSS_SIZE_SHORTHAND.test(p)) {
+            const m = new SMap(this._m());
+            if (!cssSizeShorthandSet(m, p, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
         if (p === 'interpolate-size') {
             const m = new SMap(this._m());
             if (!cssInterpolateSizeSet(m, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (CSS_EASING_LONGHAND.test(p)) {
+            const m = new SMap(this._m());
+            if (!cssEasingSet(m, p, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (CSS_IMAGE_LONGHAND.test(p)) {
+            const m = new SMap(this._m());
+            if (!cssImageLonghandSet(m, p, v, pri)) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
         if (p === 'overflow') {
@@ -1383,7 +1493,7 @@ class CSSStyleDeclaration {
         }
         if (v !== '' && !p.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null) return; }
         if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },
@@ -1391,7 +1501,7 @@ const styleHandler = {
     has(t, p) { return p in t || cssPropKnown(p); },
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = camelToKebab(String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [this.getPropertyValue(p), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
+    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = cssStylePropertyName(this, String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [this.getPropertyValue(p), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return this._names().length; }
     /* an invalid pseudo-element or an element outside the document has an empty style */
     _names() { return this._none || !this._el.isConnected || !N.computed(this._el, 'display') || mediaChild(this._el) ? [] : computedNames(); }   /* no style: outside the flat tree */
@@ -1402,11 +1512,13 @@ class ComputedStyleDeclaration extends CSSStyleDeclaration {
 /* inside <video>/<audio>, whose shadow trees have no slots */
 const mediaChild = el => { for (let p = el.parentNode; p && p.nodeType === 1; p = p.parentNode) if (p.namespaceURI === 'http://www.w3.org/1999/xhtml' && (p.localName === 'video' || p.localName === 'audio')) return true; return false; };
 /* the longhands a computed style lists (length / item / iteration), sorted like Chrome's */
-const CSS_SHORTHANDS = /^(all|animation|animation-range|background|background-position|border|border-(block|inline)(-(start|end))?(-(color|style|width))?|border-(top|right|bottom|left|color|style|width|image|radius)|column-rule|columns|contain-intrinsic-size|container|flex|flex-flow|font|font-synthesis|font-variant|gap|grid|grid-area|grid-column|grid-row|grid-template|grid-gap|grid-row-gap|grid-column-gap|inset|inset-block|inset-inline|list-style|margin|margin-block|margin-inline|marker|mask|mask-border|offset|outline|overflow|overscroll-behavior|padding|padding-block|padding-inline|place-content|place-items|place-self|position-try|scroll-margin(-block|-inline)?|scroll-padding(-block|-inline)?|scroll-timeline|text-box|text-decoration|text-emphasis|text-wrap|transition|view-timeline|white-space|word-wrap|page-break-(before|after|inside)|-webkit-.*|-epub-.*)$/;
+const CSS_SHORTHANDS = /^(all|(?:min-|max-)?size|animation|animation-range|background|background-position|border|border-(block|inline)(-(start|end))?(-(color|style|width))?|border-(top|right|bottom|left|color|style|width|image|radius)|column-rule|columns|contain-intrinsic-size|container|flex|flex-flow|font|font-synthesis|font-variant|gap|grid|grid-area|grid-column|grid-row|grid-template|grid-gap|grid-row-gap|grid-column-gap|inset|inset-block|inset-inline|list-style|margin|margin-block|margin-inline|marker|mask|mask-border|offset|outline|overflow|overscroll-behavior|padding|padding-block|padding-inline|place-content|place-items|place-self|position-try|scroll-margin(-block|-inline)?|scroll-padding(-block|-inline)?|scroll-timeline|text-box|text-decoration|text-emphasis|text-wrap|transition|view-timeline|white-space|word-wrap|page-break-(before|after|inside)|-webkit-.*|-epub-.*)$/;
 let computedList = null;
 const computedNames = () => computedList || (computedList = Array.from(CSS_PROP_NAMES).filter(p => !CSS_SHORTHANDS.test(p)).sort());
 /* CSS properties Chrome supports (those its WPT computed-style tests exercise), for `name in getComputedStyle(el)` */
 const CSS_PROP_NAMES = new SSet("background border-top border-right border-bottom border-left touch-action pointer-events -webkit-user-select offset border-block border-inline -webkit-appearance page-break-before page-break-after page-break-inside -webkit-animation -webkit-animation-delay -webkit-animation-direction -webkit-animation-duration -webkit-animation-fill-mode -webkit-animation-iteration-count -webkit-animation-name -webkit-animation-play-state -webkit-animation-timing-function -webkit-transition -webkit-transition-delay -webkit-transition-duration -webkit-transition-property -webkit-transition-timing-function -webkit-transform-origin -webkit-transform-style -webkit-perspective -webkit-perspective-origin -webkit-backface-visibility -webkit-box-align -webkit-box-direction -webkit-box-flex -webkit-box-ordinal-group -webkit-box-orient -webkit-box-pack -webkit-box-shadow -webkit-box-sizing -webkit-box-reflect -webkit-box-decoration-break -webkit-mask -webkit-mask-image -webkit-mask-position -webkit-mask-size -webkit-mask-repeat -webkit-mask-origin -webkit-mask-clip -webkit-mask-composite -webkit-mask-box-image -webkit-border-radius -webkit-border-top-left-radius -webkit-border-top-right-radius -webkit-border-bottom-left-radius -webkit-border-bottom-right-radius -webkit-flex -webkit-flex-basis -webkit-flex-direction -webkit-flex-flow -webkit-flex-grow -webkit-flex-shrink -webkit-flex-wrap -webkit-align-content -webkit-align-items -webkit-align-self -webkit-justify-content -webkit-order -webkit-filter -webkit-clip-path -webkit-font-smoothing -webkit-tap-highlight-color -webkit-user-modify -webkit-user-drag -webkit-text-security -webkit-highlight -webkit-hyphenate-character -webkit-line-break -webkit-locale -webkit-rtl-ordering -webkit-text-combine -webkit-text-emphasis -webkit-text-emphasis-color -webkit-text-emphasis-position -webkit-text-emphasis-style -webkit-text-orientation -webkit-writing-mode -webkit-column-count -webkit-column-gap -webkit-column-rule -webkit-column-rule-color -webkit-column-rule-style -webkit-column-rule-width -webkit-column-span -webkit-column-width -webkit-columns -webkit-column-break-after -webkit-column-break-before -webkit-column-break-inside -webkit-print-color-adjust -webkit-ruby-position -webkit-shape-outside -webkit-shape-margin -webkit-shape-image-threshold -webkit-border-image -webkit-border-horizontal-spacing -webkit-border-vertical-spacing -webkit-background-clip -webkit-background-origin -webkit-background-size -webkit-font-feature-settings -webkit-hyphens -webkit-opacity -webkit-text-size-adjust -webkit-text-decorations-in-effect -webkit-text-stroke-color -webkit-text-fill-color -webkit-box-decoration-break -webkit-initial-letter -webkit-margin-before -webkit-margin-after -webkit-margin-start -webkit-margin-end -webkit-padding-before -webkit-padding-after -webkit-padding-start -webkit-padding-end -webkit-logical-width -webkit-logical-height -webkit-min-logical-width -webkit-min-logical-height -webkit-max-logical-width -webkit-max-logical-height -webkit-border-before -webkit-border-after -webkit-border-start -webkit-border-end -webkit-border-before-color -webkit-border-before-style -webkit-border-before-width -webkit-border-after-color -webkit-border-after-style -webkit-border-after-width -webkit-border-start-color -webkit-border-start-style -webkit-border-start-width -webkit-border-end-color -webkit-border-end-style -webkit-border-end-width -webkit-line-clamp -webkit-text-stroke -webkit-text-stroke-width -webkit-transform accent-color align-content align-items align-self alignment-baseline all anchor-name anchor-scope animation animation-composition animation-delay animation-direction animation-duration animation-fill-mode animation-iteration-count animation-name animation-play-state animation-range animation-range-end animation-range-start animation-timeline animation-timing-function appearance aspect-ratio backdrop-filter backface-visibility background-attachment background-blend-mode background-clip background-color background-image background-origin background-position background-position-x background-position-y background-repeat background-size baseline-shift baseline-source block-size border border-block-color border-block-end-color border-block-end-radius border-block-end-style border-block-end-width border-block-start-color border-block-start-radius border-block-start-style border-block-start-width border-block-style border-block-width border-bottom-color border-bottom-left-radius border-bottom-radius border-bottom-right-radius border-bottom-style border-bottom-width border-collapse border-color border-end-end-radius border-end-start-radius border-image-outset border-image-repeat border-image-slice border-image-source border-image-width border-inline-color border-inline-end-color border-inline-end-radius border-inline-end-style border-inline-end-width border-inline-start-color border-inline-start-radius border-inline-start-style border-inline-start-width border-inline-style border-inline-width border-left-color border-left-radius border-left-style border-left-width border-radius border-right-color border-right-radius border-right-style border-right-width border-shape border-spacing border-start-end-radius border-start-start-radius border-style border-top-color border-top-left-radius border-top-radius border-top-right-radius border-top-style border-top-width border-width bottom box-decoration-break box-shadow box-sizing break-after break-before break-inside caption-side caret-color caret-shape clear clip clip-path clip-rule color color-interpolation-filters color-scheme column-count column-fill column-gap column-rule column-rule-break column-rule-color column-rule-inset column-rule-inset-cap column-rule-inset-cap-end column-rule-inset-cap-start column-rule-inset-end column-rule-inset-junction column-rule-inset-junction-end column-rule-inset-junction-start column-rule-inset-start column-rule-style column-rule-visibility-items column-rule-width column-span column-width columns contain contain-intrinsic-block-size contain-intrinsic-height contain-intrinsic-inline-size contain-intrinsic-size contain-intrinsic-width container container-name container-type content content-visibility corner corner-block-end-shape corner-block-start corner-block-start-shape corner-bottom-left-shape corner-bottom-right-shape corner-bottom-shape corner-inline-end-shape corner-inline-start-shape corner-left-shape corner-right-shape corner-shape corner-top corner-top-left corner-top-left-shape corner-top-right-shape corner-top-shape counter-increment counter-reset counter-set cursor cx cy direction display dominant-baseline dynamic-range-limit empty-cells field-sizing fill fill-opacity filter flex flex-basis flex-direction flex-flow flex-grow flex-line-count flex-shrink flex-wrap float flood-color flood-opacity font font-family font-feature-settings font-kerning font-language-override font-optical-sizing font-palette font-size font-size-adjust font-stretch font-style font-synthesis font-synthesis-small-caps font-synthesis-style font-synthesis-weight font-variant font-variant-alternates font-variant-caps font-variant-east-asian font-variant-emoji font-variant-ligatures font-variant-numeric font-variant-position font-variation-settings font-weight forced-color-adjust frame-sizing gap grid grid-area grid-auto-columns grid-auto-flow grid-auto-rows grid-column grid-column-end grid-column-gap grid-column-start grid-gap grid-lanes grid-lanes-direction grid-lanes-pack grid-row grid-row-end grid-row-gap grid-row-start grid-template-areas grid-template-columns grid-template-rows height hyphenate-character hyphenate-limit-chars hyphens image-orientation image-rendering initial-letter inline-size inset inset-block inset-block-end inset-block-start inset-inline inset-inline-end inset-inline-start interactivity interpolate-size isolation justify-content justify-items justify-self left letter-spacing lighting-color line-break line-height link-parameters list-style list-style-image list-style-position list-style-type margin margin-block margin-block-end margin-block-start margin-bottom margin-inline margin-inline-end margin-inline-start margin-left margin-right margin-top margin-trim mask mask-clip mask-composite mask-image mask-mode mask-origin mask-position mask-repeat mask-size mask-type math-depth max-block-size max-height max-inline-size max-width min-block-size min-height min-inline-size min-width mix-blend-mode object-fit object-position offset-anchor offset-distance offset-path offset-position offset-rotate opacity order orphans outline outline-color outline-offset outline-style outline-width overflow overflow-anchor overflow-block overflow-clip-margin overflow-inline overflow-wrap overflow-x overflow-y overlay overscroll-behavior overscroll-behavior-block overscroll-behavior-inline overscroll-behavior-x overscroll-behavior-y padding padding-block padding-block-end padding-block-start padding-bottom padding-inline padding-inline-end padding-inline-start padding-left padding-right padding-top page perspective perspective-origin place-content place-items place-self position position-anchor position-area position-try position-try-fallbacks position-try-order position-visibility print-color-adjust quotes reading-flow reading-order resize right rotate row-gap row-rule row-rule-break row-rule-color row-rule-inset row-rule-inset-cap row-rule-inset-cap-end row-rule-inset-cap-start row-rule-inset-end row-rule-inset-junction row-rule-inset-junction-end row-rule-inset-junction-start row-rule-inset-start row-rule-style row-rule-visibility-items row-rule-width ruby-align ruby-overhang ruby-position rule rule-break rule-color rule-inset rule-inset-cap rule-inset-end rule-inset-junction rule-inset-start rule-overlap rule-style rule-visibility-items rule-width rx ry scale scroll-axis-lock scroll-behavior scroll-initial-target scroll-margin scroll-margin-block scroll-margin-block-end scroll-margin-block-start scroll-margin-bottom scroll-margin-inline scroll-margin-inline-end scroll-margin-inline-start scroll-margin-left scroll-margin-right scroll-margin-top scroll-marker-group scroll-padding scroll-padding-block scroll-padding-block-end scroll-padding-block-start scroll-padding-bottom scroll-padding-inline scroll-padding-inline-end scroll-padding-inline-start scroll-padding-left scroll-padding-right scroll-padding-top scroll-snap-align scroll-snap-stop scroll-snap-type scroll-target-group scrollbar-color scrollbar-gutter scrollbar-width shape-image-threshold shape-margin shape-outside stroke stroke-dasharray stroke-dashoffset stroke-opacity stroke-width tab-size table-layout text-align text-align-last text-autospace text-box text-box-edge text-box-trim text-combine-upright text-decoration text-decoration-color text-decoration-inset text-decoration-line text-decoration-skip-ink text-decoration-skip-spaces text-decoration-style text-decoration-thickness text-emphasis text-emphasis-color text-emphasis-position text-emphasis-style text-fit text-indent text-justify text-orientation text-overflow text-shadow text-size-adjust text-spacing-trim text-transform text-underline-offset text-underline-position text-wrap text-wrap-mode text-wrap-style top transform transform-box transform-origin transform-style transition transition-behavior transition-delay transition-duration transition-property transition-timing-function translate unicode-bidi user-select vertical-align view-transition-class view-transition-name visibility white-space white-space-collapse widows width will-change word-break word-spacing word-wrap writing-mode x y z-index zoom r d fill-rule stop-color stop-opacity shape-rendering stroke-miterlimit color-interpolation color-rendering paint-order stroke-linecap stroke-linejoin text-anchor vector-effect column-height grid-template marker marker-start marker-mid marker-end mask-border mask-border-mode mask-border-outset mask-border-repeat mask-border-slice mask-border-source mask-border-width text-rendering border-image -webkit-text-fill-color -webkit-text-stroke-color -webkit-mask-image -webkit-box-orient".split(" "));
+/* Sizing 4 defines these element shorthands independently of @page size. */
+for (const name of ["size", "min-size", "max-size"]) CSS_PROP_NAMES.add(name);
 const cssPropName = p => typeof p !== 'string' ? null : p.includes('-') ? p : p.replace(/^webkit(?=[A-Z])/, '-webkit').replace(/[A-Z]/g, c => '-' + c.toLowerCase());
 /* one notion of a supported property for `in style`, `in getComputedStyle()` and CSS.supports(): dashed, camelCase, webkitCase */
 const cssPropKnown = p => typeof p === 'string' && (p.startsWith('--') ? false : p === 'cssFloat' || (p.includes('-') ? p === p.toLowerCase() && CSS_PROP_NAMES.has(p) : !/^-/.test(cssPropName(p)) || /^-webkit-/.test(cssPropName(p)) ? CSS_PROP_NAMES.has(cssPropName(p)) : false));

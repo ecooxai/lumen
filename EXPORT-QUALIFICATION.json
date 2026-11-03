@@ -1,88 +1,73 @@
 {
-  "candidate": 1701,
-  "status": "SOURCE MAPPING ACCEPTED after independent public inventory review",
-  "tested_source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
-  "tested_binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
-  "source_manifest_digest": "2c75e05834c127e4dc4f19b5b559e43fd6080118df146e427eb9cbb9779d9458",
-  "public_parent": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1701-20261102",
+  "candidate": 1808,
+  "status": "DEVELOPMENT SOURCE CHECKPOINT; scoped qualification PASSED; full1248 verification PENDING; NOT ACCEPTED",
+  "tested_source_commit": "fcf2d2d83686a554f492fbaf992173b12d924b64",
+  "tested_binary_sha256": "79af7023284551d597ce61ff4a5e3954a7edd2a43b4b8ee2af5d63a1658ff46d",
+  "source_manifest_digest": "5c73f1b303089995b99e281ae20025600ea0c5345848eaf09705ca9d7d7ca2eb",
+  "public_parent": "2ec6af183597791985b48c6a9c2689c4a8ef3cf2",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103",
   "all_recorded_inputs_exact": true,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
   "private_history_included": false,
+  "publication_performed": false,
   "validation_summary": {
-    "build_startup": {
-      "passed": true,
-      "elapsed_seconds": 51.14
+    "qualification_scope": "DEVELOPMENT SOURCE CHECKPOINT ONLY. All33 scoped qualification jobs passed, including native218 and retained1318. Complete unchanged1248 verification is running; product acceptance is NOT granted.",
+    "product_accepted": false,
+    "full1248_replayed": false,
+    "full1248_status": "PENDING final complete immutable replay and zero prior-PASS loss review",
+    "last_regression_free_full_sample": {
+      "candidate": 1705,
+      "files_pass": 714,
+      "files_total": 1248,
+      "file_percent": 57.21153846153846,
+      "assertions_pass": 22637,
+      "assertions_total": 26245
     },
-    "native_suite": {
-      "passed": 218,
-      "total": 218,
-      "elapsed_seconds": 137.13
+    "prior_pass_union_required": 22824,
+    "required_union_sha256": "68bedec8eed38a27366eb010f6251c2e70dbd761fa83b3e24d688832c7e90cfc",
+    "held1807": "Intentionally partial replay with15 semantic duration/size losses and40 namespace timeout losses; timeout cause unconfirmed. No final full rate assigned. Completed new PASS identities are retained in the22824 union. Namespace647 passed on corrected1808, without claiming historical timeout cause resolved.",
+    "source_engine_commit": "d93c9769c750dacbfd4bf415aa0523fbc0de7d6f",
+    "reviewed_repairs": [
+      "animation-duration auto resolved according to the actual single-auto vs other computed timeline",
+      "finite size/min-size/max-size declaration grammar with token-safe comments/escapes and descriptor isolation"
+    ],
+    "provenance_incident": "A copied candidate CLI argument overwrote the historical1807 binary after its intentional partial replay. Raw results and expectations remain preserved, but the original historical executable is unavailable. The wrongly labeled replacement is quarantined; this export binds the separately recorded corrected1808 build and fresh742-input independent audit.",
+    "corrected_build_state_sha256": "19d2950b7f2ff7c2990bf8212f54aaecf19993329a4a4db03228ea906b5a0376",
+    "incremental_acceptance_receipt_sha256": "a9174729a57cf4759f3a6699182d03dd8bd0e43cbe3da56a5dd1a6a7ef33e5a2",
+    "scoped_qualification": {
+      "jobs": 33,
+      "completed_utc": "2026-11-03T11:32:15.497Z",
+      "native": "218/218",
+      "retained": "45 fixtures /1318 assertions",
+      "independent_retained_audit": "334/334 checks",
+      "required_focused_controls": "passed;23 pre-existing unsupported tree-context expectations remain visible"
     },
-    "retained_authored": {
-      "fixtures": 45,
-      "passed_assertions": 1318,
-      "total_assertions": 1318,
-      "independent_audit_checks_passed": 542,
-      "independent_audit_checks_total": 542,
-      "elapsed_seconds": 98.7633
-    },
-    "css_property_rule_authored": {
-      "passed": 21,
-      "total": 21,
-      "baseline1603_passed": 2,
-      "baseline1603_total": 21
-    },
-    "descriptor_exact_object_comparison": {
-      "native_passed": 13,
-      "chromium_passed": 13,
-      "total_each": 13
-    },
-    "css_properties_values_api_wpt41": {
-      "passed_files": 18,
-      "total_files": 41,
-      "passed_assertions": 589,
-      "total_assertions": 813,
-      "baseline1603_passed_files": 16,
-      "baseline1603_passed_assertions": 521,
-      "baseline1603_total_assertions": 813,
-      "shared_fail_to_pass": 68,
-      "shared_pass_to_fail": 0,
-      "missing_or_new_assertion_identities": 0
-    },
-    "last_fixed1248_measurement": {
-      "candidate": 1603,
-      "candidate1701_rerun": false,
-      "lumen_passed_files": 703,
-      "total_files": 1248,
-      "lumen_passed_assertions": 22604,
-      "lumen_total_assertions": 26245,
-      "chromium_version": "150.0.7871.114",
-      "chromium_passed_files": 1062,
-      "chromium_passed_assertions": 24541,
-      "chromium_total_assertions": 26064,
-      "scope": "Fixed HTTP default-timeout testharness sample, not the full official WPT suite"
+    "benchmark_coverage": {
+      "selected_test_cases_urls": 1248,
+      "unique_source_files": 1247,
+      "dom_css_families": 10,
+      "http_default_timeout_only": true,
+      "preexisting_selection_exclusions": {
+        "long_timeout": 44,
+        "https_only": 1
+      },
+      "selection_predates_results": true,
+      "no_reftest_manual_visual_whole_platform_claim": true
     }
   },
   "limitations": [
-    "Candidate 1701 incremental scopes passed; the last full fixed 1248 sample remains candidate 1603 and was not rerun for 1701.",
-    "Full official WPT conformance and Chromium parity remain unmeasured and are not claimed.",
-    "Only approved public source ancestry and exact tested source inputs are exported; private working history and validation machinery are excluded.",
-    "External build dependencies and browser profiles are not bundled.",
-    "Public packaging and offline Git recovery checks are not an independent rebuild.",
-    "Android and display :0 runtime qualification for the final integrated session candidate will be recorded separately."
+    "DEVELOPMENT SOURCE ONLY: all scoped qualification jobs passed; complete1248 verification and regression-free product promotion remain pending.",
+    "The fixed1248 subset is not full official WPT. Chromium parity and overall95/100 quality are not claimed.",
+    "Random syntax/type validation does not implement runtime random sampling or cache computation.",
+    "Tree-count context is bounded to exact literal inline scalar/integer ownership;23 authored context cases remain unsupported.",
+    "Sizing shorthand declaration storage/grammar does not implement complete native width/height shorthand expansion or layout.",
+    "Existing animation-duration initial0s metadata and broader timeline/animation runtime remain separate limitations.",
+    "Broader native sheet.media applicability, stylesheet sets, @import loading and external source reflection remain incomplete.",
+    "Only approved public ancestry and exact compiled source inputs are exported; private working history, validation machinery, profiles, inbox and credentials are excluded.",
+    "External dependencies are not bundled. Offline Git recovery is not an independent rebuild.",
+    "Final Android install and Linux display0 promotion remain pending final acceptance.",
+    "Historical1807 raw evidence cannot currently be rebound to its original unavailable binary; no historical restoration is claimed. Final1808 requires its own complete qualification and replay."
   ],
-  "publication_evidence": "Public commit, offline bundle recovery and external publication receipts are recorded separately after this source tree is committed.",
-  "independent_source_review": {
-    "reviewer": "engine_improvements GPT-6 Astra Pro builtin agent",
-    "review_sha256": "88ca3101d6d7b67f6038bf2d5dd17801b88b170b804fb036b00443597d56d91a",
-    "preparation_sha256": "a128dc9688a290a092f7008299f190a45c8de01f4c3f403dfb73619c72e94862",
-    "recorded_inputs": 734,
-    "public_files": 834,
-    "approved_public_history_commits": 217,
-    "all_recorded_inputs_exact": true,
-    "private_history_excluded": true,
-    "scope": "Independent review of full public-source inventory, generated metadata and source pins; not a rebuild or publication receipt"
-  }
+  "product_accepted": false
 }

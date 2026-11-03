@@ -5,6 +5,9 @@
 #endif
 /* Cascade, inheritance and computed values */
 #include "css.h"
+#include "easing.h"
+#include "animation-aliases.h"
+#include "../html/xml-stylesheet.h"
 #include "color.h"
 #include "../layout/layout.h"
 #include "../base/url.h"
@@ -188,6 +191,8 @@ typedef struct {
     const ComputedStyle *flow_basis;
     const ComputedStyle *line_height_basis;
     bool line_height_parent, root_line_height_initial;
+    const Node *tree_count_element; /* borrowed only for proven literal inline values */
+    bool *used_tree_counts;
 } LCtx;
 static float ch_advance(LCtx *c) {
     if (c->used_font_units) *c->used_font_units = true;
@@ -1723,14 +1728,16 @@ static char *next_token(const char **pp) {
 static int split_ws(const char *v, char **out, int max) { int n = 0; const char *p = v; char *t; while (n < max && (t = next_token(&p))) out[n++] = t; return n; }
 static void free_toks(char **t, int n) { for (int i = 0; i < n; i++) free(t[i]); }
 
-typedef struct { ComputedStyle *st; const ComputedStyle *par; StyleEngine *e; Node *el; float em, rem; const MediaCtx *mc; bool validation_only, line_height_property; } ACtx;
+typedef struct { ComputedStyle *st; const ComputedStyle *par; StyleEngine *e; Node *el; float em, rem; const MediaCtx *mc; bool validation_only, line_height_property, literal_inline_tree_counts; } ACtx;
 static LCtx application_scalar_context(ACtx *c, bool *root_used) {
     const ComputedStyle *root = c->e && c->e->doc && c->e->doc->html ? c->e->doc->html->style : NULL;
     if (c->e && c->e->doc && c->el == c->e->doc->html) root = c->st;
     LCtx result = { .em = c->em, .rem = root ? root->font_size : c->rem, .mc = c->mc,
         .font_basis = c->st, .actual_font = c->st != NULL && !c->validation_only,
         .used_font_units = c->e ? &c->e->uses_font_units : NULL,
-        .root_font_basis = root, .resolve_font_metrics = true, .used_root_font_units = root_used };
+        .root_font_basis = root, .resolve_font_metrics = true, .used_root_font_units = root_used,
+        .tree_count_element = c->literal_inline_tree_counts ? c->el : NULL,
+        .used_tree_counts = c->st ? &c->st->uses_tree_counts : NULL };
     return result;
 }
 /* lh in line-height and font-size uses the parent's line metrics. The root's
@@ -2868,7 +2875,10 @@ static char *min_size_parser_text(const char *value) {
         if (offset > copied) sb_putc(&out, ' ');
         if (type == CT_EOF) { free(t.str); break; }
         bool valid = true;
-        if (type == CT_IDENT && t.str && t.str[0] == '-' && t.str[1] == '-') {
+        if (type == CT_IDENT && t.str && ((t.str[0] == '-' && t.str[1] == '-') ||
+            !strncasecmp(t.str, "ua-", 3))) {
+            /* Random cache names are case-sensitive custom identifiers. Keep
+             * even an invalid uppercase prefix intact for the grammar check. */
             min_size_dashed_text(&out, t.str);
         } else if (type == CT_IDENT || type == CT_FUNC) {
             for (const unsigned char *q = (const unsigned char *)t.str; q && *q; q++)
@@ -3334,6 +3344,19 @@ char *css_numeric_dimension_parse(const char *prop, const char *value) {
     return buffer;
 }
 bool css_numeric_dimension_valid(const char *prop, const char *value) {
+    if (!strcmp(prop, "z-index")) {
+        /* Share the computed integer grammar with declarations and supports.
+         * Keep CSS-wide and pending substitution tokens for the normal cascade. */
+        if (!css_var_syntax_valid(value)) return false;
+        if (min_size_deferred(value)) return true;
+        if (!css_math_spacing_valid(value)) return false;
+        char *buffer = min_size_parser_text(value); if (!buffer) return false;
+        char *text = str_trim(buffer); int ignored;
+        ACtx context = { .em = 16, .rem = 16, .validation_only = true };
+        bool valid = str_ieq(text, "auto") || var_wide_keyword(text) != NULL ||
+            application_integer(&context, text, INT_MIN, &ignored);
+        free(buffer); return valid;
+    }
     if (!numeric_dimension_kind(prop)) return true;
     char *parsed = css_numeric_dimension_parse(prop, value); bool valid = parsed != NULL;
     free(parsed); return valid;
@@ -3589,6 +3612,272 @@ invalid:
 bool css_border_valid(const char *property, const char *value) {
     if (border_decl_kind(property) < 0) return true;
     char *parsed = css_border_parse(property, value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
+/* These image longhands share token grammar and canonical serialization across
+ * stylesheet parsing, support queries, CSSOM mutation and computed storage. */
+static int image_longhand_kind(const char *property) {
+    if (!strcmp(property, "background-clip")) return 1;
+    if (!strcmp(property, "border-image-repeat")) return 2;
+    if (!strcmp(property, "border-image-slice")) return 3;
+    return 0;
+}
+/* CLexer's numeric scratch buffer is intentionally small. Reparse the complete
+ * original number token before serializing it, including numbers inside math,
+ * so a long prefix of zeroes cannot change either its magnitude or its sign. */
+static bool image_token_text(SB *out, const CTok *token, bool literal) {
+    if (token->type != CT_NUMBER && token->type != CT_PERCENT && token->type != CT_DIM)
+        return shadow_token_text(out, token);
+    char *end; double number = strtod(token->start, &end);
+    size_t consumed = (size_t)(end - token->start);
+    if (!consumed || consumed > token->len) return false;
+    if (token->type == CT_NUMBER && consumed != token->len) return false;
+    if (token->type == CT_PERCENT && (consumed + 1 != token->len || *end != '%')) return false;
+    if (token->type == CT_DIM && consumed == token->len) return false;
+    CTok canonical = *token;
+    canonical.num = literal && number == 0 ? 0 : number;
+    return shadow_token_text(out, &canonical);
+}
+static char *image_component_text(CLexer *lexer, const CTok *first) {
+    if (first->type != CT_IDENT && first->type != CT_NUMBER && first->type != CT_PERCENT &&
+        first->type != CT_DIM && first->type != CT_FUNC) return NULL;
+    SB out = {0};
+    if (!image_token_text(&out, first, first->type != CT_FUNC)) { sb_free(&out); return NULL; }
+    unsigned depth = first->type == CT_FUNC; size_t copied = lexer->i;
+    while (depth) {
+        CTok token = clex_next(lexer); int type = token.type;
+        size_t offset = (size_t)(token.start - lexer->s);
+        if (offset > copied && out.n && out.s[out.n - 1] != ' ' && out.s[out.n - 1] != '(') sb_putc(&out, ' ');
+        bool ok = type != CT_EOF && image_token_text(&out, &token, false);
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) depth--;
+        copied = lexer->i; free(token.str);
+        if (!ok || depth > 256) { sb_free(&out); return NULL; }
+    }
+    return sb_take(&out);
+}
+static bool image_slice_component(const char *text, int token_type) {
+    if (token_type != CT_NUMBER && token_type != CT_PERCENT && token_type != CT_FUNC) return false;
+    CssNumber number;
+    if (!css_number_parse_context(text, 16, 16, NULL, false, NULL, true, &number)) return false;
+    bool percentage = true;
+    for (int i = 0; i < CN_DIMS; i++) if (number.power[i] != (i == CN_PERCENT)) percentage = false;
+    if (!percentage && !css_number_scalar(&number)) return false;
+    /* Calculations are range-clamped at computed-value time; literal negatives
+     * are invalid declarations and must not replace an earlier valid value. */
+    return token_type == CT_FUNC || number.value >= 0;
+}
+char *css_image_longhand_parse(const char *property, const char *value) {
+    int kind = image_longhand_kind(property);
+    if (!kind || !value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    if (!css_math_spacing_valid(value)) return NULL;
+    char *buffer = css_math_value_text(value); if (!buffer) return NULL;
+    CLexer lexer; clex_init(&lexer, buffer, strlen(buffer));
+    SB out = {0}; char *parts[5] = {0}; int types[5] = {0}; unsigned count = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_COMMA || type == CT_EOF) {
+            free(token.str);
+            if (!count || (type == CT_COMMA && kind != 1)) goto invalid;
+            if (var_wide_keyword(parts[0])) {
+                if (count != 1 || out.n || type != CT_EOF) goto invalid;
+                sb_puts(&out, parts[0]);
+            } else if (kind == 1) {
+                if (out.n) sb_puts(&out, ", ");
+                if (count == 1 && (bg_box_kind(parts[0]) >= 0 || !strcmp(parts[0], "text") ||
+                                  !strcmp(parts[0], "border-area"))) sb_puts(&out, parts[0]);
+                else if (count == 2 && ((!strcmp(parts[0], "text") && !strcmp(parts[1], "border-area")) ||
+                                       (!strcmp(parts[1], "text") && !strcmp(parts[0], "border-area"))))
+                    sb_puts(&out, "border-area text");
+                else goto invalid;
+            } else if (kind == 2) {
+                if (count > 2) goto invalid;
+                for (unsigned i = 0; i < count; i++)
+                    if (strcmp(parts[i], "stretch") && strcmp(parts[i], "repeat") &&
+                        strcmp(parts[i], "round") && strcmp(parts[i], "space")) goto invalid;
+                sb_puts(&out, parts[0]);
+                if (count == 2 && strcmp(parts[0], parts[1])) { sb_putc(&out, ' '); sb_puts(&out, parts[1]); }
+            } else {
+                unsigned first = 0, last = count; bool fill = false;
+                if (!strcmp(parts[first], "fill")) { fill = true; first++; }
+                if (last > first && !strcmp(parts[last - 1], "fill")) {
+                    if (fill) goto invalid;
+                    fill = true; last--;
+                }
+                if (last <= first || last - first > 4) goto invalid;
+                for (unsigned i = first; i < last; i++)
+                    if (!image_slice_component(parts[i], types[i])) goto invalid;
+                unsigned used = last - first;
+                if (used == 4 && !strcmp(parts[first + 1], parts[first + 3])) used--;
+                if (used == 3 && !strcmp(parts[first], parts[first + 2])) used--;
+                if (used == 2 && !strcmp(parts[first], parts[first + 1])) used--;
+                for (unsigned i = 0; i < used; i++) {
+                    if (i) sb_putc(&out, ' ');
+                    sb_puts(&out, parts[first + i]);
+                }
+                if (fill) sb_puts(&out, " fill");
+            }
+            for (unsigned i = 0; i < count; i++) { free(parts[i]); parts[i] = NULL; }
+            count = 0;
+            if (type == CT_EOF) { free(buffer); return sb_take(&out); }
+            continue;
+        }
+        char *component = image_component_text(&lexer, &token);
+        free(token.str);
+        if (!component || count == 5) { free(component); goto invalid; }
+        types[count] = type; parts[count++] = component;
+    }
+invalid:
+    for (unsigned i = 0; i < count; i++) free(parts[i]);
+    free(buffer); sb_free(&out); return NULL;
+}
+bool css_image_longhand_valid(const char *property, const char *value) {
+    if (!image_longhand_kind(property)) return true;
+    char *parsed = css_image_longhand_parse(property, value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
+/* Easing longhands share strict component boundaries and numeric typing.
+ * This bounded parser leaves the established linear() component behavior intact;
+ * it does not replace the Web Animations curve evaluator. */
+static bool easing_property(const char *property) {
+    if (!strncmp(property, "-webkit-", 8)) property += 8;
+    return !strcmp(property, "animation-timing-function") || !strcmp(property, "transition-timing-function");
+}
+static char *easing_component(CLexer *lexer, const CTok *first) {
+    if (first->type != CT_IDENT && first->type != CT_NUMBER && first->type != CT_FUNC) return NULL;
+    size_t start = (size_t)(first->start - lexer->s);
+    unsigned depth = first->type == CT_FUNC;
+    while (depth) {
+        CTok token = clex_next(lexer); int type = token.type; free(token.str);
+        if (type == CT_EOF) return NULL;
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) depth--;
+        if (depth > 256) return NULL;
+    }
+    return xstrndup(lexer->s + start, lexer->i - start);
+}
+static bool easing_arguments(const char *body, char **parts, int *types, unsigned *count) {
+    CLexer lexer; clex_init(&lexer, body, strlen(body)); bool need = true;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_EOF) { free(token.str); return !need; }
+        if (!need) {
+            free(token.str); if (type != CT_COMMA) return false;
+            need = true; continue;
+        }
+        char *part = easing_component(&lexer, &token); free(token.str);
+        if (!part || *count == 4) { free(part); return false; }
+        types[*count] = type; parts[(*count)++] = part; need = false;
+    }
+}
+static void easing_number_text(SB *out, double value) {
+    if (isnan(value)) sb_putc(out, '0');
+    else if (isinf(value)) sb_puts(out, value < 0 ? "calc(-infinity)" : "calc(infinity)");
+    else sb_printf(out, "%.15g", value == 0 ? 0.0 : value);
+}
+static char *easing_single(ACtx *context, const char *text, bool computed) {
+    static const char *const keywords[] = { "linear", "ease", "ease-in", "ease-out", "ease-in-out" };
+    for (unsigned i = 0; i < sizeof keywords / sizeof keywords[0]; i++)
+        if (!strcmp(text, keywords[i])) return xstrdup(text);
+    if (!strcmp(text, "step-start")) return xstrdup("steps(1, start)");
+    if (!strcmp(text, "step-end")) return xstrdup("steps(1)");
+    bool steps = !strncmp(text, "steps(", 6), bezier = !strncmp(text, "cubic-bezier(", 13);
+    if (!steps && !bezier) return !strncmp(text, "linear(", 7) ? xstrdup(text) : NULL;
+    size_t prefix = steps ? 6 : 13, length = strlen(text);
+    if (length <= prefix || text[length - 1] != ')') return NULL;
+    char *body = xstrndup(text + prefix, length - prefix - 1), *parts[4] = {0};
+    int types[4] = {0}; unsigned count = 0; SB out = {0};
+    if (!easing_arguments(body, parts, types, &count)) goto invalid;
+    if (steps) {
+        if (count < 1 || count > 2 || (count == 2 && types[1] != CT_IDENT)) goto invalid;
+        const char *position = count == 2 ? parts[1] : "end";
+        bool none = !strcmp(position, "jump-none"), end = !strcmp(position, "end") || !strcmp(position, "jump-end");
+        if (!none && !end && strcmp(position, "start") && strcmp(position, "jump-start") && strcmp(position, "jump-both")) goto invalid;
+        int number;
+        if (!application_integer(context, parts[0], none ? 2 : 1, &number)) goto invalid;
+        sb_puts(&out, "steps(");
+        if (computed) sb_printf(&out, "%d", number);
+        else if (types[0] == CT_FUNC) sb_puts(&out, parts[0]);
+        else {
+            /* Keep the accepted integer token's full magnitude in specified
+             * values. Only computed storage uses the implementation range. */
+            const char *digits = parts[0]; if (*digits == '+') digits++;
+            while (digits[0] == '0' && digits[1]) digits++;
+            sb_puts(&out, digits);
+        }
+        if (!end) { sb_puts(&out, ", "); sb_puts(&out, position); }
+        sb_putc(&out, ')');
+    } else {
+        if (count != 4) goto invalid;
+        sb_puts(&out, "cubic-bezier(");
+        for (unsigned i = 0; i < 4; i++) {
+            CssNumber number;
+            if ((types[i] != CT_NUMBER && types[i] != CT_FUNC) ||
+                !application_number(context, parts[i], false, &number) || !css_number_scalar(&number)) goto invalid;
+            bool x = i == 0 || i == 2, math = types[i] == CT_FUNC;
+            if (x && !math && !(number.value >= 0 && number.value <= 1)) goto invalid;
+            if (i) sb_puts(&out, ", ");
+            if (math && !computed) sb_puts(&out, parts[i]);
+            else {
+                double value = number.value;
+                if (x && math) value = isnan(value) ? 0 : fmin(1, fmax(0, value));
+                if (!math && !isfinite(value)) sb_puts(&out, parts[i]);
+                else easing_number_text(&out, value);
+            }
+        }
+        sb_putc(&out, ')');
+    }
+    for (unsigned i = 0; i < count; i++) free(parts[i]);
+    free(body); return sb_take(&out);
+invalid:
+    for (unsigned i = 0; i < count; i++) free(parts[i]);
+    free(body); sb_free(&out); return NULL;
+}
+static char *easing_parse_context(ACtx *context, const char *value, bool computed) {
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    if (!css_math_spacing_valid(value)) return NULL;
+    char *buffer = min_size_parser_text(value); if (!buffer) return NULL;
+    CLexer lexer; clex_init(&lexer, buffer, strlen(buffer)); SB out = {0};
+    bool need = true, singleton = false;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_EOF) {
+            free(token.str); if (need) goto invalid;
+            free(buffer); return sb_take(&out);
+        }
+        if (!need) {
+            free(token.str); if (type != CT_COMMA || singleton) goto invalid;
+            need = true; continue;
+        }
+        if (type != CT_IDENT && type != CT_FUNC) { free(token.str); goto invalid; }
+        char *component = easing_component(&lexer, &token); free(token.str);
+        if (!component) goto invalid;
+        const char *wide = var_wide_keyword(component);
+        bool wide_component = wide != NULL;
+        char *parsed = wide && !out.n ? xstrdup(wide) : easing_single(context, component, computed);
+        free(component);
+        if (!parsed) goto invalid;
+        if (out.n) sb_puts(&out, ", ");
+        sb_puts(&out, parsed); free(parsed);
+        singleton = wide_component; need = false;
+    }
+invalid:
+    free(buffer); sb_free(&out); return NULL;
+}
+char *css_easing_parse(const char *value) {
+    ACtx context = { .em = 16, .rem = 16, .validation_only = true };
+    return easing_parse_context(&context, value, false);
+}
+bool css_easing_valid(const char *property, const char *value) {
+    if (!easing_property(property)) return true;
+    char *parsed = css_easing_parse(value); bool valid = parsed != NULL;
     free(parsed); return valid;
 }
 
@@ -4176,7 +4465,22 @@ static bool query_apply_dependencies(ComputedStyle *style, const char *property,
     return true;
 }
 
+/* The string-based custom-value store does not retain tree-scope provenance.
+ * Only the exact property/value owned by this element's cached inline block
+ * proves a local literal source. A copied, substituted, inherited, expanded or
+ * stylesheet value must not acquire a guessed element context. */
+static bool tree_count_literal_inline(const Node *element, const char *property, const char *value) {
+    if (!element || !element->inline_decls || !value || !strchr(value, '(') ||
+        (property[0] == '-' && property[1] == '-') || min_size_deferred(value)) return false;
+    const DeclList *declarations = element->inline_decls;
+    for (int i = 0; i < declarations->n; i++) {
+        const Decl *declaration = &declarations->v[i];
+        if (declaration->value == value && !strcmp(declaration->prop, property)) return true;
+    }
+    return false;
+}
 static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
+    prop = css_animation_property_name(prop);
     /* Invalid argument grammar is discarded before pending substitution can
        unset a normal property or replace a custom property's prior tokens. */
     if (css_value_has_if(value_in) && !css_var_syntax_valid(value_in)) return;
@@ -4231,6 +4535,8 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     if (!css_interpolate_size_valid(prop, value_in)) return;
     if (!css_box_shadow_valid(prop, value_in)) return;
     if (!css_border_valid(prop, value_in)) return;
+    if (!css_image_longhand_valid(prop, value_in)) return;
+    if (!css_easing_valid(prop, value_in)) return;
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
@@ -4253,7 +4559,9 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
         !strcmp(prop, "interpolate-size") ? interpolate_size_parse(v) :
         !strcmp(prop, "transition-property") ? css_transition_property_parse(v) :
         !strcmp(prop, "box-shadow") ? css_box_shadow_parse(v) :
-        border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) : xstrdup(v);
+        border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) :
+        image_longhand_kind(prop) ? css_image_longhand_parse(prop, v) :
+        easing_property(prop) ? css_easing_parse(v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);
     if (min_size_property(prop) && (str_ieq(val, "-webkit-min-content") ||
@@ -4269,6 +4577,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     }
     ACtx c = { st, par, e, el, st->font_size, 16, e ? &e->media : NULL };
     c.line_height_property = !strcmp(prop, "line-height");
+    c.literal_inline_tree_counts = tree_count_literal_inline(el, prop, value_in);
     g_cq[0] = g_cq[1] = 0;
     if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)
         if (a->type == NODE_ELEMENT && a->style && a->style->container_type) { g_cq[0] = a->cq_w; g_cq[1] = a->style->container_type == 2 ? a->cq_h : 0; break; }
@@ -4296,6 +4605,11 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
             if (invalid_substitution) css_apply_decl(st, par, P, "unset", e, el);
             return;
         }
+    }
+    if (easing_property(P) && !inherit && !initial && !unset) {
+        char *computed = easing_parse_context(&c, val, true);
+        if (computed) gen_put(&st->gen_n, P, computed);
+        free(vbuf); free(subst); return;
     }
     bool flex_value = !strcmp(P, "flex") || !strcmp(P, "flex-grow") ||
                       !strcmp(P, "flex-shrink") || !strcmp(P, "flex-basis");
@@ -4935,7 +5249,18 @@ apply:
         else if (!strcmp(P, "writing-mode")) st->writing_mode = str_ieq(val, "vertical-rl") ? 2 : str_ieq(val, "vertical-lr") ? 1 : 0;   /* 2: vertical-rl; sideways layout remains unsupported */
         break;
     case 'z':
-        if (!strcmp(P, "z-index")) { if (str_ieq(val, "auto")) st->z_auto = true; else { st->z_auto = false; st->z_index = atoi(val); if (isalpha((unsigned char)val[0])) { LCtx lc = { st->font_size, 16, NULL }; const char *q = val; Length L; if (parse_dim(&q, &L, &lc) && !L.pct && isfinite(L.px)) st->z_index = (int)lroundf(L.px); } } }
+        if (!strcmp(P, "z-index")) {
+            if (str_ieq(val, "auto")) st->z_auto = true;
+            else {
+                int value;
+                /* Shared typed integer conversion rounds CSS ties toward +infinity
+                 * and clamps to the supported range before converting to int. */
+                if (application_integer(&c, val, INT_MIN, &value)) {
+                    st->z_auto = false;
+                    st->z_index = value;
+                }
+            }
+        }
         break;
     }
 out:
@@ -7182,7 +7507,7 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     ComputedStyle x = *a, y = *b;
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
     PO_Z(anchor_name); PO_Z(pos_anchor); PO_Z(pos_area); PO_Z(pos_try); PO_Z(anchor_ins); PO_Z(anchor_sz); PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom); PO_Z(gen_i); PO_Z(gen_n);
-    PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic); PO_Z(indep_set);
+    PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic); PO_Z(uses_tree_counts); PO_Z(indep_set);
     PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_origin); PO_Z(bg_clip); PO_Z(bg_color_clip); PO_Z(bg_layers); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
     PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
     PO_Z(box_shadow); PO_Z(has_shadow); PO_Z(text_shadow); PO_Z(has_text_shadow); PO_Z(text_decoration);
@@ -7510,7 +7835,13 @@ static bool annotate_tree_changes(Node *n) {
     bool changed = direct, following = changed;
     for (Node *c = n->last; c; c = c->prev) {
         bool child = annotate_tree_changes(c);
-        if (direct) c->flags |= NF_TREE_CHILD;
+        if (direct) {
+            c->flags |= NF_TREE_CHILD;
+            /* Only existing direct children that actually evaluated a count
+             * need restyling; newly inserted/moved subtrees are already dirty. */
+            if (c->type == NODE_ELEMENT && c->style && c->style->uses_tree_counts)
+                mark_style_subject(c, "tree-count");
+        }
         if (child || following) c->flags |= NF_TREE_RELATED;
         changed |= child; following |= child;
     }
@@ -7850,8 +8181,12 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     bool height_only = media_changed && e->media_valid && e->media.vw == e->styled_media.vw &&
         e->media.dpr == e->styled_media.dpr && e->media.dark == e->styled_media.dark && !e->idx_dirty && !e->idx_changed;
     for (int i = 0; i < e->sheets.n; i++) {   /* the owner's media attribute: set, changed, or the viewport moved */
-        StyleSheet *sh = e->sheets.v[i]; const char *m = sh->owner ? node_attr(sh->owner, "media") : NULL;
-        bool off = m && *m && !css_media_matches(m, &e->media);
+        StyleSheet *sh = e->sheets.v[i]; HMap pi = {0};
+        bool processing = node_is_stylesheet_pi(sh->owner);
+        bool eligible = !processing || xml_stylesheet_info(sh->owner, &pi);
+        const char *m = processing ? hm_get(&pi, "media") : sh->owner ? node_attr(sh->owner, "media") : NULL;
+        bool off = !eligible || (m && *m && !css_media_matches(m, &e->media));
+        hm_free(&pi, free);
         if (off != sh->media_off) { sh->media_off = off; e->idx_dirty = true; e->delta_all = true; force = true; }
     }
     if (e->idx_dirty) idx_build(e);
@@ -8545,6 +8880,7 @@ static bool computed_inset_native(Node *el, const ComputedStyle *s, int side, fl
     return false;
 }
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
+    prop = css_animation_property_name(prop);
     SB b; sb_init(&b);
     if (s && (!strncmp(prop, "transition-", 11) || !strncmp(prop, "animation-", 10))) {
         const GenProp *g = gen_prop(prop); const char *v = g ? gen_value(s, g) : NULL;
@@ -8552,7 +8888,24 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
             if (strstr(prop, "-duration") || strstr(prop, "-delay")) {
                 char *copy = xstrdup(v), *parts[32]; int count = split_top(copy, ',', parts, 32);
                 bool valid = count > 0;
+                bool animation_duration = !strcmp(prop, "animation-duration");
+                const GenProp *timeline_prop = animation_duration ? gen_prop("animation-timeline") : NULL;
+                const char *timeline = timeline_prop ? gen_value(s, timeline_prop) : NULL;
+                char *timeline_text = timeline ? min_size_parser_text(timeline) : NULL;
+                bool auto_as_zero = !timeline || (timeline_text && str_ieq(str_trim(timeline_text), "auto"));
+                free(timeline_text);
                 for (int i = 0; i < count; i++) {
+                    /* Animations 2 resolves auto to 0s only for the single auto
+                     * timeline. Other timeline lists retain the keyword; this
+                     * is a valid duration, not an unsupported time calculation. */
+                    char *keyword = animation_duration ? min_size_parser_text(parts[i]) : NULL;
+                    bool auto_duration = keyword && str_ieq(str_trim(keyword), "auto");
+                    free(keyword);
+                    if (auto_duration) {
+                        if (i) sb_puts(&b, ", ");
+                        sb_puts(&b, auto_as_zero ? "0s" : "auto");
+                        continue;
+                    }
                     float value;
                     if (!css_time(parts[i], &value)) { valid = false; break; }
                     if (i) sb_puts(&b, ", ");
@@ -8561,8 +8914,10 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
                 free(copy);
                 if (valid) return sb_take(&b);
                 sb_free(&b); sb_init(&b);
-            }
-            sb_puts(&b, v); return sb_take(&b);
+                /* An unsupported computation has no resolved time to expose.
+                 * Read the same native fallback for canonical and alias names;
+                 * never return its authored random/math text as a time value. */
+            } else { sb_puts(&b, v); return sb_take(&b); }
         }
     }
     if (!s) return sb_take(&b);
@@ -8640,6 +8995,10 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         else if (!strcmp(q, "transition-property")) sb_puts(&b, s->tr_prop ? s->tr_prop : "all");
         else if (!strcmp(q, "transition-duration")) sb_printf(&b, "%gs", s->tr_dur);
         else if (!strcmp(q, "transition-delay")) sb_printf(&b, "%gs", s->tr_delay);
+        else if (!strcmp(q, "animation-timing-function") || !strcmp(q, "transition-timing-function")) {
+            const GenProp *g = gen_prop(q); const char *value = g ? gen_value(s, g) : NULL;
+            sb_puts(&b, value ? value : g && g->initial ? g->initial : "ease");
+        }
     }
     else if (!strcmp(prop, "position")) sb_puts(&b, ps[s->position]);
     else if (!strcmp(prop, "visibility")) sb_puts(&b, s->visibility ? "hidden" : "visible");
