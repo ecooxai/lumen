@@ -1,88 +1,155 @@
 {
-  "candidate": 1701,
-  "status": "SOURCE MAPPING ACCEPTED after independent public inventory review",
-  "tested_source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
-  "tested_binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
-  "source_manifest_digest": "2c75e05834c127e4dc4f19b5b559e43fd6080118df146e427eb9cbb9779d9458",
-  "public_parent": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1701-20261102",
   "all_recorded_inputs_exact": true,
-  "full_wpt_conformance_claimed": false,
+  "candidate": 1802,
   "chromium_parity_claimed": false,
-  "private_history_included": false,
-  "validation_summary": {
-    "build_startup": {
-      "passed": true,
-      "elapsed_seconds": 51.14
-    },
-    "native_suite": {
-      "passed": 218,
-      "total": 218,
-      "elapsed_seconds": 137.13
-    },
-    "retained_authored": {
-      "fixtures": 45,
-      "passed_assertions": 1318,
-      "total_assertions": 1318,
-      "independent_audit_checks_passed": 542,
-      "independent_audit_checks_total": 542,
-      "elapsed_seconds": 98.7633
-    },
-    "css_property_rule_authored": {
-      "passed": 21,
-      "total": 21,
-      "baseline1603_passed": 2,
-      "baseline1603_total": 21
-    },
-    "descriptor_exact_object_comparison": {
-      "native_passed": 13,
-      "chromium_passed": 13,
-      "total_each": 13
-    },
-    "css_properties_values_api_wpt41": {
-      "passed_files": 18,
-      "total_files": 41,
-      "passed_assertions": 589,
-      "total_assertions": 813,
-      "baseline1603_passed_files": 16,
-      "baseline1603_passed_assertions": 521,
-      "baseline1603_total_assertions": 813,
-      "shared_fail_to_pass": 68,
-      "shared_pass_to_fail": 0,
-      "missing_or_new_assertion_identities": 0
-    },
-    "last_fixed1248_measurement": {
-      "candidate": 1603,
-      "candidate1701_rerun": false,
-      "lumen_passed_files": 703,
-      "total_files": 1248,
-      "lumen_passed_assertions": 22604,
-      "lumen_total_assertions": 26245,
-      "chromium_version": "150.0.7871.114",
-      "chromium_passed_files": 1062,
-      "chromium_passed_assertions": 24541,
-      "chromium_total_assertions": 26064,
-      "scope": "Fixed HTTP default-timeout testharness sample, not the full official WPT suite"
-    }
-  },
+  "full_wpt_conformance_claimed": false,
+  "independent_review_accepted": true,
+  "independent_review_sha256": "fa50bd257876d50c7a3732c93b605777642e13c558e3d60bb8eb660d14b8acce",
   "limitations": [
-    "Candidate 1701 incremental scopes passed; the last full fixed 1248 sample remains candidate 1603 and was not rerun for 1701.",
-    "Full official WPT conformance and Chromium parity remain unmeasured and are not claimed.",
+    "Candidate1802 is accepted for focused WPT26, authored controls, native218 and retained45/1318; its complete fixed1248 replay is still running.",
+    "Four specified z-index invalid-unit cases and two named-timeline-range authored cases remain visible at this exactsource.",
+    "Native stylesheet.media rendering applicability is not yet connected to MediaList mutation; known-feature media math simplification remains partial, and semantic nesting is bounded.",
+    "Readonly indexed MediaList mutation follows normative WebIDL false results; Chromium150 true/no-op behavior is an explicitly recorded reference deviation.",
+    "Full official WPT conformance and Chromium parity are not claimed.",
     "Only approved public source ancestry and exact tested source inputs are exported; private working history and validation machinery are excluded.",
-    "External build dependencies and browser profiles are not bundled.",
-    "Public packaging and offline Git recovery checks are not an independent rebuild.",
-    "Android and display :0 runtime qualification for the final integrated session candidate will be recorded separately."
+    "External build dependencies and browser profiles are not bundled; offline Git recovery is not an independent rebuild.",
+    "Final Android and display0 runtime promotion remain pending the final integrated candidate."
   ],
-  "publication_evidence": "Public commit, offline bundle recovery and external publication receipts are recorded separately after this source tree is committed.",
-  "independent_source_review": {
-    "reviewer": "engine_improvements GPT-6 Astra Pro builtin agent",
-    "review_sha256": "88ca3101d6d7b67f6038bf2d5dd17801b88b170b804fb036b00443597d56d91a",
-    "preparation_sha256": "a128dc9688a290a092f7008299f190a45c8de01f4c3f403dfb73619c72e94862",
-    "recorded_inputs": 734,
-    "public_files": 834,
-    "approved_public_history_commits": 217,
-    "all_recorded_inputs_exact": true,
-    "private_history_excluded": true,
-    "scope": "Independent review of full public-source inventory, generated metadata and source pins; not a rebuild or publication receipt"
+  "private_history_included": false,
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1802-20261103",
+  "public_parent": "2ec6af183597791985b48c6a9c2689c4a8ef3cf2",
+  "publication_performed": false,
+  "source_manifest_digest": "711bc0fd75334746677edd4655198d4ce0dbb24f2abc59e8c39ece5f220a5909",
+  "status": "Accepted independently for exact source export and focused/native/retained qualification; full1248 replay pending",
+  "tested_binary_sha256": "e54c56023927627937ea6bcd2e9f4e1bb835709e8d7eb90c6d8522e27577b4db",
+  "tested_source_commit": "c60398214ad22f5d7578ec8f1f5239e2bab53010",
+  "validation_summary": {
+    "authored": {
+      "css-property-rule21": {
+        "assertion_count": 21,
+        "diagnostic_integrity_valid": true,
+        "passing_assertions": 21
+      },
+      "descriptor-comparison13": {
+        "assertion_count": 13,
+        "diagnostic_integrity_valid": true,
+        "passing_assertions": 13
+      },
+      "keyframe-eof-numeric13": {
+        "assertion_count": 13,
+        "diagnostic_integrity_valid": true,
+        "passing_assertions": 13
+      },
+      "keyframe-runtime2": {
+        "assertion_count": 2,
+        "diagnostic_integrity_valid": true,
+        "passing_assertions": 2
+      },
+      "keyframe34": {
+        "assertion_count": 34,
+        "diagnostic_integrity_valid": true,
+        "passing_assertions": 32
+      },
+      "medialist15": {
+        "assertion_count": 15,
+        "diagnostic_integrity_valid": true,
+        "passing_assertions": 15
+      },
+      "numeric28": {
+        "assertion_count": 28,
+        "diagnostic_integrity_valid": true,
+        "passing_assertions": 24
+      },
+      "owner8": {
+        "assertion_count": 8,
+        "diagnostic_integrity_valid": true,
+        "passing_assertions": 8
+      }
+    },
+    "build_startup": {
+      "exit_code": 0,
+      "finished_utc": "2026-11-03T07:28:39.134516+00:00",
+      "label": "build-startup",
+      "seconds": 50.20783625403419,
+      "started_utc": "2026-11-03T07:27:48.926682+00:00"
+    },
+    "incremental_acceptance_receipt_sha256": "43ca98d08bd728d5f4ec2deec0ba6c55ba78ac880485f69b4b80e0026b9d7663",
+    "last_fixed1248_measurement": {
+      "candidate": 1705,
+      "candidate1802_replay_complete": false,
+      "candidate1802_replay_in_progress": true,
+      "chromium_passed_assertions": 24541,
+      "chromium_passed_files": 1062,
+      "chromium_total_assertions": 26064,
+      "lumen_passed_assertions": 22637,
+      "lumen_passed_files": 714,
+      "lumen_total_assertions": 26245,
+      "scope": "Frozen HTTP default-timeout testharness sample; not full official WPT",
+      "total_files": 1248
+    },
+    "medialist_wpt10": {
+      "before": {
+        "files": 10,
+        "fully_passing_files": 2,
+        "passing_assertions": 23,
+        "registered_assertions": 47
+      },
+      "current": {
+        "files": 10,
+        "fully_passing_files": 10,
+        "passing_assertions": 47,
+        "registered_assertions": 47
+      },
+      "identity_drift": 0,
+      "prior_pass_losses": 0
+    },
+    "native": {
+      "accepted": true,
+      "configured_count": 218,
+      "deferred_names": [],
+      "observed_count": 218,
+      "selected_count": 218,
+      "statuses": {
+        "PASS": 218
+      }
+    },
+    "neighbor_wpt13": {
+      "before": {
+        "passing_assertions": 74,
+        "registered_assertions": 113
+      },
+      "current": {
+        "files": 13,
+        "fully_passing_files": 9,
+        "passing_assertions": 76,
+        "registered_assertions": 113
+      },
+      "identity_drift": 0,
+      "prior_pass_losses": 0
+    },
+    "numeric_wpt3": {
+      "before": {
+        "files": 3,
+        "fully_passing_files": 0,
+        "passing_assertions": 130,
+        "registered_assertions": 199
+      },
+      "current": {
+        "files": 3,
+        "fully_passing_files": 1,
+        "passing_assertions": 132,
+        "registered_assertions": 199
+      },
+      "identity_drift": 0,
+      "prior_pass_losses": 0
+    },
+    "qualification_scope": "Integrated1802 focused frozen-WPT26 files, original and added authored contracts, full native218 and unchanged retained45/1318. Full1248 not yet replayed.",
+    "retained": {
+      "all_checks_passed": true,
+      "assertion_count": 1318,
+      "checks_passed": 334,
+      "checks_total": 334,
+      "fixture_count": 45
+    }
   }
 }

@@ -1,0 +1,81 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Response MIME metadata and independent HTML/XML document mode</title>
+<body><script>
+(async () => {
+    'use strict';
+    const marker = 'document-response-mime-mode', rows = [], frames = [], urls = [];
+    const HTML_NS = 'http://www.w3.org/1999/xhtml';
+    const equal = (actual, expected) => { if (actual !== expected) throw new Error(JSON.stringify({actual, expected})); };
+    const invalidState = fn => { let error; try { fn(); } catch (caught) { error = caught; } equal(error && error.name, 'InvalidStateError'); };
+    function test(name, fn) {
+        try { rows.push({name, pass: true, observations: fn()}); }
+        catch (error) { rows.push({name, pass: false, observations: {error: String(error && error.stack || error)}}); }
+        console.log('DOCUMENT_RESPONSE_MIME_MODE_ROW ' + JSON.stringify(rows[rows.length - 1]));
+    }
+    function load(type, source) {
+        return new Promise(resolve => {
+            const frame = document.createElement('iframe'), url = URL.createObjectURL(new Blob([source], {type}));
+            frames.push(frame); urls.push(url); let done = false;
+            const timer = setTimeout(() => finish(null, 'frame load exceeded 4000ms'), 4000);
+            function finish(doc, error) { if (done) return; done = true; clearTimeout(timer); resolve({doc, error}); }
+            frame.onload = () => { try { finish(frame.contentDocument, null); } catch (error) { finish(null, String(error)); } };
+            frame.onerror = () => finish(null, 'frame load error');
+            frame.src = url; document.body.appendChild(frame);
+        });
+    }
+    function loadBlank() {
+        return new Promise(resolve => {
+            const frame = document.createElement('iframe'); frames.push(frame); let done = false;
+            const timer = setTimeout(() => finish(null, 'blank frame load exceeded 4000ms'), 4000);
+            function finish(doc, error) { if (done) return; done = true; clearTimeout(timer); resolve({doc, error}); }
+            frame.onload = () => finish(frame.contentDocument, null); frame.onerror = () => finish(null, 'blank frame load error');
+            frame.src = 'about:blank'; document.body.appendChild(frame);
+        });
+    }
+    const loaded = await Promise.all([
+        load('TEXT/PLAIN;CHARSET=UTF-8', 'literal text'),
+        load('text/css; charset=utf-8', 'body { color: red; }'),
+        load('text/html; charset=utf-8', '<!doctype html><title>html</title><body>html'),
+        load('Text/Xml ; charset=utf-8', '<Root><Child/></Root>'),
+        load('application/xhtml+xml', '<html xmlns="http://www.w3.org/1999/xhtml"><head/><body/></html>'),
+        load('image/svg+xml', '<svg xmlns="http://www.w3.org/2000/svg"/>'),
+        loadBlank()
+    ]);
+    const doc = index => { const result = loaded[index]; if (!result.doc) throw new Error(result.error || 'missing frame document'); return result.doc; };
+    const htmlElement = documentObject => { const node = documentObject.createElement('DiV'); equal(node.localName, 'div'); equal(node.namespaceURI, HTML_NS); return node; };
+    const xmlElement = documentObject => { const node = documentObject.createElement('MiXeD'); equal(node.localName, 'MiXeD'); equal(node.namespaceURI, null); return node; };
+    test('plain response exposes normalized text/plain MIME essence', () => equal(doc(0).contentType, 'text/plain'));
+    test('plain response keeps HTML element case and namespace', () => htmlElement(doc(0)) && undefined);
+    test('plain response keeps HTML fragment and outer serialization', () => { const node = htmlElement(doc(0)); node.innerHTML = '<br>'; equal(node.outerHTML, '<div><br></div>'); });
+    test('CSS response exposes text/css without parameters', () => equal(doc(1).contentType, 'text/css'));
+    test('CSS response keeps HTML element case and namespace', () => htmlElement(doc(1)) && undefined);
+    test('CSS response keeps HTML fragment and outer serialization', () => { const node = htmlElement(doc(1)); node.innerHTML = '<br>'; equal(node.outerHTML, '<div><br></div>'); });
+    test('HTML response exposes text/html without parameters', () => equal(doc(2).contentType, 'text/html'));
+    test('HTML response keeps HTML element case and namespace', () => htmlElement(doc(2)) && undefined);
+    test('XML response exposes normalized text/xml MIME essence', () => equal(doc(3).contentType, 'text/xml'));
+    test('XML response preserves element case and null namespace', () => xmlElement(doc(3)) && undefined);
+    test('XML response keeps XML empty-element serialization', () => equal(xmlElement(doc(3)).outerHTML, '<MiXeD/>'));
+    test('XHTML response preserves application/xhtml+xml MIME essence', () => equal(doc(4).contentType, 'application/xhtml+xml'));
+    test('XHTML document preserves case while creating HTML namespace elements', () => { const node = doc(4).createElement('DiV'); equal(node.localName, 'DiV'); equal(node.namespaceURI, HTML_NS); });
+    test('SVG response preserves image/svg+xml MIME essence', () => equal(doc(5).contentType, 'image/svg+xml'));
+    test('SVG XML document creates case-sensitive null-namespace elements', () => xmlElement(doc(5)) && undefined);
+    test('cloned plain document retains MIME metadata and HTML mode', () => { const clone = doc(0).cloneNode(false); equal(clone.contentType, 'text/plain'); htmlElement(clone); });
+    test('cloned XML document retains MIME metadata and XML mode', () => { const clone = doc(3).cloneNode(false); equal(clone.contentType, 'text/xml'); xmlElement(clone); });
+    test('createHTMLDocument retains its default MIME type and HTML mode', () => { const value = document.implementation.createHTMLDocument('owned'); equal(value.contentType, 'text/html'); htmlElement(value); });
+    test('DOMParser XML construction retains its declared MIME and XML mode', () => { const value = new DOMParser().parseFromString('<Root/>', 'application/xml'); equal(value.contentType, 'application/xml'); xmlElement(value); });
+    test('createDocument with the HTML namespace retains XHTML MIME type', () => { const value = document.implementation.createDocument(HTML_NS, 'html', null); equal(value.contentType, 'application/xhtml+xml'); });
+    test('about:blank without response MIME retains HTML default and mode', () => { equal(doc(6).contentType, 'text/html'); htmlElement(doc(6)); });
+    test('XML document open rejects with InvalidStateError', () => invalidState(() => doc(3).open()));
+    test('XML document write rejects with InvalidStateError', () => invalidState(() => doc(3).write('owned')));
+    test('plain HTML document open remains allowed despite non-HTML MIME', () => { doc(0).open(); doc(0).close(); });
+    test('CSS HTML document open remains allowed despite non-HTML MIME', () => { doc(1).open(); doc(1).close(); });
+    test('XHTML XML document open rejects with InvalidStateError', () => invalidState(() => doc(4).open()));
+    test('SVG XML document write rejects with InvalidStateError', () => invalidState(() => doc(5).write('owned')));
+    for (const frame of frames) frame.remove();
+    for (const url of urls) URL.revokeObjectURL(url);
+    const passed = rows.filter(row => row.pass).length, status = passed === rows.length ? 'PASS' : 'FAIL';
+    console.log('RESULTS ' + marker + ':' + status + ' ' + JSON.stringify({passed, total: rows.length}));
+    document.documentElement.setAttribute('data-' + marker, status);
+})();
+</script></body>

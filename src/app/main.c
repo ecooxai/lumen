@@ -464,12 +464,14 @@ static int loader(void *arg) {
     if (rq->html) { body = rq->html; blen = strlen(body); }
     else if (!r || r->status == 0) { errbuf = xmalloc(512); snprintf(errbuf, 512, "<title>Error</title><body style='font:15px system-ui;padding:40px;color:#444'><h2>Can't open this page</h2><p>%s</p>", rq->url); body = errbuf; blen = strlen(errbuf); }
     const char *ctype = r && r->status > 0 && !rq->html ? headers_get(&r->headers, "content-type") : NULL;
+    const char *document_ctype = ctype;   /* viewer markup must not replace the response's document metadata */
     if (r && r->status == 200 && !rq->html) {
         char *viewer = local_viewer_html(r->url, ctype, kind == 2);
         if (viewer) { free(r->body); r->body = viewer; r->body_len = strlen(viewer); body = viewer; blen = r->body_len; ctype = NULL; }
     }
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
+    p->d->content_type = mime_essence(document_ctype);
     if (r && r->status > 0 && !rq->html) { p->d->csp = headers_join(&r->headers, "content-security-policy"); p->d->csp_ro = headers_join(&r->headers, "content-security-policy-report-only"); p->d->referrer_policy = headers_join(&r->headers, "referrer-policy"); }
     bool xml = xml_mime(ctype), js = !getenv("LUMEN_NO_JS");
     char *decoded = NULL;
@@ -478,7 +480,7 @@ static int loader(void *arg) {
         if ((decoded = enc_document((const uint8_t *)body, blen, ctype, xml, &enc, &dn))) { body = decoded; blen = dn; }
         p->d->charset = enc;
     }
-    if (xml) { xml_parse(p->d, body, blen); p->d->content_type = mime_essence(ctype); }
+    if (xml) { xml_parse(p->d, body, blen); }
     else if (js) {
         /* Keep the existing head-policy bootstrap, but expose only the real
            parser prefix. No nodes or resource owners survive the metadata pass. */

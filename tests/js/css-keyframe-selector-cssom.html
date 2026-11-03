@@ -1,0 +1,147 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CSS keyframe selector parsing and list mutation</title>
+<body><script>
+(() => {
+    'use strict';
+    const marker = 'css-keyframe-selector-cssom', rows = [];
+    const equal = (actual, expected) => { if (actual !== expected) throw new Error(JSON.stringify({actual, expected})); };
+    const sheet = body => { const s = new CSSStyleSheet(); s.replaceSync('@keyframes owned { ' + body + ' }'); return s; };
+    const keyframes = body => sheet(body).cssRules[0];
+    const one = () => keyframes('from { opacity: 0.25; }').cssRules[0];
+    function syntaxError(fn) {
+        let error; try { fn(); } catch (caught) { error = caught; }
+        if (!(error instanceof DOMException) || error.name !== 'SyntaxError') throw new Error('Expected DOM SyntaxError, received ' + error);
+    }
+    function invalid(values) {
+        const rule = one(); rule.keyText = '25%';
+        for (const value of values) { syntaxError(() => { rule.keyText = value; }); equal(rule.keyText, '25%'); }
+    }
+    function test(name, fn) {
+        try { fn(); rows.push({name, pass: true}); }
+        catch (error) { rows.push({name, pass: false, observations: {error: String(error && error.stack || error)}}); }
+        console.log('CSS_KEYFRAME_SELECTOR_ROW ' + JSON.stringify(rows[rows.length - 1]));
+    }
+    test('stylesheet percentages normalize decimals and exponents', () => {
+        const rules = keyframes('.5%, 1e1%, 100.0% { opacity: 1; }').cssRules;
+        equal(rules.length, 1); equal(rules[0].keyText, '0.5%, 10%, 100%');
+    });
+    test('setter normalizes case-insensitive from and to keywords', () => {
+        const r = one(); r.keyText = 'FrOm, TO'; equal(r.keyText, '0%, 100%');
+    });
+    test('setter normalizes signed decimals and scientific notation', () => {
+        const r = one(); r.keyText = '+1e1%, +.5%, 10.125%'; equal(r.keyText, '10%, 0.5%, 10.125%');
+    });
+    test('negative zero serializes as zero percent', () => {
+        const r = one(); r.keyText = '-0%, -0.000%'; equal(r.keyText, '0%, 0%');
+    });
+    test('out of range and overflowing percentages reject atomically', () => {
+        invalid(['-1%', '100.1%', '1e999%']);
+    });
+    test('invalid percentage token forms reject atomically', () => {
+        invalid(['10', '1.%', '1e%', '1e+%', '10 %', '50%%', 'NaN%']);
+    });
+    test('empty selectors and empty list components reject atomically', () => {
+        invalid(['', ' ', ',', 'from,', ',to', 'from,,to']);
+    });
+    test('invalid final member leaves the whole selector list unchanged', () => {
+        invalid(['from, 101%', '10%, bogus', '0%, to, -5%']);
+    });
+    test('escaped keyword codepoints parse without calling author APIs', () => {
+        const r = one(); r.keyText = '\\66 rom, t\\6f'; equal(r.keyText, '0%, 100%');
+    });
+    test('comments containing commas remain token trivia', () => {
+        const r = one(); r.keyText = '/* , */ from /**/, /* , */ 50% /*,*/, to /* trailing */';
+        equal(r.keyText, '0%, 50%, 100%');
+    });
+    test('comments cannot join a number and percent delimiter', () => {
+        invalid(['50/**/%', '1/**/e1%']);
+    });
+    test('comments cannot join separately tokenized identifier parts', () => {
+        invalid(['fr/**/om', '\\66/**/rom']);
+    });
+    test('only CSS whitespace is ignored around selectors', () => {
+        const r = one(); r.keyText = '\t\n\f\r 25% \t'; equal(r.keyText, '25%');
+        invalid(['\u00a025%', '25%\u00a0']);
+    });
+    test('named timeline ranges retain their name and normalize offsets', () => {
+        const r = one(); r.keyText = 'entry +1e1%, EXIT 60.0%, cover -10%, contain 120%, entry-crossing 0%, exit-crossing 100%';
+        equal(r.keyText, 'entry 10%, exit 60%, cover -10%, contain 120%, entry-crossing 0%, exit-crossing 100%');
+    });
+    test('named timeline range identifiers respect escapes and token boundaries', () => {
+        const r = one(); r.keyText = '\\65 ntry/**/10%'; equal(r.keyText, 'entry 10%');
+        invalid(['entry', 'entry 10', 'unknown 10%', 'en/**/try 10%']);
+    });
+    test('invalid mutation preserves style identity and rule ownership', () => {
+        const s = sheet('from { opacity: 0.25; }'), parent = s.cssRules[0], r = parent.cssRules[0], style = r.style;
+        syntaxError(() => { r.keyText = 'not-a-selector'; });
+        equal(r.style, style); equal(r.style.opacity, '0.25'); equal(r.parentRule, parent); equal(r.parentStyleSheet, s);
+    });
+    test('appendRule uses the same normalization as keyText', () => {
+        const k = keyframes(''); k.appendRule('+.5%, 1e1%, TO { opacity: 1; }');
+        equal(k.cssRules.length, 1); equal(k.cssRules[0].keyText, '0.5%, 10%, 100%');
+    });
+    test('appendRule rejects trailing non-rule text', () => {
+        const k = keyframes(''); k.appendRule('from { opacity: 0; } garbage'); equal(k.cssRules.length, 0);
+    });
+    test('appendRule rejects a trailing at-rule', () => {
+        const k = keyframes(''); k.appendRule('from { opacity: 0; } @media all {}'); equal(k.cssRules.length, 0);
+    });
+    test('appendRule accepts exactly one keyframe entry', () => {
+        const k = keyframes(''); k.appendRule('from { opacity: 0; } to { opacity: 1; }'); equal(k.cssRules.length, 0);
+    });
+    test('appendRule rejects discarded closing-brace prefixes', () => {
+        const k = keyframes(''); k.appendRule('} from { opacity: 0; }'); equal(k.cssRules.length, 0);
+    });
+    test('appendRule permits trailing comments and whitespace', () => {
+        const k = keyframes(''); k.appendRule(' /* before */ from { opacity: 0; } /* after */ \n');
+        equal(k.cssRules.length, 1); equal(k.cssRules[0].keyText, '0%');
+    });
+    test('stylesheet parsing preserves escaped identifier token boundaries', () => {
+        const k = keyframes('\\66/**/rom { opacity: 0; } from { opacity: 1; }');
+        equal(k.cssRules.length, 1); equal(k.cssRules[0].style.opacity, '1');
+    });
+    test('invalid stylesheet keyframe blocks do not hide valid following blocks', () => {
+        const k = keyframes('-1% { opacity: 0; } 101% { opacity: 0; } 1e1% { opacity: 1; }');
+        equal(k.cssRules.length, 1); equal(k.cssRules[0].keyText, '10%');
+    });
+    test('findRule returns the last duplicate after keyword normalization', () => {
+        const k = keyframes('from { opacity: 0; } 0.0% { opacity: 1; }');
+        equal(k.findRule('FROM'), k.cssRules[1]); equal(k.findRule('+0e0%'), k.cssRules[1]);
+    });
+    test('findRule matches the complete ordered list', () => {
+        const k = keyframes('25%, 75% { opacity: 1; }');
+        equal(k.findRule(' 2.5e1% , 75.0% '), k.cssRules[0]); equal(k.findRule('75%, 25%'), null); equal(k.findRule('25%'), null);
+    });
+    test('deleteRule removes only the last match and detaches its ownership', () => {
+        const s = sheet('from { opacity: 0; } 0% { opacity: 1; } to { opacity: 1; }'), k = s.cssRules[0];
+        const kept = k.cssRules[0], removed = k.cssRules[1], final = k.cssRules[2];
+        k.deleteRule('FROM'); equal(k.cssRules.length, 2); equal(k.cssRules[0], kept); equal(k.cssRules[1], final);
+        equal(removed.parentRule, null); equal(removed.parentStyleSheet, null); equal(kept.parentRule, k); equal(kept.parentStyleSheet, s);
+    });
+    test('invalid find and delete selectors are nonmutating', () => {
+        const k = keyframes('from { opacity: 0; }'), r = k.cssRules[0];
+        equal(k.findRule(''), null); equal(k.findRule('101%'), null); k.deleteRule('from,');
+        equal(k.cssRules.length, 1); equal(k.cssRules[0], r);
+    });
+    test('style assignment forwards to the same declaration object', () => {
+        const r = one(), style = r.style; r.style = 'opacity: 0.75; color: red;';
+        equal(r.style, style); equal(r.style.opacity, '0.75'); equal(r.style.color, 'red');
+    });
+    test('keyText coerces an input object once before parsing', () => {
+        const r = one(); let calls = 0; r.keyText = {toString() { calls++; return 'from'; }};
+        equal(calls, 1); equal(r.keyText, '0%');
+    });
+    test('keyframe list methods enforce their required argument', () => {
+        const k = keyframes('from { opacity: 0; }');
+        for (const method of ['appendRule', 'findRule', 'deleteRule']) {
+            let error; try { k[method](); } catch (caught) { error = caught; }
+            if (!(error instanceof TypeError)) throw new Error(method + ' should reject a missing argument');
+        }
+        equal(k.cssRules.length, 1);
+    });
+    const passed = rows.filter(row => row.pass).length, status = passed === rows.length ? 'PASS' : 'FAIL';
+    console.log('RESULTS ' + marker + ':' + status + ' ' + JSON.stringify({passed, total: rows.length}));
+    document.documentElement.setAttribute('data-' + marker, status);
+})();
+</script></body>

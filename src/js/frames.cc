@@ -107,6 +107,7 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const std::string &key, const char
                            const char *ctype = nullptr, const Headers *hdrs = nullptr) {
     if (JsCtx *old = js_frame_ctx(f)) frame_kill(old);
     Document *d = doc_new(url);
+    d->content_type = mime_essence(ctype);   /* response metadata is independent of parser mode */
     if (!strncmp(url, "about:", 6)) d->base_url = xstrdup(doc_base(p->doc));   /* about:blank and about:srcdoc inherit the parent's */
     if (hdrs) { d->csp = headers_join(hdrs, "content-security-policy"); d->csp_ro = headers_join(hdrs, "content-security-policy-report-only"); d->referrer_policy = headers_join(hdrs, "referrer-policy"); }
     bool xml = xml_mime(ctype);
@@ -117,7 +118,7 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const std::string &key, const char
         d->charset = enc;
     }
     HtmlParser *parser = nullptr; Node *first_script = nullptr;
-    if (xml) { xml_parse(d, html ? html : "", html ? n : 0); d->content_type = mime_essence(ctype); }
+    if (xml) { xml_parse(d, html ? html : "", html ? n : 0); }
     else {
         /* Bootstrap policy metadata comes from a separate native parse. Its
            nodes are never exposed or retained as the active document. */
