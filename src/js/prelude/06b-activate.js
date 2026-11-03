@@ -533,7 +533,7 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             if (!cssKeyframePropertyAllowed(p)) return;
             if (v !== '') {
                 pri = pri == null ? '' : String(pri);
-                if (pri !== '' || cssKeyframeImportant(v)) return;
+                if (pri && !/^important$/i.test(pri) || cssKeyframeImportant(v)) return;
             }
         }
         if (v !== '' && !cssVarSyntax(v)) return;
