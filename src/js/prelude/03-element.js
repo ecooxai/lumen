@@ -1160,6 +1160,16 @@ function cssScalarSpecified(property, value) {
 }
 
 function specNormalize(p, v) {
+    if (p === 'z-index') {
+        /* Preserve integer token syntax across CSSOM serialization. Converting
+         * long decimal integers through Number/String creates exponent tokens,
+         * which are not valid authored <integer> values. */
+        const integer = /^([+-]?)([0-9]+)$/.exec(v.trim());
+        if (integer) {
+            const digits = integer[2].replace(/^0+(?=[0-9])/, '');
+            return (integer[1] === '-' && digits !== '0' ? '-' : '') + digits;
+        }
+    }
     if ((p === 'shape-outside' || p === 'clip-path') && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, null);
     if ((p === 'shape-outside' || p === 'clip-path') && /inset\(/i.test(v)) v = insetNorm(v, null);
     if (/-gradient\(\s*in\s/i.test(v))   /* "in <space> <direction>" serializes as "<direction> in <space>" */

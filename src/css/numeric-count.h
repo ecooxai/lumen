@@ -27,6 +27,14 @@ static bool css_number_length_unit(const char *unit) {
     for (size_t i = 0; i < ARRLEN(units); i++) if (!strcmp(unit, units[i])) return true;
     return false;
 }
+/* CSS orders negative zero below positive zero. C fmin/fmax do not give a
+ * portable choice of zero sign on ties, so handle that case explicitly. */
+static double css_number_minimum(double a, double b) {
+    return a == 0 && b == 0 ? (signbit(a) ? a : b) : fmin(a, b);
+}
+static double css_number_maximum(double a, double b) {
+    return a == 0 && b == 0 ? (signbit(a) ? b : a) : fmax(a, b);
+}
 static bool css_number_function(const char *name, CssNumber *args, int n, int strategy, bool no_clamp, CssNumber *out) {
     if (!n) return false;
     *out = args[0]; double a = args[0].value, b = n > 1 ? args[1].value : 1, v = a;
@@ -37,7 +45,7 @@ static bool css_number_function(const char *name, CssNumber *args, int n, int st
         if (!same) return false;
         bool lo = !strcmp(name, "min"), hi = !strcmp(name, "max");
         if (!lo && !hi) v = fabs(a);
-        for (int i = 1; i < n; i++) v = lo ? fmin(v, args[i].value) : hi ? fmax(v, args[i].value) : hypot(v, args[i].value);
+        for (int i = 1; i < n; i++) v = lo ? css_number_minimum(v, args[i].value) : hi ? css_number_maximum(v, args[i].value) : hypot(v, args[i].value);
     } else if (!strcmp(name, "progress")) {
         if (n != 3 || !same) return false;
         int dimensions = 0;
@@ -48,7 +56,7 @@ static bool css_number_function(const char *name, CssNumber *args, int n, int st
         if (dimensions > 1) return false;
         memset(out->power, 0, sizeof out->power);
         v = calculation_progress(a, b, args[2].value, no_clamp);
-    } else if (!strcmp(name, "clamp")) { if (n != 3 || !same) return false; v = fmax(a, fmin(b, args[2].value)); }
+    } else if (!strcmp(name, "clamp")) { if (n != 3 || !same) return false; v = css_number_maximum(a, css_number_minimum(b, args[2].value)); }
     else if (!strcmp(name, "abs")) { if (n != 1) return false; v = fabs(a); }
     else if (!strcmp(name, "sign")) { if (n != 1) return false; memset(out->power, 0, sizeof out->power); v = a > 0 ? 1 : a < 0 ? -1 : a; }
     else if (!strcmp(name, "round")) {
@@ -63,6 +71,7 @@ static bool css_number_function(const char *name, CssNumber *args, int n, int st
         if (!b || isinf(a)) v = NAN;
         else if (isinf(b)) v = !strcmp(name, "mod") && signbit(a) != signbit(b) ? NAN : a;
         else v = !strcmp(name, "mod") ? a - b * floor(a / b) : fmod(a, b);
+        if (!strcmp(name, "mod") && v == 0) v = copysign(0, b);
     } else if (!strcmp(name, "sin") || !strcmp(name, "cos") || !strcmp(name, "tan")) {
         if (n != 1 || (!scalar && !css_number_angle(&args[0]))) return false;
         if (!scalar) a *= M_PI / 180; memset(out->power, 0, sizeof out->power);
