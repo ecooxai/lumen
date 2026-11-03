@@ -153,9 +153,9 @@ replay is in progress against its immutable binary; focused gains are not extrap
 Preserve that binary and all pinned WPT/harness/manifest files while drafting new source.
 The live checkout may advance; distinguish source-worktree state from immutable build provenance.
 
-Next reviewed drafts are bounded z-index specified-value validation in style.c/03-element.js
-and keyframe-only declaration filtering/priority rejection in03-element.js/06b-activate.js.
-They require separate source commits and focused qualification. Background-clip and
+Next candidate1803 source includes separately committed z-index specified-value validation
+(2f31207 plus cssText routing follow-up8801d9d) and keyframe-only declaration context
+(2d9e7e1). Both are independently reviewed; build and focused qualification are pending. Background-clip and
 border-image repeat/slice validation/serialization are approved next investigations.
 Failed timing1704 remains separately preserved at527e190832b0ee6ff6a10def4bc42fe9b7d5cc22;
 do not revive its wholesale draft or alter tests to manufacture passes.
@@ -166,7 +166,9 @@ Focused1801 source was independently checked against all739 compiled inputs and 
 as curated public commit `1f01b72cfcfb797244a8ff5853389897401e419f` on branch
 `gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1801-20261103`.
 That public checkpoint has the1801 focused qualification scope, not1802's broader gates.
-Archive offline restore/package verification is still operations-owned and pending.
+The1801 archive passed offline Git restore and public HTTPS readback:10,301,351 bytes,
+SHA-256 a61ccf59f41c0123d2a65092a86f5d7b31e5e8a4288b8d50847df6259828215a.
+Treat the exact promotion receipt as authoritative if a later archive replaces it.
 Desktop display:0 and connected Android promotion are pending the final qualified candidate.
 Keep final engine source frozen through Android build/install and desktop restart;
 use adb install-r, preserve profiles/data, and verify task-owned PIDs before stopping them.

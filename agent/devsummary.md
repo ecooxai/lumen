@@ -244,3 +244,19 @@ math, native stylesheet.media rendering invalidation; no full MediaQueries claim
 Next reviewed work is specified-value z-index validation, then keyframe-only property
 and priority filtering before duplicate resolution. All test/harness inputs and the
 immutable1802 binary must remain unchanged during its full replay.
+
+### Iteration2 persistence / iteration3 source preparation
+
+Operations completed curated1801 package/offline Git restore and external HTTPS
+readback, with its exact qualification scope retained. Public source commit is
+1f01b72cfcfb797244a8ff5853389897401e419f. Receipts are under
+agent/ops/session18/artifacts1801/; public archive1801 monitor retains all timings.
+The progress snapshot now reports accepted1802, active1803, frozen-sample1705 score57.21
+and downloadable1801 separately. No newer archive or broad-sample claim is implied.
+
+Iteration3 preparation starts after1802 acceptance07:38:27.321787Z. Ops z-index
+validator patch committed2f31207; keyframe declaration context committed2d9e7e1.
+Independent review found a remaining parseDecls route for literal z-index units;
+follow-up8801d9d routes those values through the same typed validator before map
+updates. This preserves prior valid duplicates when a later invalid declaration
+is ignored. New build and runtime gates remain pending.

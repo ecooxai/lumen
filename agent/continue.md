@@ -21,9 +21,9 @@ new reviewed source may advance while preserving that immutable provenance.
 Last completed full sample is1705:714/1248 files,22637/26245 assertions, score57.21/100.
 This is neither full official WPT nor overall browser quality; no95/100 claim.
 
-Current next changes: ops z-index specified-value validator draft is independently
-reviewed and ready to apply/commit. After03-element.js ownership is released, repo
-lead's reviewed keyframe declaration-context draft must be applied separately.
+Current candidate1803 source is applied in separate commits: z-index validation2f31207,
+keyframe context2d9e7e1, and cssText literal z-index validation follow-up8801d9d.
+Independent review accepted the bounded changes; the new build/gates are pending.
 Draft paths: agent/ops/session18/z-index-declarations/ and
 agent/source-work/session18/keyframe-declarations-v1/. Preserve prior normal duplicate
 values when rejecting!important. Then investigate bounded background-clip/border-image
@@ -31,6 +31,7 @@ repeat/slice validation and serialization with frozen official cases and indepen
 No broad parser/cascade rewrite or failed timing1704 revival.
 
 Operations has pushed curated1801 source, public1f01b72cfcfb797244a8ff5853389897401e419f;
-archive restore/package verification remains pending. Keep final candidate source frozen
+archive offline restore and public HTTPS byte/hash readback are verified in
+agent/ops/session18/artifacts1801/promotion-receipt.json. Keep final candidate source frozen
 through Android install-r (no data clear) and verified desktop:0 restart. Preserve all
 untracked prior work, monitors, raw failures and exact source/binary identities.
