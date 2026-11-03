@@ -179,3 +179,68 @@ NumericWPT3 improves130→132/199 assertions,0→1/3 completefiles,2existinggain
 Acceptance: focusedregressiongatePASS; focusedresourcegatePASS; native218/retained45DEFERRED tointegrated1802; full1248NOTYETRERUN; desktopPENDING; AndroidPENDING; newexternalcheckpointPENDING.
 Iteration score **57.21/100**, tied to lastverifiedfull selected1248 measurement1705; no broadscore increment inferred from a small cohort.
 Nextiteration1802: MediaListv2 underindependentreview. Normative readonly indexed methods remainFALSE despiteChromium150 TRUE/no-op deviation. No originalfixture/expectedrow modified.
+
+## Session18 iteration2 — MediaList integrated candidate1802
+
+Recorded continuation phase start: 2026-11-03T07:21:18.425510+00:00; acceptance end: 2026-11-03T07:38:27.321787+00:00.
+Wall interval: 1028.896277s. MediaList drafting also overlapped iteration1;
+these wall windows are not additive model-compute or isolated author-effort measurements.
+Total session wall time from06:58:59Z through this acceptance: 2368.321787s.
+Repo lead implemented/reviewed source and docs; ops independently reviewed and prepared
+public1801 persistence; WPT agent ran and audited all build/test gates. Root coordinated.
+
+Source: c60398214ad22f5d7578ec8f1f5239e2bab53010. Binary SHA-256: e54c56023927627937ea6bcd2e9f4e1bb835709e8d7eb90c6d8522e27577b4db.
+Source manifest: 711bc0fd75334746677edd4655198d4ce0dbb24f2abc59e8c39ece5f220a5909.
+Acceptance: `agent/validation/linux-wpt-20261103-session18/candidate1802-incremental-acceptance.json`.
+Worker completion: 2026-11-03T07:35:09.933406+00:00; final independent audit/acceptance: 2026-11-03T07:38:27.321787+00:00.
+The worker-to-acceptance interval includes review/receipt preparation and is not test runtime.
+
+MediaList10 improves2→10/10 files and23→47/47 assertions. CSSOM neighbors13 gains
+74→76/113 assertions with9/13 files. Numeric3 retains132/199 and1/3 files. All focused
+identity audits preserve prior passes, named occurrences and harness statuses. Authored
+MediaList15/15 and owner8/8 pass; Chromium13/15 and7/8 differs on normative readonly
+Reflect false semantics, preserved explicitly. Numeric28=24/28, keyframe47/49 retains
+two named-range failures, property21/21 and descriptor13/13 pass. Native218/218 and
+unchanged retained45/1318 pass; retained audit334/334.
+
+Score: **57.21/100**, still the last complete1705 selected1248 whole-file pass rate.
+Focused gains are separate; candidate1802 full1248 replay begins afterward and is not
+part of this iteration's accepted broad-sample result. Overall browser95 quality has
+not been established. Desktop/Android promotion remains pending.
+
+| Task | UTC start | UTC end | Seconds | Exit |
+|---|---|---|---:|---:|
+| build-startup | 2026-11-03T07:27:48.926682+00:00 | 2026-11-03T07:28:39.134516+00:00 | 50.208 | 0 |
+| medialist15 | 2026-11-03T07:28:39.160572+00:00 | 2026-11-03T07:28:42.668911+00:00 | 3.508 | 0 |
+| owner8 | 2026-11-03T07:28:42.687485+00:00 | 2026-11-03T07:28:46.193971+00:00 | 3.506 | 0 |
+| medialist10 | 2026-11-03T07:28:46.214676+00:00 | 2026-11-03T07:28:59.447188+00:00 | 13.233 | 0 |
+| cssom-neighbors13 | 2026-11-03T07:28:59.573160+00:00 | 2026-11-03T07:29:16.750011+00:00 | 17.177 | 0 |
+| numeric3 | 2026-11-03T07:29:16.863380+00:00 | 2026-11-03T07:29:24.048153+00:00 | 7.185 | 0 |
+| numeric28 | 2026-11-03T07:29:24.136965+00:00 | 2026-11-03T07:29:26.528610+00:00 | 2.392 | 0 |
+| token-observations30 | 2026-11-03T07:29:26.539226+00:00 | 2026-11-03T07:29:29.008126+00:00 | 2.469 | 0 |
+| keyframe34 | 2026-11-03T07:29:29.022007+00:00 | 2026-11-03T07:29:33.663740+00:00 | 4.642 | 0 |
+| keyframe-eof-numeric13 | 2026-11-03T07:29:33.676730+00:00 | 2026-11-03T07:29:36.052106+00:00 | 2.375 | 0 |
+| keyframe-runtime2 | 2026-11-03T07:29:36.060385+00:00 | 2026-11-03T07:29:38.429037+00:00 | 2.369 | 0 |
+| css-property-rule21 | 2026-11-03T07:29:38.437971+00:00 | 2026-11-03T07:29:41.830094+00:00 | 3.392 | 0 |
+| descriptor-comparison13 | 2026-11-03T07:29:41.843508+00:00 | 2026-11-03T07:29:45.345654+00:00 | 3.502 | 0 |
+| native218 | 2026-11-03T07:29:45.356325+00:00 | 2026-11-03T07:33:09.595427+00:00 | 204.239 | 0 |
+| authored38 | 2026-11-03T07:33:09.625613+00:00 | 2026-11-03T07:34:47.957995+00:00 | 98.332 | 0 |
+| retained-additional14 | 2026-11-03T07:34:47.967148+00:00 | 2026-11-03T07:34:54.705272+00:00 | 6.738 | 0 |
+| retained-extras143 | 2026-11-03T07:34:54.720746+00:00 | 2026-11-03T07:35:02.714779+00:00 | 7.994 | 0 |
+| retained-universal40 | 2026-11-03T07:35:02.734511+00:00 | 2026-11-03T07:35:06.322600+00:00 | 3.588 | 0 |
+| retained-frame4 | 2026-11-03T07:35:06.338755+00:00 | 2026-11-03T07:35:09.918016+00:00 | 3.579 | 0 |
+
+Every individual build/test task above completed within5min; the combined worker is
+longer because it runs distinct required gates. No unexplained slow task was observed.
+Build monitor:50 one-second samples, process-tree CPU min0%,median52.032%,max98.003%;
+peakRSS490.93MiB, finalRSS42.693MiB, peakPSS395.028MiB. Shared cgroup weightedmean
+136.993%,median168.160%,max189.538%, with100%=one core and480% total quota.
+Samples can miss short-lived children and treeRSS can double-count shared pages.
+Full monitor artifacts remain with each test task. No sustained unaccounted CPU/RAM
+problem was identified by the independent qualifier.
+
+Implementation limits retained: semantic media nesting guard128, unsimplified media
+math, native stylesheet.media rendering invalidation; no full MediaQueries claim.
+Next reviewed work is specified-value z-index validation, then keyframe-only property
+and priority filtering before duplicate resolution. All test/harness inputs and the
+immutable1802 binary must remain unchanged during its full replay.

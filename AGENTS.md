@@ -100,77 +100,76 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session18, focused candidate1801
+## Current development handoff — session18, qualified candidate1802
 
 Canonical checkout: `/mnt/p3/project/browser/lumen-android/lumen-android`.
 Current branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
-Current user request is preserved verbatim in `agent/task.md`; the prior task and
-continuation are archived with the `20261103-session18-before` suffix.
-Session start **2026-11-03T06:58:59Z**, nominal five-hour deadline **11:58:59Z**,
+The complete current user request is preserved verbatim in `agent/task.md`.
+Session start **2026-11-03T06:58:59Z**; nominal five-hour deadline **11:58:59Z**,
 with up to one additional hour only for an important unresolved bug.
 
-Root is CTO. Same-model built-in agents own repository/implementation, independent
-WPT/build qualification, and operations/delivery. Direct RubyWebTerm calls are
-working in this session; the previous session's relay queue is historical.
-Repo lead owns source and Git branch/index operations. WPT agent owns heavy build/test
-windows; operations owns progress service and deployment. Coordinate exact source
-freeze boundaries before builds. Keep the shared build/source-edit locks, quota480%,
-jobs2, and one-second process-tree/cgroup monitoring. Preserve all untracked prior work.
+Root is CTO. Same-model built-in agents own implementation/Git, independent WPT/build
+qualification, and operations/delivery. Direct RubyWebTerm calls work; prior relay
+queues are historical. Repo lead owns canonical Git operations. Coordinate source
+ownership and freeze before every build. Preserve shared locks, quota 480%, jobs 2,
+one-second CPU/RSS/cgroup monitoring, all untracked historical work and unchanged WPT
+oracles/harnesses. Reserve the final hour for integrated verification and delivery.
 
-Starting source is candidate1705, commit `13c22d3d28a68746fede3f265f55c5eda3247da6`,
-binary SHA-256 `a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271`.
-Incremental qualification is recorded in
-`agent/validation/linux-wpt-20261102-session17/candidate1705-incremental-acceptance.json`.
-It retained MIME27/27, native218/218, original keyframes32/34 with both named-range
-failures visible, and retained1318/1318 assertions across45 files.
+### Latest qualified engine
 
-The newer saved complete selected1248 replay, found after the prior handoff, is
-`candidate1705-expanded-first-comparison.json` in the same directory. It records
-**714/1248 complete files (57.21154%) and22637/26245 assertions**, versus prior1603
-703/1248 and22604/26245. Pinned Chromium150 is1062/1248 and24541/26064; the assertion
-denominators remain engine-specific. Saved comparison records33 assertion gains,
-11 whole-file gains and no prior-PASS losses. Independent raw recount and compiled-source hashes are verified in `agent/validation/linux-wpt-20261103-session18/verified-baseline1705.json`.
-This is the frozen selected sample, not full official WPT or a browser-quality score.
+Integrated candidate **1802**, source `c60398214ad22f5d7578ec8f1f5239e2bab53010`,
+binary SHA-256 `e54c56023927627937ea6bcd2e9f4e1bb835709e8d7eb90c6d8522e27577b4db`,
+source manifest `711bc0fd75334746677edd4655198d4ce0dbb24f2abc59e8c39ece5f220a5909`.
+Acceptance is `agent/validation/linux-wpt-20261103-session18/candidate1802-incremental-acceptance.json`.
 
-Failed timing1704 remains on its separate preserved branch at527e190832b0ee6ff6a10def4bc42fe9b7d5cc22;
-it is not merged. Do not revive its wholesale draft. Select a bounded standards
-fix using real current failures and preserve every test/oracle. The prior MediaList
-draft is a candidate for independent review, not qualified source.
+- MediaList frozen WPT10: **10/10 files, 47/47 assertions**, up from 2/10 and 23/47;
+  eight new fully passing files and 24 previously failing assertions now pass.
+- Adjacent CSSOM13: **9/13 files, 76/113 assertions**, two assertion gains. Numeric3
+  retains **1/3 files, 132/199 assertions**, including the two candidate1801 gains.
+  These focused comparisons have no prior-pass loss or assertion/harness identity change.
+- Original authored MediaList controls **15/15**, new owner controls **8/8**.
+  Chromium150 is 13/15 and 7/8 because its readonly indexed Reflect return values
+  diverge from the normative WebIDL algorithm; preserve that documented difference.
+- **218/218 configured native tests** and unchanged **45 retained fixtures / 1318
+  assertions** pass. Independent retained audit passed 334/334 checks.
+- Keyframe contracts retain **47/49** with both named-range failures visible;
+  CSSPropertyRule21/21 and descriptor comparison13/13 pass. Numeric28 remains24/28:
+  four specified-value invalid-unit z-index failures remain despite computing to auto.
 
-Operations will verify current live desktop/Android state and persistence before
-promotion. Keep final qualified engine source frozen through Android build/install
-and desktop:0 restart; preserve profiles and Android data. The prior public1701
-backup is historical until a newer exact source checkpoint is verified.
-Reserve at least final60min for integrated replay/repair, delivery and persistence.
+Candidate1801 introduced shared typed z-index integer conversion; candidate1802 adds
+component-value MediaList parsing, canonical mutations, readonly indexed API semantics,
+and live null-namespace owner media attributes. Media query semantic nesting beyond128,
+full math simplification and native stylesheet.media rendering invalidation remain
+explicit limitations. No complete MediaQueries implementation is claimed.
 
+### Sample score and ongoing work
 
-### Session18 iteration1: focused candidate1801
+The last completed frozen1248 replay is still **candidate1705: 714/1248 files
+(57.21154%), 22637/26245 assertions**. Chromium150 on that sample is1062/1248 and
+24541/26064 assertions; denominators are engine-specific. Independent baseline receipt:
+`agent/validation/linux-wpt-20261103-session18/verified-baseline1705.json`.
+Score **57.21/100** describes only this selected-file pass rate. Candidate1802 full
+replay is in progress against its immutable binary; focused gains are not extrapolated.
+Preserve that binary and all pinned WPT/harness/manifest files while drafting new source.
+The live checkout may advance; distinguish source-worktree state from immutable build provenance.
 
-Source1801 is `4e74e964347ed5608a3110a1e2b31b270e610ac9`, containing the isolated
-z-index engine commit `8f9cdd82567a0609b18088f687c068299d19c919` plus status documentation.
-Immutable binary SHA-256 `21e04192acf8602705c0aeb9e27ce673977a75a41c0b1c02618a79a1c65c7839`;
-source manifest `6646326b25ee6dd2422bce96f1e3a92991165d291561fee8f3f3590088d392de`.
-Accepted scope is the exact numeric3 WPT cohort and independent authored28 controls:
-130→132/199 assertions and0→1/3 complete files; two existing assertion gains, no
-prior-PASS losses, missing/new identities, or harness regressions. Authored28 improves
-13→24/28. Four original declaration-validation failures remain visible: unit-valued
-z-index declarations are accepted by the pre-existing specified-value path, although
-all now compute to auto. This patch replaces z-index's ad-hoc numeric conversion with
-the existing typed integer path, including CSS half-ties, NaN and range clamping.
+Next reviewed drafts are bounded z-index specified-value validation in style.c/03-element.js
+and keyframe-only declaration filtering/priority rejection in03-element.js/06b-activate.js.
+They require separate source commits and focused qualification. Background-clip and
+border-image repeat/slice validation/serialization are approved next investigations.
+Failed timing1704 remains separately preserved at527e190832b0ee6ff6a10def4bc42fe9b7d5cc22;
+do not revive its wholesale draft or alter tests to manufacture passes.
 
-Build/startup62.435s; numeric3 replay8.290s; authored28 gate3.855s. Build peak treeRSS
-318.72MiB; cgroup CPUmean122.10%,max185.53%,62 one-second samples. Full native218 and
-retained45 will run once on integrated1802; their old1705 results are not new1801 evidence.
-Full1248 score remains the verified1705 **57.21/100** selected-file rate until a new replay.
-No overall95/98 quality claim. Desktop/Android promotion and new external persistence
-remain pending; operations owns them.
+### Persistence and final promotion
 
-Next implementation is MediaList1802, staged outside source in
-`agent/source-work/session18/medialist1802-v2/`, under independent review. It repairs
-component-value list parsing, canonical single-query mutation, live indexed API state,
-and null-namespace owner media attribute initialization/synchronization. Its semantic
-nesting guard, unsimplified media math, and pre-existing native stylesheet.media rendering
-invalidation are explicit limits; no full MediaQueries implementation claim is made.
+Focused1801 source was independently checked against all739 compiled inputs and pushed
+as curated public commit `1f01b72cfcfb797244a8ff5853389897401e419f` on branch
+`gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1801-20261103`.
+That public checkpoint has the1801 focused qualification scope, not1802's broader gates.
+Archive offline restore/package verification is still operations-owned and pending.
+Desktop display:0 and connected Android promotion are pending the final qualified candidate.
+Keep final engine source frozen through Android build/install and desktop restart;
+use adb install-r, preserve profiles/data, and verify task-owned PIDs before stopping them.
 
 ### Retained prior architecture and authorization boundaries
 

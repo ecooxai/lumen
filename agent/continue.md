@@ -1,32 +1,36 @@
-# Continue Lumen Linux session18 after focused candidate1801
+# Continue Lumen Linux session18 after qualified candidate1802
 
-Read AGENTS.md and agent/devsummary.md; current user request is agent/task.md.
-Canonical RubyWebTerm workspace /mnt/p3/project/browser/lumen-android/lumen-android.
-Branch gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103.
-Session start2026-11-03T06:58:59Z; nominaldeadline11:58:59Z, one extra hour only for important bug.
-Root is CTO; repo_lead owns source/Git; wpt_baseline owns heavybuild/test windows;
-ops_recovery owns progress/persistence/deployment and independent review.
+Read AGENTS.md and agent/devsummary.md first. The full user request is agent/task.md.
+Use RubyWebTerm workspace /mnt/p3/project/browser/lumen-android/lumen-android;
+branch gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103.
+Session start2026-11-03T06:58:59Z, nominal deadline11:58:59Z, one extra hour only for
+an important unresolved bug. Root is CTO; same-model agents own all implementation,
+build/testing and operations. Preserve exact task scope, source ownership and shared locks.
 
-Focused1801 source4e74e964347ed5608a3110a1e2b31b270e610ac9 has a small independently
-reviewed z-index integer conversion fix. Binary21e04192acf8602705c0aeb9e27ce673977a75a41c0b1c02618a79a1c65c7839.
-Numeric3 WPT130→132/199,0→1/3 files,2gains/no losses. Authored28=24/28, four old
-specified-value invalid-unit failures retained. Fullnative218/retained45 not rerun on1801;
-run them once with integrated1802. Acceptedreceipt is session18/candidate1801-incremental-acceptance.json.
+Latest qualified engine is1802 at c60398214ad22f5d7578ec8f1f5239e2bab53010,
+binary e54c56023927627937ea6bcd2e9f4e1bb835709e8d7eb90c6d8522e27577b4db.
+MediaList WPT10 is10/10 and47/47 (+8 files,+24 assertions); adjacent CSSOM13 gains2
+assertions to76/113. Numeric3 retains132/199. Native218/218 and unchanged retained
+45 fixtures/1318 assertions pass, independently audited. Original MediaList15 and
+owner8 all pass. Keep Chromium's readonly Reflect return-value deviation explicit.
+Keyframe47/49 and numeric24/28 retain their known failures, not blanket success.
 
-Last full selected1248 sample remains1705:714/1248 files,22637/26245 assertions;
-Chromium1501062/1248,24541/26064. Independentrecount verified. Score57.21/100 is
-selected-file passrate only, not fullWPT/wholebrowser95quality.
+Full frozen1248 replay of immutable1802 is ongoing. Do not alter its binary or any
+pinned WPT/harness/manifest inputs. Source/Git build freeze was released by tester;
+new reviewed source may advance while preserving that immutable provenance.
+Last completed full sample is1705:714/1248 files,22637/26245 assertions, score57.21/100.
+This is neither full official WPT nor overall browser quality; no95/100 claim.
 
-MediaList1802v2 draft is agent/source-work/session18/medialist1802-v2/, not applied.
-Ops independentreview pending; WPT static/fixture gates prepared. It changes06b-activate.js
-plus one internal01-events.js notificationhook. Preserve original15/v2 fixture even where
-Chromium's readonly indexed Reflect behavior differs from normative WebIDL. WPT10 exact
-frozen cohort, authored15, owner8, adjacentCSSOM13 and tokenobservations are distinct scopes.
-Semantic nesting over128 is conservatively rejected; known media math simplification and
-native stylesheet.media rendering invalidation remain explicit limitations.
+Current next changes: ops z-index specified-value validator draft is independently
+reviewed and ready to apply/commit. After03-element.js ownership is released, repo
+lead's reviewed keyframe declaration-context draft must be applied separately.
+Draft paths: agent/ops/session18/z-index-declarations/ and
+agent/source-work/session18/keyframe-declarations-v1/. Preserve prior normal duplicate
+values when rejecting!important. Then investigate bounded background-clip/border-image
+repeat/slice validation and serialization with frozen official cases and independent gates.
+No broad parser/cascade rewrite or failed timing1704 revival.
 
-Coordinate source/Git freeze before eachbuild; current1801freeze is released. Preserve all
-untracked history. Do not revive failedtiming1704 or alter test oracles/protectedrunners.
-Sharedlocks,480%CPUquota,jobs2,one-second resource monitoring remain required.
-Continue meaningful bounded fixes until goal/time; reserve final60min for fullreplay,
-repair, verifiedpersistence, Android install-r withoutdataclear and desktop:0restart.
+Operations has pushed curated1801 source, public1f01b72cfcfb797244a8ff5853389897401e419f;
+archive restore/package verification remains pending. Keep final candidate source frozen
+through Android install-r (no data clear) and verified desktop:0 restart. Preserve all
+untracked prior work, monitors, raw failures and exact source/binary identities.
