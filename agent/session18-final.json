@@ -1,7 +1,7 @@
 {
   "verification_summary": "The single preregistered unchanged-engine reliability replay passed: 759/1248 selected cases (60.8173%) and 22,826/26,245 assertions (86.9728%). All 22,826 required historical PASS identities were retained with no harness regressions. Compared with starting 1705, this adds 45 passing cases and 189 assertion passes. Both final unchanged namespace repetitions passed 51/51 with harness OK, real exit 0 and cleanup. Native 218/218 and retained 1318/1318 also passed. The first complete 1808 run remains HOLD: 758/1248 with 51/51 namespace assertions PASS but harness TIMEOUT; its cause remains unknown and no source fix is claimed. This is qualified development evidence, not production certification, whole-WPT parity or the unachieved 95/100 overall goal. On 26,004 exact common reference identities: 22,037 both PASS, 2,444 Chromium-only PASS, 586 Lumen-only PASS and 937 neither PASS. Independent recount SHA d60094edb3bde0aa72ba9c50fe05714a31c0df8dac8873e6fd0176b58bdc0f4c; namespace review SHA ff06f877ed01b0bffddb2ae85c480c97b7f2d9757308e2e95673e41f6382e12a.",
   "runtime_summary": "Linux display :0 was restarted successfully at 2026-11-03T12:48:21.656938+00:00 with the exact candidate 1808 binary. Actual keyboard input, navigation/history and four own-page semantic checks passed; clean and attributed 36-second 1280x960 recordings were preserved. Android was built from exact fcf, passed all 33 original APK/RTC checks, installed with install-r, and finally restarted at 2026-11-03T12:56:33.126372+00:00. Installed APK SHA-256 is 900e38488462b364076db09c574c21405e26e5b5a474b850537b953675cf4a02; package UID 10196 was retained and no app data was cleared. Six stable foreground/liveness samples and four actual page checks passed after restart. Android smoke coverage is separate from Linux WPT. Both verification-controller corrections and failed attempts remain recorded; neither changed engine/APK bytes. The exact-source delivery window was closed and the guarded task branch restored, with all 742 inputs/binary/build-state unchanged. Final runtime receipt hashes: Linux 846747c9ac1dd03d7f8d58fc930cb29909d5f868d7df1fd3c3a556c9b2e14cdb, Android ce2c885faf24dc7e5bf07c90c3fd318321a58860974bf192f8d6abb8f81481cd.",
-  "publication_summary": "The exact tested source and final development-device metadata are durably published at public commit c57da5b98ecb52124d04d10964ce62c6793c5e47 on gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103 (https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103). The public source archive at https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz is 10,344,997 bytes, SHA-256 e0ded35eb3968778f2a14af49d21dbcdae66437028cd25d3a316feeb4eed0e57; offline Git restore and external HTTPS200/full-byte readback were verified at 2026-11-03T13:03:35.288168+00:00. All742 tested inputs and the842-file public inventory were independently reviewed, and only three generated metadata files changed in the final public commit. The first full HOLD and unknown timeout cause remain explicit. Approved public history excludes canonical private Git objects, profiles, credentials, message queues and validation machinery; offline recovery is not an independent browser rebuild. Actual PDF/video/APK transfer and saved artifact identifiers are recorded separately in the final delivery receipts; report publication was still finishing when this source-publication record was written.",
+  "publication_summary": "The exact tested source and final development-device metadata are published at public commit c57da5b98ecb52124d04d10964ce62c6793c5e47 on gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103 (https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103). The source archive at https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz is 10,344,997 bytes, SHA-256 e0ded35eb3968778f2a14af49d21dbcdae66437028cd25d3a316feeb4eed0e57; offline Git restore and external HTTPS200/full-byte readback were verified at 2026-11-03T13:03:35.288168+00:00. The approved public export excludes canonical private Git objects, profiles, credentials, message queues and validation machinery; recovery is not an independent browser rebuild. All four user artifacts\u2014the final five-page evidence PDF, clean 36-second 4:3 recording, attributed development showcase and exact installed APK\u2014were durably saved by 13:08:18UTC. The private canonical artifact manifest agent/ops/session18/final-user-artifacts.json (SHA c8795e715225af3f9b67656f304a73ef289b5809b09d11d89fa6aab9dc8e26db) records their actual saved IDs, paths and hashes. Final PDF SHA-256 is a780cceeedbb63782e3538ec98560c4d8ace51f9fe2f819bbda44f92884a4d39, independently accepted for factual accuracy and all-page visual layout. The first full HOLD and unknown timeout cause remain explicit; no production, whole-WPT or 95 claim is made.",
   "next_work": "1. Investigate namespace/frame startup and parent-load completion reliability under controlled resource conditions. The first full run timed out after all 51 assertions passed; the cause remains unknown. Preserve the failure and every successful observation, with no timeout relaxation or test-specific bypass.\n2. Improve stylesheet and CSSOM lifecycle behavior that affects real pages: import loading, constructable sheets, source reflection, media invalidation, and atomic frame/post-connection operations. The final reliability shared-reference comparison records 449 CSSOM and 106 DOM-node assertion gaps; use the preserved final replay ranking to select a bounded next cohort.\n3. Address typed `attr()` values, cycles, `calc-size()` and context-sensitive numeric evaluation with explicit value provenance. CSS Values accounts for 1,230 of the final 2,444 shared Chromium-only passes; the large attr-all-types and calc-size-parsing files contribute 116 and 68 respectively. These counts are assertion gaps, not supported-feature percentages.\n4. Extend animation/background shorthand and selector grammar using unchanged complete valid/invalid cohorts. The measured final gaps include 230 animation-parsing and 192 background-parsing assertions; preserve the already accepted alias, priority, numeric and keyword behavior.\n5. Add separately declared rendering, network, visual/reftest and real-site coverage. The current HTTP DOM/CSS testharness sample cannot establish those broader platform properties.",
   "final_timestamp": "2026-11-03T12:59:48.301875+00:00",
   "elapsed_seconds": "21649.302",
@@ -12,7 +12,7 @@
   "restored_guard_commit": "1c1ac7cfc326a960aa91e250184883db9ee5604b",
   "original_full_HOLD_preserved": true,
   "overall95_target_achieved": false,
-  "artifact_handoff_status_at_documentation": "Final metadata/archive/PDF/media publication in progress; actual receipts authoritative",
+  "artifact_handoff_status_at_documentation": "Complete: all four user artifacts durably saved; source publication externally verified",
   "linux_runtime": {
     "phase": "final-restart",
     "candidate": 1808,
@@ -232,6 +232,103 @@
     "scope": "Development source archive with approved public Git history; no private history; restore is not an independent rebuild."
   },
   "source_publication_final_receipt_sha256": "c2b0f751aa01197507d62cb9255a7002178f35445ae52d7964df828d34877109",
-  "development_and_device_work_finished_utc": "2026-11-03T12:56:33.000000+00:00",
-  "source_publication_recorded_utc": "2026-11-03T13:05:04.477021+00:00"
+  "development_and_device_work_finished_utc": "2026-11-03T12:56:33.126372+00:00",
+  "source_publication_recorded_utc": "2026-11-03T13:05:04.477021+00:00",
+  "final_artifact_save_finished_utc": "2026-11-03T13:08:18+00:00",
+  "artifact_handoff_elapsed_seconds": 22159.0,
+  "final_documentation_seal_utc": "2026-11-03T13:10:09.155650+00:00",
+  "total_wall_seconds_at_seal": 22270.15565,
+  "final_user_artifacts_manifest": {
+    "session": "20261103-session18",
+    "agent": "ops_recovery",
+    "model": "GPT-6 Astra Pro",
+    "tools": [
+      "built-in agents",
+      "RubyWebTerm"
+    ],
+    "development_test_device_finished_utc": "2026-11-03T12:56:33Z",
+    "durable_artifact_saving_finished_utc": "2026-11-03T13:08:18Z",
+    "files": [
+      {
+        "kind": "evidence_report",
+        "filename": "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session18_evidence.pdf",
+        "local_path": "/workspace/scratch/48cfe12bf055/lumen_delivery/output/pdf/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session18_evidence.pdf",
+        "bytes": 64432,
+        "sha256": "a780cceeedbb63782e3538ec98560c4d8ace51f9fe2f819bbda44f92884a4d39",
+        "library_file_id": "libfile_3314ae9046508191b51cef09733b6f5b"
+      },
+      {
+        "kind": "clean_recording",
+        "filename": "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1808_clean_recording.mp4",
+        "local_path": "/workspace/scratch/48cfe12bf055/lumen_delivery/artifacts/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1808_clean_recording.mp4",
+        "bytes": 268297,
+        "sha256": "4fb9562a5d1b6d7018dc3e77ef9a4392c58c06eae1f7bd4c7d8f6a92f768c9df",
+        "library_file_id": "libfile_97d628eac1e88191b7b7f2c12190e2e6",
+        "duration_seconds": 36,
+        "width": 1280,
+        "height": 960
+      },
+      {
+        "kind": "branded_showcase",
+        "filename": "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1808_showcase_development.mp4",
+        "local_path": "/workspace/scratch/48cfe12bf055/lumen_delivery/artifacts/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1808_showcase_development.mp4",
+        "bytes": 357433,
+        "sha256": "5a186d99d212ab709a3f2debd4823c0365c532d8f2e0373a4a674cd87f3ae6f8",
+        "library_file_id": "libfile_527a2aad46188191ace9507685e3758d",
+        "duration_seconds": 36,
+        "width": 1280,
+        "height": 960
+      },
+      {
+        "kind": "exact_installed_apk",
+        "filename": "lumen_android_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1808.apk",
+        "local_path": "/workspace/scratch/48cfe12bf055/lumen_delivery/artifacts/lumen_android_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1808.apk",
+        "bytes": 177550258,
+        "sha256": "900e38488462b364076db09c574c21405e26e5b5a474b850537b953675cf4a02",
+        "library_file_id": "libfile_f3fae0b08ca08191a1de0f198cbf0d81"
+      }
+    ],
+    "source": {
+      "public_commit": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
+      "archive_bytes": 10344997,
+      "archive_sha256": "e0ded35eb3968778f2a14af49d21dbcdae66437028cd25d3a316feeb4eed0e57",
+      "external_and_offline_restore_verified": true
+    },
+    "services": {
+      "preview_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
+      "progress_pid": 3607620,
+      "linux_pid": 3569233,
+      "android_pid": 9591,
+      "showcase_server_pid": 3098715,
+      "temporary_artifact_transfer_closed": true,
+      "session_active": false
+    },
+    "measured_selected_case_score": 60.817307692307686,
+    "overall_95_goal_complete": false,
+    "known_limitation": "Earlier first-full namespace harness timeout remains preserved and unexplained; one unchanged preregistered reliability replay and two bounded namespace repetitions passed."
+  },
+  "final_user_artifacts_manifest_sha256": "c8795e715225af3f9b67656f304a73ef289b5809b09d11d89fa6aab9dc8e26db",
+  "final_pdf_layout_review": {
+    "reviewer": "repo_lead / GPT-6 Astra Pro built-in agent",
+    "utc": "2026-11-03T13:08:39.004923+00:00",
+    "accepted": true,
+    "pdf_sha256": "a780cceeedbb63782e3538ec98560c4d8ace51f9fe2f819bbda44f92884a4d39",
+    "pdf_bytes": 64432,
+    "pages": 5,
+    "visual_review": "All five embedded-font pages were visually inspected; final changed pages2 and4 were re-inspected. Clear kerning, no clipped content or footer overlap; source identities, category table and explicit first-HOLD limitations remain readable.",
+    "preserved_initial_artifact_findings": [
+      "Base14 font-substitution kerning defect corrected by embedded fonts.",
+      "Final timing paragraph moved to roomy page4 to keep footer clearance."
+    ],
+    "page_image_hashes": {
+      "page-1": "14bd1ee5d0cb9dbcbc28d8aa602f31bc9407063ba67adb8174b39c497ddded8c",
+      "page-2": "f0f14c4e99c650201d28b9bdf712841788162eddf7c56c5734d5183fc67d45bf",
+      "page-3": "790bc44b9cb9a1019f1d02b3bbac3e77148b67e0818e7bf787058e44a353ee6a",
+      "page-4": "14addfd87fbc87810998ddd3992a4a90c5edce160a7bf45b7af62b6e58c98688",
+      "page-5": "e0105102063e4900a34229ff2bee3d5a197f9f7f55195a40bb9a621d4da0a16c"
+    },
+    "factual_review_sha256": "29cd9c089e22b1a5c9879efc3472fbbb4731a3f25cc0be5a9cc7a7f75e6c27a8",
+    "scope": "Final PDF layout and visible disclosure review; factual audit independently performed by wpt_baseline. No browser execution or artifact publication performed by this review."
+  },
+  "final_pdf_layout_review_sha256": "e96b38e0580f218b1ef0e9db94d238981cee6c7260e046bbed61ea388a514916"
 }

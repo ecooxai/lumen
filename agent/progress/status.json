@@ -1,6 +1,6 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session18",
-  "phase": "Development and both-device verification complete. Final1808 source archive published and externally verified; final report handoff finishing.",
+  "phase": "Development checkpoint delivered: Linux and Android restarted, source archive verified, report/videos/APK durably saved. Earlier namespace timeout remains unexplained.",
   "iteration": 1808,
   "session_iteration": 8,
   "score": 60.817307692307686,
@@ -15,9 +15,9 @@
   "work_session_id": "20261103-session18",
   "work_session_number": 18,
   "session_active": false,
-  "session_status": "development complete; artifact handoff finishing",
+  "session_status": "completed",
   "session_deadline_utc": "2026-11-03T12:58:59Z",
-  "session_response_availability": "Development session has ended. The status page remains available; no unattended agent reply is promised.",
+  "session_response_availability": "This development session is complete. The status page remains available; no unattended agent reply is promised.",
   "goal_achieved": false,
   "goal_score": 95,
   "overall_assessment": "Linux development checkpoint verified on selected coverage; Chromium parity and overall95 quality remain unachieved.",
@@ -82,8 +82,8 @@
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
   "working_commit": "fcf2d2d83686a554f492fbaf992173b12d924b64",
-  "updated_utc": "2026-11-03T13:05:04.477021+00:00",
-  "updated_at": "2026-11-03T13:05:04.477021+00:00",
+  "updated_utc": "2026-11-03T13:10:09.155650+00:00",
+  "updated_at": "2026-11-03T13:10:09.155650+00:00",
   "runtime_candidate": 1808,
   "runtime_note": "Exact candidate1808 restarted on Linux display0 and connected Android; installed APK verified, UID/data preserved. Android WPT parity is not claimed.",
   "qualified_prior_candidate_scope": {
@@ -483,5 +483,9 @@
   "public_source_commit": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
   "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103",
   "source_archive_external_hash_verified": true,
-  "source_archive_offline_restore_verified": true
+  "source_archive_offline_restore_verified": true,
+  "artifact_publication_status": "complete",
+  "artifact_save_finished_utc": "2026-11-03T13:08:18+00:00",
+  "development_finished_utc": "2026-11-03T12:56:33.126372+00:00",
+  "documentation_sealed_utc": "2026-11-03T13:10:09.155650+00:00"
 }
