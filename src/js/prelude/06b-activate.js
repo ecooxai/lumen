@@ -520,7 +520,8 @@ function cssKeyframeImportant(value) {
         tokens[count - 1].value.toLowerCase() === 'important';
 }
 function cssRuleDeclarations(rule, text) {
-    return parseDecls(text, rule instanceof CSSFontFaceRule, cssOwnerGet(rule).type === 8);
+    const type = cssOwnerGet(rule).type;
+    return parseDecls(text, type === 5, type === 8, type === 1 || type === 8);
 }
 class CSSRuleStyle extends CSSStyleDeclaration {
     constructor(rule, text) { super(null); if (cssOwnerGet(rule).type === 5) cssDescriptorStyleAdd(this); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
@@ -529,7 +530,10 @@ class CSSRuleStyle extends CSSStyleDeclaration {
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(cssRuleDeclarations(this._rule, String(v))); }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = cssStylePropertyName(this, p);
         v = v == null ? '' : String(v);
-        if (cssOwnerGet(this._rule).type === 8) {
+        pri = pri == null ? '' : String(pri);
+        const type = cssOwnerGet(this._rule).type;
+        if ((type === 1 || type === 8) && !p.startsWith('--') && !cssPropKnown(p)) return;
+        if (type === 8) {
             if (!cssKeyframePropertyAllowed(p)) return;
             if (v !== '') {
                 pri = pri == null ? '' : String(pri);
@@ -711,7 +715,7 @@ class CSSFontFaceRule extends CSSRule { get type() { return 5; } get style() { r
 const PT_ALLOWED = /^(top|right|bottom|left|inset(-block|-inline)?(-start|-end)?|margin(-top|-right|-bottom|-left|-block|-inline)?(-start|-end)?|(min-|max-)?(width|height|block-size|inline-size)|align-self|justify-self|place-self|position-anchor|position-area)$/;
 class CSSPositionTryDescriptors extends CSSRuleStyle {
     constructor(rule, text) { super(rule, text); for (const k of [...this._map.keys()]) if (!PT_ALLOWED.test(k)) this._map.delete(k); }
-    set cssText(v) { const m = parseDecls(String(v)); for (const k of [...m.keys()]) if (!PT_ALLOWED.test(k)) m.delete(k); this._w(m); }
+    set cssText(v) { const m = parseDecls(String(v), false, false, false); for (const k of [...m.keys()]) if (!PT_ALLOWED.test(k)) m.delete(k); this._w(m); }
     get cssText() { return super.cssText; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (PT_ALLOWED.test(p)) super.setProperty(p, v, pri); }
 }
@@ -1072,7 +1076,7 @@ const CSS = {
         if (v === undefined) return N.cssSupports(String(p));
         p = String(p); v = String(v);
         if (p.startsWith('--')) return N.cssSupports(`(${p}: ${v})`);
-        const lp = p.toLowerCase();
+        const lp = cssAnimationPropertyName(p.replace(/[A-Z]/g, c => c.toLowerCase()));
         if (!CSS_PROP_NAMES.has(lp)) return false;
         if (/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return true;
         if (SPEC_COLOR_PROPS.has(lp) && !/var\(|env\(|attr\(/i.test(v)) return specColor(v, lp) !== null;
