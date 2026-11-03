@@ -6,6 +6,7 @@
 /* Cascade, inheritance and computed values */
 #include "css.h"
 #include "easing.h"
+#include "../html/xml-stylesheet.h"
 #include "color.h"
 #include "../layout/layout.h"
 #include "../base/url.h"
@@ -8150,8 +8151,12 @@ void style_recalc(StyleEngine *e, Node *root, bool force) {
     bool height_only = media_changed && e->media_valid && e->media.vw == e->styled_media.vw &&
         e->media.dpr == e->styled_media.dpr && e->media.dark == e->styled_media.dark && !e->idx_dirty && !e->idx_changed;
     for (int i = 0; i < e->sheets.n; i++) {   /* the owner's media attribute: set, changed, or the viewport moved */
-        StyleSheet *sh = e->sheets.v[i]; const char *m = sh->owner ? node_attr(sh->owner, "media") : NULL;
-        bool off = m && *m && !css_media_matches(m, &e->media);
+        StyleSheet *sh = e->sheets.v[i]; HMap pi = {0};
+        bool processing = node_is_stylesheet_pi(sh->owner);
+        bool eligible = !processing || xml_stylesheet_info(sh->owner, &pi);
+        const char *m = processing ? hm_get(&pi, "media") : sh->owner ? node_attr(sh->owner, "media") : NULL;
+        bool off = !eligible || (m && *m && !css_media_matches(m, &e->media));
+        hm_free(&pi, free);
         if (off != sh->media_off) { sh->media_off = off; e->idx_dirty = true; e->delta_all = true; force = true; }
     }
     if (e->idx_dirty) idx_build(e);

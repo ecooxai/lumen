@@ -1,4 +1,5 @@
 #include "dom.h"
+#include "../html/xml-stylesheet.h"
 #include "../base/url.h"
 #include <stdatomic.h>
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -152,9 +153,24 @@ static void id_map_del(Document *d, Node *n, const char *id) {
     else hm_put(&d->id_cache, id, NULL);
 }
 /* d is the document whose tree gains or loses n (NULL inside shadow trees, which getElementById skips). */
+/* Only stylesheet PIs allocate this state. Do not consume space in every Node.
+ * The destructor brands the extension; no other PI extension is overwritten. */
+typedef struct { uint64_t version; } PiSheetState;
+static void pi_sheet_state_free(void *state) { free(state); }
+void xml_stylesheet_touch(Node *node) {
+    if (!node_is_stylesheet_pi(node)) return;
+    if (node->ext && node->ext_free != pi_sheet_state_free) return;
+    if (!node->ext) { node->ext = xcalloc(1, sizeof(PiSheetState)); node->ext_free = pi_sheet_state_free; }
+    PiSheetState *state = node->ext;
+    if (!++state->version) state->version++;
+}
+uint64_t xml_stylesheet_version(const Node *node) {
+    return node && node->ext && node->ext_free == pi_sheet_state_free ? ((const PiSheetState *)node->ext)->version : 0;
+}
 static void mark_connected(Node *n, bool on, Document *d) {
     for (Node *c = n; c; c = node_next_in_tree(c, n)) {
-        if (c->doc && (node_is(c, A_style) || node_is(c, A_link))) c->doc->sheet_version++;
+        if (node_is_stylesheet_pi(c)) { xml_stylesheet_touch(c); if (c->doc) c->doc->sheet_version++; }
+        else if (c->doc && (node_is(c, A_style) || node_is(c, A_link))) c->doc->sheet_version++;
         if (!on && (c->flags & NF_MODAL)) node_set_modal(c, false);
         if (on) c->flags |= NF_CONNECTED; else c->flags &= ~(uint32_t)(NF_CONNECTED | NF_MODAL | NF_FULLSCREEN | NF_POPOVER_OPEN);
         if (c->type == NODE_ELEMENT && c->id) { if (on) id_map_add(d, c); else id_map_del(d, c, c->id); }
@@ -166,6 +182,7 @@ static bool is_connected(Node *p) { return p->type == NODE_DOCUMENT || (p->flags
 /* Ordinary text/input changes must not rehash every stylesheet in a long page.
  * Include ancestors because a style element's textContent can contain elements. */
 static void mark_sheet_content(Document *d, Node *n) {
+    if (node_is_stylesheet_pi(n)) { xml_stylesheet_touch(n); d->sheet_version++; return; }
     for (; n; n = n->parent) {
         if (node_is(n, A_style) || node_is(n, A_link)) { d->sheet_version++; return; }
     }
@@ -326,6 +343,12 @@ static void record_tree_change(Document *d, Node *n) {
 static void mark_child_list(Node *parent) {
     Document *d = parent->doc;
     bool connected = is_connected(parent);
+    if (d && parent->type == NODE_DOCUMENT) {
+        /* A document element moving across a PI changes prolog eligibility. */
+        for (Node *n = parent->first; n; n = n->next) if (node_is_stylesheet_pi(n)) {
+            xml_stylesheet_touch(n); d->sheet_version++;
+        }
+    }
     if (d) { if (connected) d->tree_version++; d->selector_version++; }
     if (!connected) parent->flags |= NF_RESELECT_SUBTREE;
     parent->flags |= NF_CHILD_LIST_DIRTY;
