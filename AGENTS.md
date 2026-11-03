@@ -100,7 +100,7 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session18, broad regression HOLD on1802
+## Current development handoff — session18, qualified1804 full replay running
 
 Canonical checkout: `/mnt/p3/project/browser/lumen-android/lumen-android`.
 Current branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
@@ -115,39 +115,36 @@ ownership and freeze before every build. Preserve shared locks, quota 480%, jobs
 one-second CPU/RSS/cgroup monitoring, all untracked historical work and unchanged WPT
 oracles/harnesses. Reserve the final hour for integrated verification and delivery.
 
-### Candidate1802 focused gates passed; broad acceptance HOLD
+### Candidate1804 focused/native/retained gates passed
 
-**Current blocker:** the completed1802 full1248 replay measured724/1248
-whole files and22676/26245 assertions, but lost5 priorPASS
-assertions. Four signedzero cases in CSS math and one25-digit z-index case regressed.
-Do not promote1802 as fully accepted. Last regression-free full baseline remains1705.
-Repair all5 losses while preserving the union of1705 and1802 prior passes before1803.
-The downloadable1802 archive is retained only as a labeled development checkpoint.
+Tested source `c55bd95010c37c7907020f951ac40c6420788a43`, binary SHA-256
+`6d44ae80424d1a102829a185be6b6dd322603e1d605a2f50000b467367f89ebe`, input manifest
+`d4cbc36fb6b52bf2d11998edeb63ccbc07b19a0822168fd94c634718f2334084`. Scope receipt:
+`agent/validation/linux-wpt-20261103-session18/candidate1804-incremental-acceptance.json`.
+The fresh immutable full1248 replay is running; broad promotion is still pending.
 
-Integrated candidate **1802**, source `c60398214ad22f5d7578ec8f1f5239e2bab53010`,
-binary SHA-256 `e54c56023927627937ea6bcd2e9f4e1bb835709e8d7eb90c6d8522e27577b4db`,
-source manifest `711bc0fd75334746677edd4655198d4ce0dbb24f2abc59e8c39ece5f220a5909`.
-Acceptance is `agent/validation/linux-wpt-20261103-session18/candidate1802-incremental-acceptance.json`.
+- integer-regressions3: **3/3 fully passing files, 188/188 assertions**; no prior-PASS loss in its focused comparison.
+- charset: **20/21 fully passing files, 20/21 assertions**; no prior-PASS loss in its focused comparison.
+- background9: **8/9 fully passing files, 48/50 assertions**; no prior-PASS loss in its focused comparison.
+- keyframe18: **8/18 fully passing files, 92/129 assertions**; no prior-PASS loss in its focused comparison.
+- medialist10: **10/10 fully passing files, 47/47 assertions**; no prior-PASS loss in its focused comparison.
+- cssom-neighbors13: **9/13 fully passing files, 76/113 assertions**; no prior-PASS loss in its focused comparison.
+- numeric3: **1/3 fully passing files, 134/199 assertions**; no prior-PASS loss in its focused comparison.
+- Native **218/218** and unchanged retained **45 fixtures/1318 assertions** pass,
+  with **334/334** independent retained checks.
+- Large integers12/12, z-index syntax38/38 and computed28/28, keyframe declarations31/31,
+  opacity10/10, image44+10+4 and canonical charset44+1 controls pass.
+- Prior keyframe contracts remain47/49 with the two named-timeline-range failures
+  explicit. MediaList15/15 and owner8/8 retain normative readonly behavior despite
+  Chromium's documented Reflect return-value deviation.
 
-- MediaList frozen WPT10: **10/10 files, 47/47 assertions**, up from 2/10 and 23/47;
-  eight new fully passing files and 24 previously failing assertions now pass.
-- Adjacent CSSOM13: **9/13 files, 76/113 assertions**, two assertion gains. Numeric3
-  retains **1/3 files, 132/199 assertions**, including the two candidate1801 gains.
-  These focused comparisons have no prior-pass loss or assertion/harness identity change.
-- Original authored MediaList controls **15/15**, new owner controls **8/8**.
-  Chromium150 is 13/15 and 7/8 because its readonly indexed Reflect return values
-  diverge from the normative WebIDL algorithm; preserve that documented difference.
-- **218/218 configured native tests** and unchanged **45 retained fixtures / 1318
-  assertions** pass. Independent retained audit passed 334/334 checks.
-- Keyframe contracts retain **47/49** with both named-range failures visible;
-  CSSPropertyRule21/21 and descriptor comparison13/13 pass. Numeric28 remains24/28:
-  four specified-value invalid-unit z-index failures remain despite computing to auto.
-
-Candidate1801 introduced shared typed z-index integer conversion; candidate1802 adds
-component-value MediaList parsing, canonical mutations, readonly indexed API semantics,
-and live null-namespace owner media attributes. Media query semantic nesting beyond128,
-full math simplification and native stylesheet.media rendering invalidation remain
-explicit limitations. No complete MediaQueries implementation is claimed.
+Historical1802 full replay measured724/1248 and22676/26245 but lost5 priorPASSs.
+All5 were recovered by1803 and remain recovered in1804's complete188-row integer
+cohort. Preserve the raw1802 HOLD and failed1803 opacity evidence; never rewrite them.
+The downloadable1802 archive is still a labeled development checkpoint until a newer
+reviewed archive is promoted. Last regression-free full sample remains1705 while1804
+replays. New charset ingress and image longhands have their stated loading/rendering
+and computed-math limits; no whole-feature or whole-browser conformance claim follows.
 
 ### Sample score and ongoing work
 
