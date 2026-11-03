@@ -260,3 +260,18 @@ Independent review found a remaining parseDecls route for literal z-index units;
 follow-up8801d9d routes those values through the same typed validator before map
 updates. This preserves prior valid duplicates when a later invalid declaration
 is ignored. New build and runtime gates remain pending.
+
+### Qualified1802 publication checkpoint
+
+Publication verified at2026-11-03T07:55:03.805592+00:00. Independent repo-lead export review checked
+all839 inventory files and739 compiled inputs against immutablec603982, approved
+218-commit public parent, absence of the private engine commit object, spec and
+acceptance receipt digests. Review took0.502461s; receipt is
+agent/source-work/session18/public1802-independent-review.json.
+
+Operations pushed and verified public9f9dab43fa707adbb69ebc07f30d8107a5f4d9db; archive offline Git restore
+and external HTTPS readback verified10308895 bytes and SHA-256a30b5dd525f623d50440fa16fa4f569177d8849cb4548e77337f73fa8c47b8c4.
+Receipts: agent/ops/session18/artifacts1802/ and ops-task-timings.json.
+Scope remains focused26/native218/retained45; immutable full1248 replay is ongoing.
+The next candidate separately fixes both literal z-index CSSOM routes and distinguishes
+CSSOM setter priorities from text-parsed keyframe!important declarations.

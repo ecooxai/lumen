@@ -154,24 +154,31 @@ Preserve that binary and all pinned WPT/harness/manifest files while drafting ne
 The live checkout may advance; distinguish source-worktree state from immutable build provenance.
 
 Next candidate1803 source includes separately committed z-index specified-value validation
-(2f31207 plus cssText routing follow-up8801d9d) and keyframe-only declaration context
-(2d9e7e1). Both are independently reviewed; build and focused qualification are pending. Background-clip and
+(2f31207 plus cssText8801d9d and CSSRule setter8b8ddc8 route fixes) and keyframe-only declaration context
+(2d9e7e1 plus setter-priority correctiona4e38c1). Both are independently reviewed;
+build and focused qualification are pending. Parsed keyframe text discards!important,
+while CSSOM setters retain recognized important priority; empty removal follows CSSOM
+before priority validation despite the documented Chromium reference difference. Background-clip and
 border-image repeat/slice validation/serialization are approved next investigations.
 Failed timing1704 remains separately preserved at527e190832b0ee6ff6a10def4bc42fe9b7d5cc22;
 do not revive its wholesale draft or alter tests to manufacture passes.
 
 ### Persistence and final promotion
 
-Focused1801 source was independently checked against all739 compiled inputs and pushed
-as curated public commit `1f01b72cfcfb797244a8ff5853389897401e419f` on branch
-`gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1801-20261103`.
-That public checkpoint has the1801 focused qualification scope, not1802's broader gates.
-The1801 archive passed offline Git restore and public HTTPS readback:10,301,351 bytes,
-SHA-256 a61ccf593c39061aac7a85240bdee1c3eb813999fd9ba7279995fa7037c8215a.
-Treat the exact promotion receipt as authoritative if a later archive replaces it.
-Desktop display:0 and connected Android promotion are pending the final qualified candidate.
+Qualified1802 source was independently checked against all739 compiled inputs and839
+curated inventory files, then pushed as public commit `9f9dab43fa707adbb69ebc07f30d8107a5f4d9db` on branch
+`gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1802-20261103`.
+Public ancestry contains only the approved public history; private working Git objects
+were excluded. This checkpoint records focused WPT26, native218 and retained45/1318
+qualification; full1248 replay remains separately pending.
+
+The1802 archive passed offline Git restore and public HTTPS byte/hash readback:
+10,308,895 bytes, SHA-256 `a30b5dd525f623d50440fa16fa4f569177d8849cb4548e77337f73fa8c47b8c4`.
+Exact receipt: `agent/ops/session18/artifacts1802/promotion-receipt.json`.
+Offline restore verifies Git recovery and source identity, not an independent rebuild.
+Desktop display:0 and connected Android promotion remain pending the final candidate.
 Keep final engine source frozen through Android build/install and desktop restart;
-use adb install-r, preserve profiles/data, and verify task-owned PIDs before stopping them.
+use adb install-r, preserve profiles/data and verify task-owned PIDs before stopping them.
 
 ### Retained prior architecture and authorization boundaries
 

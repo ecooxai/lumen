@@ -30,8 +30,17 @@ values when rejecting!important. Then investigate bounded background-clip/border
 repeat/slice validation and serialization with frozen official cases and independent gates.
 No broad parser/cascade rewrite or failed timing1704 revival.
 
-Operations has pushed curated1801 source, public1f01b72cfcfb797244a8ff5853389897401e419f;
+Operations has pushed curated1802 source, public9f9dab43fa707adbb69ebc07f30d8107a5f4d9db;
 archive offline restore and public HTTPS byte/hash readback are verified in
-agent/ops/session18/artifacts1801/promotion-receipt.json. Keep final candidate source frozen
-through Android install-r (no data clear) and verified desktop:0 restart. Preserve all
-untracked prior work, monitors, raw failures and exact source/binary identities.
+agent/ops/session18/artifacts1802/promotion-receipt.json. The archive contains exact
+1802 source, not new1803 changes, and makes no full1248 replay claim.
+
+Candidate1803 also includes CSSRule z-index setter fix8b8ddc8 and keyframe CSSOM
+priority correctiona4e38c1. Important priority supplied through setProperty is valid;
+text-parsed!important is ignored before duplicate resolution. Preserve the documented
+Chromium empty+invalid-priority discrepancy and normative empty removal.
+
+Keep final candidate source frozen through Android install-r (no data clear) and
+verified desktop:0 restart. Preserve all untracked work, raw failures, monitors and
+exact source/binary identities. Ops handoff is agent/ops/session18/handoff.md; poll
+progress messages at checkpoints with node agent/progress/manage.mjs poll.

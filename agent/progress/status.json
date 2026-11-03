@@ -55,21 +55,21 @@
     ],
     [
       "Delivery status",
-      "HTTPS source1801 archive readback matched all10,301,351bytes and SHA; public Git checkpoint pushed. Surge lacks authentication and FileHarbor returned403."
+      "HTTPS source1802 archive readback matched all10,308,895bytes and SHA; exact public Git checkpoint pushed. Surge lacks authentication and FileHarbor returned403."
     ]
   ],
   "findings": [
     "Three built-in agents handle engine work, validation, delivery/performance; CTO coordinates.",
     "The engine remains below Chromium on the measured sample; full official WPT and overall95 quality are not established.",
-    "Current accepted1802 engine, measured1705 broad score and downloadable1801 checkpoint are explicitly separate."
+    "Accepted1802 engine and downloadable1802 checkpoint agree; broad57.21 score still belongs to completed1705 measurement."
   ],
   "historical": {
     "label": "Previous Linux311 same frozen1248 sample:686/1248files;21992/26245assertions.",
     "comparison": "Current pinned reference Chromium150. Older234/640-file measurements use different scope."
   },
   "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
-  "source_archive_label": "Download reviewed candidate1801 source and public Git history",
-  "source_archive_note": "Archive contains exact qualified1801 engine inputs and approved curated public Git ancestry; public commit1f01b72 records engine source4e74e964. It predates1802; focused numeric qualification is documented. Private working history is excluded.",
+  "source_archive_label": "Download reviewed candidate1802 source and public Git history",
+  "source_archive_note": "Archive contains exact accepted1802 engine inputs and approved curated public Git ancestry. Focused WPT, native218 and retained1318 qualification is recorded; its complete fixed1248 replay remains pending.",
   "broad_current": {
     "iteration": 1705,
     "files": 1248,
@@ -89,8 +89,8 @@
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
   "working_commit": "2d9e7e1c66993f6aee272d367b9aed0562edb7ba",
-  "updated_utc": "2026-11-03T07:44:24.925163+00:00",
-  "updated_at": "2026-11-03T07:44:24.925163+00:00",
+  "updated_utc": "2026-11-03T07:57:16.722178+00:00",
+  "updated_at": "2026-11-03T07:57:16.722178+00:00",
   "runtime_candidate": null,
   "runtime_note": "Linux display0 Lumen restart remains pending; the isolated progress control window is live. MI8 is authorized and still runs prior qualified1603 APK; SDK/NDK and prebuilt dependencies are present.",
   "qualified_prior_candidate_scope": {
@@ -262,8 +262,8 @@
     "full_fixed1248_replayed": false,
     "native218_replayed": false
   },
-  "source_archive_candidate": 1801,
-  "source_archive_sha256": "a61ccf593c39061aac7a85240bdee1c3eb813999fd9ba7279995fa7037c8215a",
-  "source_archive_bytes": 10301351,
-  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1801-20261103"
+  "source_archive_candidate": 1802,
+  "source_archive_sha256": "a30b5dd525f623d50440fa16fa4f569177d8849cb4548e77337f73fa8c47b8c4",
+  "source_archive_bytes": 10308895,
+  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1802-20261103"
 }
