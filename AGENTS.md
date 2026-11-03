@@ -100,7 +100,7 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session18, qualified candidate1802
+## Current development handoff — session18, broad regression HOLD on1802
 
 Canonical checkout: `/mnt/p3/project/browser/lumen-android/lumen-android`.
 Current branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
@@ -115,7 +115,14 @@ ownership and freeze before every build. Preserve shared locks, quota 480%, jobs
 one-second CPU/RSS/cgroup monitoring, all untracked historical work and unchanged WPT
 oracles/harnesses. Reserve the final hour for integrated verification and delivery.
 
-### Latest qualified engine
+### Candidate1802 focused gates passed; broad acceptance HOLD
+
+**Current blocker:** the completed1802 full1248 replay measured724/1248
+whole files and22676/26245 assertions, but lost5 priorPASS
+assertions. Four signedzero cases in CSS math and one25-digit z-index case regressed.
+Do not promote1802 as fully accepted. Last regression-free full baseline remains1705.
+Repair all5 losses while preserving the union of1705 and1802 prior passes before1803.
+The downloadable1802 archive is retained only as a labeled development checkpoint.
 
 Integrated candidate **1802**, source `c60398214ad22f5d7578ec8f1f5239e2bab53010`,
 binary SHA-256 `e54c56023927627937ea6bcd2e9f4e1bb835709e8d7eb90c6d8522e27577b4db`,
@@ -148,8 +155,8 @@ The last completed frozen1248 replay is still **candidate1705: 714/1248 files
 (57.21154%), 22637/26245 assertions**. Chromium150 on that sample is1062/1248 and
 24541/26064 assertions; denominators are engine-specific. Independent baseline receipt:
 `agent/validation/linux-wpt-20261103-session18/verified-baseline1705.json`.
-Score **57.21/100** describes only this selected-file pass rate. Candidate1802 full
-replay is in progress against its immutable binary; focused gains are not extrapolated.
+Score **57.21/100** describes only this selected-file pass rate. Candidate1802 full replay has completed with the5-loss HOLD described above.
+Its larger raw pass count does not satisfy the no-regression acceptance gate.
 Preserve that binary and all pinned WPT/harness/manifest files while drafting new source.
 The live checkout may advance; distinguish source-worktree state from immutable build provenance.
 
@@ -170,7 +177,8 @@ curated inventory files, then pushed as public commit `9f9dab43fa707adbb69ebc07f
 `gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1802-20261103`.
 Public ancestry contains only the approved public history; private working Git objects
 were excluded. This checkpoint records focused WPT26, native218 and retained45/1318
-qualification; full1248 replay remains separately pending.
+qualification; the later full1248 replay found5 prior-PASS losses and the checkpoint
+is held as a development artifact, not a fully accepted release.
 
 The1802 archive passed offline Git restore and public HTTPS byte/hash readback:
 10,308,895 bytes, SHA-256 `a30b5dd525f623d50440fa16fa4f569177d8849cb4548e77337f73fa8c47b8c4`.

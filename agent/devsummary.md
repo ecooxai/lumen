@@ -275,3 +275,19 @@ Receipts: agent/ops/session18/artifacts1802/ and ops-task-timings.json.
 Scope remains focused26/native218/retained45; immutable full1248 replay is ongoing.
 The next candidate separately fixes both literal z-index CSSOM routes and distinguishes
 CSSOM setter priorities from text-parsed keyframe!important declarations.
+
+### Candidate1802 complete replay — broad acceptance HOLD
+
+Recorded2026-11-03T08:10:17.115943+00:00. Immutable1802 full1248 replay completed with724/1248
+fully passing files and22676/26245 assertions.
+This is a raw gain of10 whole files and39 net assertions, but **five priorPASS losses**
+block acceptance: four clamp/mod signedzero identities in signed-zero.html and the
+25-digit z-index case in serialize-custom-props.html. Raw comparison and all identities
+remain unchanged in session18/candidate1802-expanded-comparison.json.
+
+The focused/native218/retained1318 outcomes remain true for their scopes; they did
+not cover these broader regressions. The tester held1803 build and froze complete
+integer-regressions3 files. Corrective acceptance must preserve the union of1705 and
+1802 passes (at least185/188 in that cohort), then rerun focused/native/retained gates
+and a fresh full1248 replay. Last regression-free full-sample score remains57.21/100.
+The1802 archive remains available as a clearly labeled development checkpoint only.

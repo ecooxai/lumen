@@ -1,6 +1,6 @@
 {
-  "title": "Lumen Linux · WPT improvement session18",
-  "phase": "Candidate1802 passed focused MediaList and numeric gates plus native/retained regressions; full1248 replay running and candidate1803 validation fixes staged",
+  "title": "Lumen Linux \u00b7 WPT improvement session18",
+  "phase": "HOLD candidate1802: complete1248 replay found5 prior-PASS regressions. Repairing typed integer signedzero and large-integer serialization before1803 qualification.",
   "iteration": 1803,
   "session_iteration": 3,
   "score": 57.21153846153846,
@@ -22,19 +22,19 @@
   "goal_score": 95,
   "overall_assessment": "Linux browser improvements underway. Full-WPT rate and whole-browser95/98score are not established.",
   "overall_result_label": "Chromium parity incomplete; full official WPT unmeasured",
-  "accepted_iteration": 1802,
+  "accepted_iteration": 1705,
   "active_iteration": 1803,
-  "active_candidate": 1802,
-  "accepted_binary_sha256": "e54c56023927627937ea6bcd2e9f4e1bb835709e8d7eb90c6d8522e27577b4db",
-  "accepted_binary_scope": "Candidate1802 accepted for focused WPT, original authored, native218 and retained1318 gates. Full1248 score remains measured1705 until immutable1802 replay completes.",
+  "active_candidate": 1803,
+  "accepted_binary_sha256": "a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271",
+  "accepted_binary_scope": "Last regression-free complete frozen1248 baseline is1705. Candidate1802 passed focused/native/retained gates but is held after5 full-replay prior-PASS losses.",
   "coverage": "Candidate1705 passed714/1248files and22637/26245assertions on the frozen HTTP/default-timeout sample. Chromium150 passed1062/1248files and24541/26064assertions. This is selected WPT coverage, not full official WPT.",
   "current_evidence": [
     [
-      "Lumen1705 · frozen1248 URLs",
+      "Lumen1705 \u00b7 frozen1248 URLs",
       "714/1248 fully passing files(57.21%);22637/26245 assertions(86.25%)."
     ],
     [
-      "Chromium150 · same1248 URLs",
+      "Chromium150 \u00b7 same1248 URLs",
       "1062/1248 fully passing files(85.10%);24541/26064 assertions(94.16%). Assertion denominators remain separate."
     ],
     [
@@ -42,8 +42,8 @@
       "1238 OK,1ERROR,9TIMEOUT; all1248 files remain counted. Raw assertions:22637PASS,3580FAIL,7TIMEOUT,21NOTRUN."
     ],
     [
-      "Candidate1802 focused and regression gates",
-      "MediaList10:10/10 files,47/47 assertions (before2/10,23/47); numeric3:132/199 (before130); native218/218 and retained1318/1318. No prior-pass losses or identity drift."
+      "Candidate1802 full replay \u2014 HOLD",
+      "724/1248 complete files;22676/26245 assertions;5 prior-PASS losses. Focused/native218/retained1318 passed, but broad acceptance is held."
     ],
     [
       "Changes since1603",
@@ -59,17 +59,17 @@
     ]
   ],
   "findings": [
-    "Three built-in agents handle engine work, validation, delivery/performance; CTO coordinates.",
-    "The engine remains below Chromium on the measured sample; full official WPT and overall95 quality are not established.",
-    "Accepted1802 engine and downloadable1802 checkpoint agree; broad57.21 score still belongs to completed1705 measurement."
+    "Full1802 replay found4 signedzero arithmetic regressions and1 large z-index serialization regression; repairs take priority.",
+    "The last regression-free complete1248 baseline remains1705 at57.21/100. The new raw724-file result is held and not promoted.",
+    "The1802 archive is a reproducible development checkpoint with this broad-regression hold, not a final runtime release."
   ],
   "historical": {
     "label": "Previous Linux311 same frozen1248 sample:686/1248files;21992/26245assertions.",
     "comparison": "Current pinned reference Chromium150. Older234/640-file measurements use different scope."
   },
   "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
-  "source_archive_label": "Download reviewed candidate1802 source and public Git history",
-  "source_archive_note": "Archive contains exact accepted1802 engine inputs and approved curated public Git ancestry. Focused WPT, native218 and retained1318 qualification is recorded; its complete fixed1248 replay remains pending.",
+  "source_archive_label": "Download development checkpoint1802 \u2014 broad regression HOLD",
+  "source_archive_note": "Exact1802 source/public history remains available for reproducibility. Focused/native/retained gates passed; completed1248 replay found5 prior-PASS losses. This development checkpoint is not promoted as fully accepted.",
   "broad_current": {
     "iteration": 1705,
     "files": 1248,
@@ -88,9 +88,9 @@
   },
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
-  "working_commit": "2d9e7e1c66993f6aee272d367b9aed0562edb7ba",
-  "updated_utc": "2026-11-03T07:57:16.722178+00:00",
-  "updated_at": "2026-11-03T07:57:16.722178+00:00",
+  "working_commit": "c3ee07b6b0569633152934b4d8f9d102c699b77c",
+  "updated_utc": "2026-11-03T08:10:17.115943+00:00",
+  "updated_at": "2026-11-03T08:10:17.115943+00:00",
   "runtime_candidate": null,
   "runtime_note": "Linux display0 Lumen restart remains pending; the isolated progress control window is live. MI8 is authorized and still runs prior qualified1603 APK; SDK/NDK and prebuilt dependencies are present.",
   "qualified_prior_candidate_scope": {
@@ -233,7 +233,9 @@
       "Native stylesheet.media applicability is not yet connected to MediaList mutation",
       "Known-feature media math simplification remains partial",
       "Four specified invalid-unit declarations are pending1803 validation"
-    ]
+    ],
+    "broad_qualification_status": "HOLD:5 prior-PASS regressions",
+    "full1248_replayed": true
   },
   "qualified_candidate1801_scope": {
     "candidate": 1801,
@@ -265,5 +267,16 @@
   "source_archive_candidate": 1802,
   "source_archive_sha256": "a30b5dd525f623d50440fa16fa4f569177d8849cb4548e77337f73fa8c47b8c4",
   "source_archive_bytes": 10308895,
-  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1802-20261103"
+  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1802-20261103",
+  "latest_broad_observation": {
+    "candidate": 1802,
+    "qualification_status": "HOLD",
+    "files_passed": 724,
+    "files": 1248,
+    "assertions_passed": 22676,
+    "assertions_total": 26245,
+    "prior_pass_losses": 5,
+    "last_regression_free_candidate": 1705,
+    "scope": "Complete frozen1248 sample; not full official WPT."
+  }
 }
