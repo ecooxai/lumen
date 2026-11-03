@@ -2870,7 +2870,10 @@ static char *min_size_parser_text(const char *value) {
         if (offset > copied) sb_putc(&out, ' ');
         if (type == CT_EOF) { free(t.str); break; }
         bool valid = true;
-        if (type == CT_IDENT && t.str && t.str[0] == '-' && t.str[1] == '-') {
+        if (type == CT_IDENT && t.str && ((t.str[0] == '-' && t.str[1] == '-') ||
+            !strncasecmp(t.str, "ua-", 3))) {
+            /* Random cache names are case-sensitive custom identifiers. Keep
+             * even an invalid uppercase prefix intact for the grammar check. */
             min_size_dashed_text(&out, t.str);
         } else if (type == CT_IDENT || type == CT_FUNC) {
             for (const unsigned char *q = (const unsigned char *)t.str; q && *q; q++)
