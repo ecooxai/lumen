@@ -1,8 +1,8 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session18",
-  "phase": "Candidate1804 passed focused WPT, native218 and retained1318; fresh full1248 replay is running. Reviewed easing and XML stylesheet follow-ups are being prepared.",
+  "phase": "HOLD1804 archive published with2 known random() regressions. Reviewed random typing, easing and native-default repairs are queued for1805 qualification.",
   "iteration": 1804,
-  "session_iteration": 4,
+  "session_iteration": 5,
   "score": 57.21153846153846,
   "selected_case_score": 57.21153846153846,
   "score_candidate": 1705,
@@ -23,10 +23,10 @@
   "overall_assessment": "Linux browser improvements underway. Full-WPT rate and whole-browser95/98score are not established.",
   "overall_result_label": "Chromium parity incomplete; full official WPT unmeasured",
   "accepted_iteration": 1705,
-  "active_iteration": 1804,
-  "active_candidate": 1804,
+  "active_iteration": 1805,
+  "active_candidate": 1805,
   "accepted_binary_sha256": "a3db6b7179821e7f231060b2a5880f582b3d470b94845932b9274896d1d00271",
-  "accepted_binary_scope": "Last regression-free complete frozen1248 baseline is1705. Candidate1802 passed focused/native/retained gates but is held after5 full-replay prior-PASS losses.",
+  "accepted_binary_scope": "Last regression-free complete frozen1248 baseline remains1705. Candidate1804 has focused/native/retained qualification but full1248 is held after2 prior-PASS losses.",
   "coverage": "Candidate1705 passed714/1248files and22637/26245assertions on the frozen HTTP/default-timeout sample. Chromium150 passed1062/1248files and24541/26064assertions. This is selected WPT coverage, not full official WPT.",
   "current_evidence": [
     [
@@ -76,8 +76,8 @@
     "comparison": "Current pinned reference Chromium150. Older234/640-file measurements use different scope."
   },
   "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
-  "source_archive_label": "Download development checkpoint1802 \u2014 broad regression HOLD",
-  "source_archive_note": "Exact1802 source/public history remains available for reproducibility. Focused/native/retained gates passed; completed1248 replay found5 prior-PASS losses. This development checkpoint is not promoted as fully accepted.",
+  "source_archive_label": "Source1804 development checkpoint \u2014 HOLD:2 known full-replay regressions",
+  "source_archive_note": "HELD development checkpoint: exact1804 tested inputs and approved public Git ancestry. Focused WPT/native218/retained1318 passed; full selected1248 measured751 files and22735 assertions with2 prior-PASS losses. Broad baseline remains1705.",
   "broad_current": {
     "iteration": 1705,
     "files": 1248,
@@ -96,9 +96,9 @@
   },
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103",
-  "working_commit": "95e8bf3b2c0f201984cf560a3725a6f5bbe39c1a",
-  "updated_utc": "2026-11-03T08:50:24.855328+00:00",
-  "updated_at": "2026-11-03T08:50:24.855328+00:00",
+  "working_commit": "3a085028fa78f1a5d3b01a6c6f1009df72dc4980",
+  "updated_utc": "2026-11-03T09:27:06.660775+00:00",
+  "updated_at": "2026-11-03T09:27:06.660775+00:00",
   "runtime_candidate": null,
   "runtime_note": "Linux display0 Lumen restart remains pending; the isolated progress control window is live. MI8 is authorized and still runs prior qualified1603 APK; SDK/NDK and prebuilt dependencies are present.",
   "qualified_prior_candidate_scope": {
@@ -216,18 +216,18 @@
     "full_fixed1248_replayed": false,
     "native218_replayed": false
   },
-  "source_archive_candidate": 1802,
-  "source_archive_sha256": "a30b5dd525f623d50440fa16fa4f569177d8849cb4548e77337f73fa8c47b8c4",
-  "source_archive_bytes": 10308895,
-  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1802-20261103",
+  "source_archive_candidate": 1804,
+  "source_archive_sha256": "68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6",
+  "source_archive_bytes": 10322694,
+  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1804-20261103",
   "latest_broad_observation": {
-    "candidate": 1802,
+    "candidate": 1804,
     "qualification_status": "HOLD",
-    "files_passed": 724,
+    "files_passed": 751,
     "files": 1248,
-    "assertions_passed": 22676,
+    "assertions_passed": 22735,
     "assertions_total": 26245,
-    "prior_pass_losses": 5,
+    "prior_pass_losses": 2,
     "last_regression_free_candidate": 1705,
     "scope": "Complete frozen1248 sample; not full official WPT."
   },
@@ -325,7 +325,7 @@
     "source_commit": "c55bd95010c37c7907020f951ac40c6420788a43",
     "binary_sha256": "6d44ae80424d1a102829a185be6b6dd322603e1d605a2f50000b467367f89ebe",
     "source_manifest_digest": "d4cbc36fb6b52bf2d11998edeb63ccbc07b19a0822168fd94c634718f2334084",
-    "accepted_scope": "Focused unchangedWPT cohorts + original218native + unchangedretained45/1318 + qualified authored semantic controls. Full1248 replay required and pending; no broad promotion.",
+    "accepted_scope": "Focused WPT, native218 and retained45/1318 passed; broad promotion held by two full-replay prior-PASS losses.",
     "acceptance_receipt_sha256": "168657a971bddbc04e096709b0dabee85f89e3da328c344f784886278eb13904",
     "native_contracts": {
       "passed": 218,
@@ -337,8 +337,8 @@
       "total": 1318,
       "independent_checks": 334
     },
-    "full1248_replayed": false,
-    "full1248_status": "RUNNING",
+    "full1248_replayed": true,
+    "full1248_status": "HOLD: two prior-PASS losses in named-cache random() integer syntax",
     "focused": {
       "integer-regressions3": {
         "files_passed": 3,

@@ -100,7 +100,7 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff — session18, qualified1804 full replay running
+## Current development handoff — session18, held1804 and repaired1805 qualification
 
 Canonical checkout: `/mnt/p3/project/browser/lumen-android/lumen-android`.
 Current branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session18-20261103`.
@@ -121,7 +121,7 @@ Tested source `c55bd95010c37c7907020f951ac40c6420788a43`, binary SHA-256
 `6d44ae80424d1a102829a185be6b6dd322603e1d605a2f50000b467367f89ebe`, input manifest
 `d4cbc36fb6b52bf2d11998edeb63ccbc07b19a0822168fd94c634718f2334084`. Scope receipt:
 `agent/validation/linux-wpt-20261103-session18/candidate1804-incremental-acceptance.json`.
-The fresh immutable full1248 replay is running; broad promotion is still pending.
+The immutable full1248 replay completed08:48:55.229–09:10:31.421Z. It measured **751/1248 files,22735/26245 assertions**, but **2 prior-PASS losses** hold broad promotion. Both losses are valid named-cache random() z-index declarations; all5 earlier numeric losses are recovered. Exact raw/comparison/recount/provenance receipts remain immutable under session18.
 
 - integer-regressions3: **3/3 fully passing files, 188/188 assertions**; no prior-PASS loss in its focused comparison.
 - charset: **20/21 fully passing files, 20/21 assertions**; no prior-PASS loss in its focused comparison.
@@ -141,9 +141,9 @@ The fresh immutable full1248 replay is running; broad promotion is still pending
 Historical1802 full replay measured724/1248 and22676/26245 but lost5 priorPASSs.
 All5 were recovered by1803 and remain recovered in1804's complete188-row integer
 cohort. Preserve the raw1802 HOLD and failed1803 opacity evidence; never rewrite them.
-The downloadable1802 archive is still a labeled development checkpoint until a newer
-reviewed archive is promoted. Last regression-free full sample remains1705 while1804
-replays. New charset ingress and image longhands have their stated loading/rendering
+The downloadable1804 archive is explicitly a held development checkpoint with2 known
+regressions. Last regression-free full sample remains1705 until a repaired candidate
+passes the complete unchanged manifest. New charset ingress and image longhands have their stated loading/rendering
 and computed-math limits; no whole-feature or whole-browser conformance claim follows.
 
 ### Sample score and ongoing work
@@ -152,41 +152,46 @@ The last regression-free frozen1248 replay is **candidate1705: 714/1248 files
 (57.21154%), 22637/26245 assertions**. Chromium150 on that sample is1062/1248 and
 24541/26064 assertions; denominators are engine-specific. Independent baseline receipt:
 `agent/validation/linux-wpt-20261103-session18/verified-baseline1705.json`.
-Score **57.21/100** describes only this selected-file pass rate. Candidate1802 full replay has completed with the5-loss HOLD described above.
-Its larger raw pass count does not satisfy the no-regression acceptance gate.
+Score **57.21/100** describes only this regression-free selected-file baseline. Candidate1804
+observed60.1763/100 on the same selected files, but its2-loss HOLD prevents promotion.
+The100 new passing assertions and2 losses yield a22737-assertion required union for repair.
 Preserve that binary and all pinned WPT/harness/manifest files while drafting new source.
 The live checkout may advance; distinguish source-worktree state from immutable build provenance.
 
-Candidate1804 atc55bd950 is accepted for focused unchanged WPT cohorts, native218,
-and retained45/1318 (334 independent checks). Integer188, large12, syntax38, computed28,
-keyframe declarations31, opacity10 and image44+10+4 controls all pass. Official charset
-is20/21 and background8/9,48/50; their remaining XML-PI and computed slice gaps are
-explicit. The full immutable1248 replay started08:48:55.18Z and remains a separate
-required gate. Do not claim broad acceptance before that receipt.
+Candidate1805 source is now3a085028fa78f1a5d3b01a6c6f1009df72dc4980:
+-75eaba06 adds bounded steps/cubic longhand grammar and typed computation using private easing.h.
+-b9278d15 repairs native computed-style timing defaults without JavaScript fallbacks.
+-3a085028 restores shared random() syntax/type validation, including current key forms,
+  while rejecting random() before evaluation. Sampling/cache computation remains absent;
+  no nominal validation value is permitted to enter computed/rendered state.
 
-The next independently reviewed easing draft uses a private easing.h for its new API
-to limit rebuild fan-out. It covers steps/cubic longhands via existing typed context;
-linear() behavior and the Web Animations solver remain unchanged. Preserve normative
-math range clamping and current canonical step serialization despite the pinned
-Chromium differences; do not change the original WPT or historical42 expectations.
-XML stylesheet-PI loading is a separately owned staged follow-up. Preserve source
-ownership and the immutable1804 runtime/test inputs while new source advances.
+Candidate1805 requires unchanged whole random71 retention, typed random36, all106 timing
+rows, original timing5/old42 diagnostics, focused regressions, native218 and retained1318.
+Four pre-existing live sibling-index/count rows remain present and failing, outside the102
+accepted timing rows; do not alter or suppress expectations. Real tree-count evaluation and
+child-list invalidation are a separate future iteration. Preserve current Easing2/Values4
+math-range and step-serialization differences from pinned Chromium. linear() and the Web
+Animations solver remain unchanged. Full1248 replay follows successful scoped qualification.
+
+XML stylesheet-PI sparse-state v3 is independently reviewed but remains staged. It preserves
+ordinary Node layout and uses a private header; parser59/browser31 and source integration
+remain tester-coordinated. No @import or full external CSSOM reflection is claimed.
 Failed timing1704 remains separately preserved at527e190832b0ee6ff6a10def4bc42fe9b7d5cc22;
 do not revive its wholesale draft or alter tests to manufacture passes.
 
 ### Persistence and final promotion
 
-Qualified1802 source was independently checked against all739 compiled inputs and839
-curated inventory files, then pushed as public commit `9f9dab43fa707adbb69ebc07f30d8107a5f4d9db` on branch
-`gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1802-20261103`.
-Public ancestry contains only the approved public history; private working Git objects
-were excluded. This checkpoint records focused WPT26, native218 and retained45/1318
-qualification; the later full1248 replay found5 prior-PASS losses and the checkpoint
-is held as a development artifact, not a fully accepted release.
+Candidate1804 sourcec55bd950 was independently checked against all739 compiled inputs and839
+curated inventory files. The source commit4064675364488ee6583c3cc50dd8a907ab1c3997 and
+metadata-only HOLD follow-up2a8c99e6f80455618ffcf9cfd71afe64e2c57feb were pushed/verified on
+`gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1804-20261103`.
+Only approved public ancestry is included; private working Git objects remain excluded.
+The current download explicitly records751/1248 and22735/26245 with2 prior-PASS losses;
+focused/native/retained success does not imply full-sample acceptance.
 
-The1802 archive passed offline Git restore and public HTTPS byte/hash readback:
-10,308,895 bytes, SHA-256 `a30b5dd525f623d50440fa16fa4f569177d8849cb4548e77337f73fa8c47b8c4`.
-Exact receipt: `agent/ops/session18/artifacts1802/promotion-receipt.json`.
+The1804 archive passed offline Git restore and exact public HTTPS byte/hash readback:
+**10,322,694 bytes**, SHA-256`68affbba63ea6f0c395de2fc8c3bf9af2c894e1e61c06c62011e60909ef6d3b6`.
+Exact receipt: `agent/ops/session18/artifacts1804/promotion-receipt.json`.
 Offline restore verifies Git recovery and source identity, not an independent rebuild.
 Desktop display:0 and connected Android promotion remain pending the final candidate.
 Keep final engine source frozen through Android build/install and desktop restart;
