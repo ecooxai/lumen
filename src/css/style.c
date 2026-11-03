@@ -6,6 +6,7 @@
 /* Cascade, inheritance and computed values */
 #include "css.h"
 #include "easing.h"
+#include "animation-aliases.h"
 #include "../html/xml-stylesheet.h"
 #include "color.h"
 #include "../layout/layout.h"
@@ -4461,6 +4462,7 @@ static bool query_apply_dependencies(ComputedStyle *style, const char *property,
 }
 
 static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
+    prop = css_animation_property_name(prop);
     /* Invalid argument grammar is discarded before pending substitution can
        unset a normal property or replace a custom property's prior tokens. */
     if (css_value_has_if(value_in) && !css_var_syntax_valid(value_in)) return;
@@ -8853,6 +8855,7 @@ static bool computed_inset_native(Node *el, const ComputedStyle *s, int side, fl
     return false;
 }
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
+    prop = css_animation_property_name(prop);
     SB b; sb_init(&b);
     if (s && (!strncmp(prop, "transition-", 11) || !strncmp(prop, "animation-", 10))) {
         const GenProp *g = gen_prop(prop); const char *v = g ? gen_value(s, g) : NULL;
@@ -8869,8 +8872,10 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
                 free(copy);
                 if (valid) return sb_take(&b);
                 sb_free(&b); sb_init(&b);
-            }
-            sb_puts(&b, v); return sb_take(&b);
+                /* An unsupported computation has no resolved time to expose.
+                 * Read the same native fallback for canonical and alias names;
+                 * never return its authored random/math text as a time value. */
+            } else { sb_puts(&b, v); return sb_take(&b); }
         }
     }
     if (!s) return sb_take(&b);

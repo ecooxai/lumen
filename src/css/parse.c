@@ -1,6 +1,7 @@
 /* CSS Syntax Level 3 tokenizer, stylesheet & selector parser */
 #include "css.h"
 #include "easing.h"
+#include "animation-aliases.h"
 #include "../base/url.h"
 #include <ctype.h>
 #include <math.h>
@@ -944,6 +945,7 @@ static DeclList *css_parse_declarations(const char *s, size_t n, bool property_d
             free(val); val = text; v = str_trim(val);
         }
         const char *property = name_valid ? custom ? atom(name.str) : atom_lower(name.str, strlen(name.str)) : NULL;
+        if (property && !property_descriptors) property = atom(css_animation_property_name(property));
         free(name.str); free(name_end.str);
         Decl dc; dc.prop = property; dc.value = xstrdup(v); dc.important = imp;
         /* A stray closing token invalidates the declaration, not just its
@@ -1317,6 +1319,7 @@ bool css_container_eval(const char *q, const CQEnv *env) {
 extern bool css_property_known(const char *prop);
 bool css_supports_declaration(const char *p, const char *v, bool quirks) {
     if (!p || !v || !*p) return false;
+    p = css_animation_property_name(p);
     bool custom = p[0] == '-' && p[1] == '-' && p[2];
     if (!custom && !*v) return false;
     bool r;

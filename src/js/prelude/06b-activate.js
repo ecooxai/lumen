@@ -523,11 +523,11 @@ function cssRuleDeclarations(rule, text) {
     return parseDecls(text, rule instanceof CSSFontFaceRule, cssOwnerGet(rule).type === 8);
 }
 class CSSRuleStyle extends CSSStyleDeclaration {
-    constructor(rule, text) { super(null); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
+    constructor(rule, text) { super(null); if (cssOwnerGet(rule).type === 5) cssDescriptorStyleAdd(this); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
     _m() { return new SMap(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(cssRuleDeclarations(this._rule, String(v))); }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = cssStylePropertyName(this, p);
         v = v == null ? '' : String(v);
         if (cssOwnerGet(this._rule).type === 8) {
             if (!cssKeyframePropertyAllowed(p)) return;
@@ -613,7 +613,7 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             m.set(p, [specNormalize(p, value), priority ? 'important' : '']);
         } else m.set(p, [/^(?:fill-|stroke-|stop-|flood-)?opacity$/.test(p) ? cssScalarSpecified(p, String(v)) : String(v), pri ? 'important' : '']); this._w(m);
     }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
+    removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
 }
 class CSSRule {
     constructor() { illegal(); }
@@ -623,7 +623,12 @@ class CSSRule {
     _changed() { for (let r = this; r; r = cssOwnerGet(r).parent) r._text = null; const s = cssRuleSheet(this); if (s) s._sync(); }
 }
 for (const [k, v] of Object.entries({ STYLE_RULE: 1, CHARSET_RULE: 2, IMPORT_RULE: 3, MEDIA_RULE: 4, FONT_FACE_RULE: 5, PAGE_RULE: 6, KEYFRAMES_RULE: 7, KEYFRAME_RULE: 8, MARGIN_RULE: 9, NAMESPACE_RULE: 10, COUNTER_STYLE_RULE: 11, SUPPORTS_RULE: 12, FONT_FEATURE_VALUES_RULE: 14 })) { Object.defineProperty(CSSRule, k, { value: v, enumerable: true }); Object.defineProperty(CSSRule.prototype, k, { value: v, enumerable: true }); }
-const ruleStyle = (r) => r._style || (r._style = new Proxy(new CSSRuleStyle(r, r._body), styleHandler));
+const ruleStyle = r => {
+    if (r._style) return r._style;
+    const target = new CSSRuleStyle(r, r._body), style = new Proxy(target, styleHandler);
+    if (cssDescriptorStyleHas(target)) cssDescriptorStyleAdd(style);
+    return r._style = style;
+};
 const blockText = (r) => { const d = r._style ? r._style.cssText : serDecls(cssRuleDeclarations(r, r._body || '')); return d ? `{ ${d} }` : '{ }'; };
 cssMediaRuleChanged = Function.prototype.call.bind(CSSRule.prototype._changed);
 class CSSStyleRule extends CSSRule {
