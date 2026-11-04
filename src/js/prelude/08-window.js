@@ -530,10 +530,28 @@ function cloneValue(v, seen) {
     for (let p = Object.getPrototypeOf(v); p; p = Object.getPrototypeOf(p)) if (p !== DOMException.prototype && PLATFORM_PROTOS.has(p)) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
 }
-const xferPorts = (o, t) => portList(o && typeof o === 'object' ? o.transfer : t);
+const windowPostOrigin = value => ttUSVString(`${value}`);
+const windowPostArguments = (value, list, count) => {
+    if (count < 3 && (value === undefined || value === null || transferObject(value))) {
+        // StructuredSerializeOptions is the parent dictionary, so transfer comes first.
+        const input = value == null ? undefined : value.transfer;
+        const transfer = input === undefined ? [] : transferSequence(input);
+        const target = value == null ? undefined : value.targetOrigin;
+        return { origin: target === undefined ? '/' : windowPostOrigin(target), transfer };
+    }
+    // Three arguments select the positional USVString overload, including object origins.
+    const origin = windowPostOrigin(value), transfer = list === undefined ? [] : transferSequence(list);
+    return { origin, transfer };
+};
 /* transferred ArrayBuffers are detached in the sender (after the clone took their contents) */
-const xferBuffers = (o, t) => { const tr = o && typeof o === 'object' && !Array.isArray(o) ? o.transfer : t; for (const b of (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : [])) if (b instanceof ArrayBuffer && !b.detached) b.transfer(); };
-function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer).map(transferLocalPort); xferBuffers(origin, transfer); N.timer(() => { try { dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true); } catch (e) { report(e); } }, 0, false, true); }
+const xferBuffers = list => { for (let i = 0; i < list.length; i++) { const b = list[i]; if (b instanceof ArrayBuffer && !b.detached) b.transfer(); } };
+function postMessage(data, origin, transfer) {
+    const args = windowPostArguments(origin, transfer, arguments.length);
+    transferDuplicates(args.transfer);
+    const [src, org] = N.caller(), d = structuredClone(data), ports = portList(args.transfer).map(transferLocalPort);
+    xferBuffers(args.transfer);
+    N.timer(() => { try { dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true); } catch (e) { report(e); } }, 0, false, true);
+}
 function rejection(promise, reason) { const e = new PromiseRejectionEvent('unhandledrejection', { promise, reason, cancelable: true }); try { dispatch(G, e, true); } catch (x) { report(x); } return e.defaultPrevented; }
 function queueMessage(data, origin, src, ports) {
     // Register transferred bridges before a following native port message arrives.
@@ -542,10 +560,10 @@ function queueMessage(data, origin, src, ports) {
     setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: receivedPorts }), true));
 }
 const remoteWins = new SMap();
-const postArgs = (v, d, o, t) => {
-    const origin = o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/'), ports = xferPorts(o, t);
+const postArgs = (v, d, o, t, count) => {
+    const args = windowPostArguments(o, t, count), ports = portList(args.transfer);
     const copy = ports.length ? structuredClone(d) : d;
-    return N.postTo(v, copy, origin, portList(ports));
+    return N.postTo(v, copy, args.origin, portList(ports));
 };
 // A window this page can't touch directly: a cross-origin frame (its context id) or another tab (-its window id,
 // as window.open returns and a popup's opener and message sources give)
@@ -557,7 +575,7 @@ function asWin(v) {
     const nav = tab ? u => { navURL(u, "set the 'href' property on 'Location'"); N.winOp(wid, 2, abs(u)); } : u => { navURL(u, "set the 'href' property on 'Location'"); N.ctxRel(v, 4, String(u)); };
     const loc = Object.freeze({ set href(u) { nav(u); }, replace: nav, assign: nav });
     w = Object.freeze({
-        postMessage(d, o, t) { postArgs(v, d, o, t); },
+        postMessage(d, o, t) { postArgs(v, d, o, t, arguments.length); },
         get window() { return w; }, get self() { return w; }, get frames() { return w; },
         get parent() { return tab ? w : asWin(N.ctxRel(v, 0)) ?? w; }, get top() { return tab ? w : asWin(N.ctxRel(v, 1)) ?? w; },
         get length() { return tab ? 0 : N.ctxRel(v, 2); }, get closed() { return tab ? !!N.winOp(wid, 0) : N.ctxRel(v, 3); }, opener: null,
