@@ -1,0 +1,11 @@
+--- a/src/js/jsglue.c
++++ b/src/js/jsglue.c
+@@ -70,7 +70,7 @@
+ }
+ 
+ char *jsg_computed(Node *el, const char *prop, int pseudo) { return pseudo == 3 ? css_get_animation_value(el, prop) : pseudo ? css_get_computed_pseudo(el, pseudo, prop) : css_get_computed_value(el, prop); }
+-void jsg_set_anim_style(Node *el, const char *css) { if (el->type == NODE_ELEMENT) css_set_anim_style(el, css); }
++void jsg_set_anim_style(Node *el, const char *css, const char *transitions) { if (el->type == NODE_ELEMENT) css_set_anim_style(el, css, transitions); }
+ 
+ uint64_t jsg_layout_generation(void) { return layout_generation(); }
+ uint64_t jsg_visual_generation(void) { return doc_visual_generation(); }

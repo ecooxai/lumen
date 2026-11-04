@@ -1,0 +1,13 @@
+{
+  "iteration": 28,
+  "start_utc": "2026-11-04T10:53:07.244722+00:00",
+  "end_utc": "2026-11-04T10:53:07.305032+00:00",
+  "source_mutation_commit_seconds": 0.060333041998092085,
+  "commit": "d742d8a299e7a5263520635107ac68daff34abdc",
+  "source_tree": "24b42c0bf25deace1002f24ee8e6869427bc888c",
+  "status": "independently reviewed source integrated; runtime qualification pending",
+  "manifest_sha256": "d599527c1a214fe6b3a6dd4f64ffe4f90a8eaa7c1b64d645298a9ca19e950838",
+  "review_sha256": "fd5e02d02578516a7a2c2a8810b1fe6d9915a7f4ffd7ec5f6a87cb34897bf49e",
+  "excluded": "padding/margin shorthand expansion and font-face descriptor changes",
+  "score_from_last_full_qualification": 62.580128205128204
+}

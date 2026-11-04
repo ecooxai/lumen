@@ -1,0 +1,27 @@
+{
+  "reviewed_utc": "2026-11-04T10:52:32.871963+00:00",
+  "reviewer": "environment_delivery independent built-in agent",
+  "manifest_sha256": "d599527c1a214fe6b3a6dd4f64ffe4f90a8eaa7c1b64d645298a9ca19e950838",
+  "status": "ACCEPTED FOR INTEGRATION; runtime qualification pending",
+  "identity_checks": {
+    "base_sha256": true,
+    "candidate_sha256": true,
+    "patch_sha256": true
+  },
+  "exact_scope_verified": "One generic parseDecls same-name importance guard after existing validation and normalization, before final map write. Earlier specialized family paths retain their prior behavior.",
+  "preserved": [
+    "Explicit setProperty remains an imperative replacement, not constrained by this parse-time cascade guard.",
+    "Font-face descriptor path remains excluded.",
+    "Keyframe authored-priority rejection remains earlier and unchanged.",
+    "No shorthand expansion or padding/margin storage rewrite.",
+    "No upstream URL gain assumed."
+  ],
+  "required_controls": [
+    "same-name important then normal, normal then important, two important declarations",
+    "CSSRule.style and inline CSSOM parsed declarations",
+    "explicit setter replacement and invalid declaration preservation"
+  ],
+  "syntax_receipt": "agent/ops/session19/importance126-guard-syntax-monitor/receipt.json",
+  "candidate_sha256": "56038ccdf393fabff5054725345ea0725630076ff22b400d50eb4cf7c56ea838",
+  "patch_sha256": "3c65c3d819a91d20d60013e87dbcc2551c63582e80769395a4b4a4c9b44bff80"
+}

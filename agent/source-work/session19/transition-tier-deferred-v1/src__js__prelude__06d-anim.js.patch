@@ -1,0 +1,279 @@
+--- a/src/js/prelude/06d-anim.js
++++ b/src/js/prelude/06d-anim.js
+@@ -1,5 +1,5 @@
+ /* Web Animations: timing model, KeyframeEffect, Animation and the document timeline. Effect values go to the
+-   native animation declaration layer (N.setAnimStyle: above inline style, below !important); getComputedStyle
++   native sampled layers (N.setAnimStyle: ordinary effects below !important, CSS transitions above it); getComputedStyle
+    flushes pending changes first (waFlush), and a frame loop runs only while an animation is running or pending. */
+ const waTypeErr = (m) => new TypeError(m);
+ /* ---- easing ---- */
+@@ -734,9 +734,10 @@
+     return v;
+ }
+ /* the value of one effect for one property, composed on the underlying value */
+-function waEffectValue(eff, prop, under, c) {
++function waEffectValue(eff, prop, under, c, contribution) {
+     const kfs = eff._kfs.filter(k => k.props.has(prop));
+     if (!kfs.length) return under;
++    if (contribution) contribution.value = true;
+     const p = c.progress, val = (k) => {
+         let v = k ? k.props.get(prop) : under;
+         if (v != null && WA_GRID.test(prop)) v = waGridSpecified(eff._target, prop, v);
+@@ -771,7 +772,113 @@
+ /* ---- timeline and frame loop ---- */
+ let waFrameTime = null, waInFrame = false, waSeqN = 0, waLoop = false, waDirty = false;
+ let waFlushing = false, waReading = false;
+-const waAll = new SSet(), waApplied = new SMap(), waEvents = [];
++const waAll = new SSet(), waEvents = [];
++/* Genuine transition class and current CSS ownership are distinct. Only
++ * trStart creates either; public cancel/finish retain ownership, while engine
++ * cancellation clears it. Weak records do not keep animation objects alive. */
++const waTransitions = new WeakSet(), waTransitionApply = Reflect.apply,
++    waTransitionHas = WeakSet.prototype.has, waTransitionAdd = WeakSet.prototype.add,
++    waOwnerGet = WeakMap.prototype.get, waOwnerSet = WeakMap.prototype.set,
++    waOwnerDelete = WeakMap.prototype.delete, waOwnerRef = WeakRef,
++    waOwnerDeref = WeakRef.prototype.deref, waLayerMap = OMap,
++    waLayerGet = OMap.prototype.get, waLayerSet = OMap.prototype.set,
++    waLayerDelete = OMap.prototype.delete, waLayerEach = OMap.prototype.forEach,
++    waLayerSort = Array.prototype.sort, waLayerStartsWith = String.prototype.startsWith;
++const waApplied = new waLayerMap(), waOwners = new WeakMap(), waOwnerRecords = new waLayerMap();
++/* Snapshot existing family metadata before author code. A supported shorthand
++ * or alias whose remaining membership is unresolved is conservative: retain
++ * ownership rather than introduce a false cancellation. */
++const waTransitionParents = new waLayerMap(), waTransitionComplete = new waLayerMap(),
++    waTransitionEnvelopes = new waLayerMap(), waTransitionUnresolved = [];
++(() => {
++    const add = (parent, children, complete = true) => {
++        if (complete) waTransitionApply(waLayerSet, waTransitionComplete, [parent, true]);
++        for (let i = 0; i < children.length; i++) {
++            const child = children[i]; if (child === parent) continue;
++            let names = waTransitionApply(waLayerGet, waTransitionParents, [child]);
++            if (!names) { names = []; waTransitionApply(waLayerSet, waTransitionParents, [child, names]); }
++            apush(names, parent);
++        }
++    };
++    for (const child of Object.keys(SHORTHAND_OF)) add(SHORTHAND_OF[child], [child]);
++    for (const parent of CSS_BORDER_SHORTHANDS) add(parent, cssBorderChildren(parent));
++    for (const parent of Object.keys(CSS_GRID_GROUPS)) add(parent, cssGridChildren(parent));
++    add('flex', CSS_FLEX_PARTS); add('contain-intrinsic-size', CSS_CIS_PARTS);
++    /* These existing aliases share native fields; this is not a general
++       vendor-prefix canonicalization rule. */
++    add('-webkit-transform', ['transform']); add('transform', ['-webkit-transform']);
++    add('word-wrap', ['overflow-wrap']); add('overflow-wrap', ['word-wrap']);
++    /* Potential child/reset envelopes prove only exclusion. Font palette and
++       synthesis, for example, remain conservative within the font envelope. */
++    waTransitionApply(waLayerSet, waTransitionEnvelopes, ['font', ['font-', '-webkit-font-', '-epub-font-', 'line-height']]);
++    waTransitionApply(waLayerSet, waTransitionEnvelopes, ['background', ['background-', '-webkit-background-', '-epub-background-']]);
++    waTransitionApply(waLayerSet, waTransitionEnvelopes, ['outline', ['outline-', '-webkit-outline-', '-epub-outline-']]);
++    for (const property of CSS_PROP_NAMES) {
++        /* Raw CSSOM child names do not resolve writing-mode aliases. Keep
++           same-family logical/physical pairs uncertain, never unrelated ones. */
++        let box = null;
++        if (/^(?:-(?:webkit|epub)-)?margin(?:-|$)/.test(property)) box = ['margin-', '-webkit-margin-', '-epub-margin-'];
++        else if (/^(?:-(?:webkit|epub)-)?padding(?:-|$)/.test(property)) box = ['padding-', '-webkit-padding-', '-epub-padding-'];
++        else if (/^(?:-(?:webkit|epub)-)?border(?:-|$)/.test(property)) box = ['border-', '-webkit-border-', '-epub-border-'];
++        else if (/^inset(?:-|$)/.test(property)) box = ['inset-', 'top', 'right', 'bottom', 'left'];
++        else if (property === 'contain-intrinsic-size') box = ['contain-intrinsic-'];
++        else if (property === 'overflow') box = ['overflow-'];
++        if (box) waTransitionApply(waLayerSet, waTransitionEnvelopes, [property, box]);
++        const canonical = cssAnimationPropertyName(property);
++        if (canonical !== property) { add(property, [canonical], false); add(canonical, [property], false); }
++        if (CSS_SHORTHANDS.test(property) && (!waTransitionApply(waLayerGet, waTransitionComplete, [property]) || waTransitionApply(waLayerGet, waTransitionEnvelopes, [property]))) apush(waTransitionUnresolved, property);
++    }
++})();
++function waTransitionStillMatches(list, owner) {
++    if (owner.membershipList === list) return owner.membership;
++    owner.membershipList = list;
++    const property = owner.property, result = value => (owner.membership = value);
++    if (N.cssTransitionIncludes(list, property)) return result(true);
++    const parents = waTransitionApply(waLayerGet, waTransitionParents, [property]);
++    if (parents) for (let i = 0; i < parents.length; i++) if (N.cssTransitionIncludes(list, parents[i])) return result(true);
++    for (let i = 0; i < waTransitionUnresolved.length; i++) {
++        const name = waTransitionUnresolved[i];
++        if (!N.cssTransitionIncludes(list, name)) continue;
++        const envelope = waTransitionApply(waLayerGet, waTransitionEnvelopes, [name]);
++        if (envelope) {
++            let possible = property === name;
++            for (let j = 0; j < envelope.length && !possible; j++) {
++                const part = envelope[j];
++                possible = part[part.length - 1] === '-' ? waTransitionApply(waLayerStartsWith, property, [part]) : property === part;
++            }
++            if (!possible) continue;
++        }
++        return result(undefined);
++    }
++    return result(false);
++}
++let waOwnerAdds = 0;
++const waIsTransition = a => waTransitionApply(waTransitionHas, waTransitions, [a]);
++const waOwnerOf = a => waTransitionApply(waOwnerGet, waOwners, [a]);
++function waVisitOwners(visit) {
++    const refs = [];
++    waTransitionApply(waLayerEach, waOwnerRecords, [(_unused, ref) => { apush(refs, ref); }]);
++    for (let i = 0; i < refs.length; i++) {
++        const ref = refs[i], a = waTransitionApply(waOwnerDeref, ref, []), owner = a && waOwnerOf(a);
++        if (!owner) { waTransitionApply(waLayerDelete, waOwnerRecords, [ref]); continue; }
++        visit(a, owner);
++    }
++}
++function waAssociateTransition(a, el, prop) {
++    if ((++waOwnerAdds & 31) === 0) waVisitOwners(() => {});
++    const ref = new waOwnerRef(a);
++    waTransitionApply(waTransitionAdd, waTransitions, [a]);
++    waTransitionApply(waOwnerSet, waOwners, [a, { element: el, property: prop, ref, membershipList: null, membership: false }]);
++    waTransitionApply(waLayerSet, waOwnerRecords, [ref, true]);
++}
++function waCancelTransition(a) {
++    const owner = waOwnerOf(a);
++    if (owner) {
++        waTransitionApply(waLayerDelete, waOwnerRecords, [owner.ref]);
++        waTransitionApply(waOwnerDelete, waOwners, [a]);
++    }
++    waTransitionApply(waCancelInternal, a, []);
++}
+ const waNow = () => { if (waInFrame && waFrameTime !== null) return waFrameTime; if (!waLoop) waKick(); return waFrameTime === null ? performance.now() : Math.max(waFrameTime, performance.now() - 1000 / 60); };
+ function waInvalidate() { waDirty = true; waKick(); }
+ function waKick() { if (waLoop) return; waLoop = true; N.raf((t) => { waLoop = false; waTick(t); }); }
+@@ -797,26 +904,59 @@
+     if (!waDirty || waFlushing) return;
+     waFlushing = true; waDirty = false;
+     try {
+-    const byEl = new SMap();
+-    for (const a of [...waAll].sort((x, y) => x._seq - y._seq)) {
+-        const e = a._effect;
++    /* The records carrying trusted tier bits stay private: native Map access,
++       own-slot append and numeric traversal avoid author collection hooks. */
++    const byEl = new waLayerMap(), groups = [], animations = [...waAll];
++    waTransitionApply(waLayerSort, animations, [(x, y) => x._seq - y._seq]);
++    for (let ai = 0; ai < animations.length; ai++) {
++        const a = animations[ai], e = a._effect;
+         if (!e || !(e instanceof KeyframeEffect) || !e._target || e._pseudo || a._replace === 'removed') continue;
+         const c = waCompute(e); if (c.progress === null) continue;
+         waCapturePreferredPolicy(a);
+-        let l = byEl.get(e._target); if (!l) byEl.set(e._target, l = []); l.push([e, c]);
+-    }
+-    for (const el of waApplied.keys()) if (!byEl.has(el)) { trSuppressCss(el, waApplied.get(el), ''); N.setAnimStyle(el, ''); waApplied.delete(el); }
+-    for (const [el, list] of byEl) {
+-        const props = new SSet(); for (const [e] of list) for (const k of e._kfs) for (const p of k.props.keys()) props.add(p);
+-        const needBase = list.some(([e]) => e._comp !== 'replace' || e._icomp !== 'replace' || e._kfs.length < 2 || e._kfs[0].co !== 0 || e._kfs[e._kfs.length - 1].co !== 1 || e._kfs.some(k => k.composite !== 'auto' && k.composite !== 'replace'));
+-        if (needBase && waApplied.has(el)) { trSuppressCss(el, waApplied.get(el), ''); N.setAnimStyle(el, ''); waApplied.delete(el); }
+-        let css = '';
++        const el = e._target;
++        let list = waTransitionApply(waLayerGet, byEl, [el]);
++        if (!list) { list = []; waTransitionApply(waLayerSet, byEl, [el, list]); apush(groups, { el, list }); }
++        apush(list, { effect: e, context: c, transition: waIsTransition(a), owner: !!waOwnerOf(a) });
++    }
++    waTransitionApply(waLayerEach, waApplied, [(previous, el) => {
++        if (!waTransitionApply(waLayerGet, byEl, [el])) {
++            trSuppressCss(el, previous.css, ''); N.setAnimStyle(el, '', '');
++            waTransitionApply(waLayerDelete, waApplied, [el]);
++        }
++    }]);
++    for (let gi = 0; gi < groups.length; gi++) {
++        const el = groups[gi].el, list = groups[gi].list, props = new SSet();
++        let needBase = false;
++        for (let li = 0; li < list.length; li++) {
++            const e = list[li].effect;
++            for (const k of e._kfs) for (const p of k.props.keys()) props.add(p);
++            if (e._comp !== 'replace' || e._icomp !== 'replace' || e._kfs.length < 2 || e._kfs[0].co !== 0 || e._kfs[e._kfs.length - 1].co !== 1 || e._kfs.some(k => k.composite !== 'auto' && k.composite !== 'replace')) needBase = true;
++        }
++        const applied = waTransitionApply(waLayerGet, waApplied, [el]);
++        if (needBase && applied) {
++            trSuppressCss(el, applied.css, ''); N.setAnimStyle(el, '', '');
++            waTransitionApply(waLayerDelete, waApplied, [el]);
++        }
++        let css = '', transitions = '';
+         for (const p of props) {
+-            let v = needBase ? waBaseValue(el, p) : null;
+-            for (const [e, c] of list) v = waEffectValue(e, p, v, c);
+-            if (v != null && v !== '') css += `${p}: ${v}; `;
+-        }
+-        if (waApplied.get(el) !== css) { trSuppressCss(el, waApplied.get(el), css); N.setAnimStyle(el, css); waApplied.set(el, css); }
++            let v = needBase ? waBaseValue(el, p) : null, transition = false;
++            for (let phase = 0; phase < 2; phase++) for (let li = 0; li < list.length; li++) {
++                const entry = list[li]; if (entry.transition !== (phase === 0)) continue;
++                const contribution = { value: false };
++                v = waEffectValue(entry.effect, p, v, entry.context, contribution);
++                if (contribution.value) transition = entry.owner;
++            }
++            if (v != null && v !== '') {
++                const declaration = `${p}: ${v}; `;
++                if (transition) transitions += declaration; else css += declaration;
++            }
++        }
++        const previous = waTransitionApply(waLayerGet, waApplied, [el]), combined = css + transitions;
++        if (!previous || previous.normal !== css || previous.transitions !== transitions) {
++            trSuppressCss(el, previous ? previous.css : '', combined);
++            N.setAnimStyle(el, css, transitions);
++            waTransitionApply(waLayerSet, waApplied, [el, { normal: css, transitions, css: combined }]);
++        }
+     }
+     } finally { waFlushing = false; }
+ }
+@@ -829,6 +969,7 @@
+     if (waFlushing || waReading || trConstructing) return false;
+     waReading = true;
+     try {
++        if (afterStyle) trCancelUnrendered();
+         const pending = waDirty;
+         if (pending) waFlush();
+         return (afterStyle && trPoll()) || pending;
+@@ -1110,6 +1251,7 @@
+     }
+     persist() { if (this._replace === 'removed') waDirty = true; this._replace = 'persisted'; waInvalidate(); }
+     _replaceable() {
++        if (waOwnerOf(this)) return false;
+         const e = this._effect;
+         return this._replace !== 'removed' && this._timeline instanceof DocumentTimeline && e instanceof KeyframeEffect && e._target && !e._pseudo && this.playState === 'finished' && waCompute(e).activeTime !== null;
+     }
+@@ -1133,8 +1275,8 @@
+ /* CSS transitions: restyle reports changed computed values (N.trTake, or fireAnim 'lumen-transition'), and each
+    becomes a CSSTransition animating from the old to the new value. Values the animation layer itself writes are
+    suppressed once so animations don't start transitions. */
+-const trRunning = new SMap(), trSuppress = new SMap();
+-let trConstructing = false;
++const trRunning = new SMap(), trSuppress = new SMap(), waCancelInternal = Animation.prototype.cancel;
++let trConstructing = false, trCheckingOwners = false;
+ /* Timing/keyframe metadata reads are part of one internal style job. Do not
+  * sample a cancelled layer or recursively poll while its replacement has not
+  * yet acquired the element/property slot. The native queue retains later jobs. */
+@@ -1161,8 +1303,10 @@
+     const i = Math.max(names.lastIndexOf(prop), names.lastIndexOf('all')); if (i < 0) return;
+     const at = (p, d) => { const l = trList(el, p); return l.length && l[0] ? l[i % l.length] : d; };
+     const duration = Math.max(0, trTime(at('transition-duration', '0s'))), delay = trTime(at('transition-delay', '0s'));
+-    const running = trRunning.get(el), old = running && running.get(prop);
+-    if (old) { running.delete(prop); old.cancel(); }
++    const running = trRunning.get(el);
++    if (running) running.delete(prop);
++    /* Include completed/public-cancelled objects no longer in trRunning. */
++    waVisitOwners((a, owner) => { if (owner.element === el && owner.property === prop) waCancelTransition(a); });
+     if (duration + delay <= 0 || !el.isConnected) return;
+     const sizeKeywords = WA_PREFERRED_SIZE.test(prop) && N.computed(el, 'interpolate-size') === 'allow-keywords';
+     const sizeMix = WA_PREFERRED_SIZE.test(prop) ? waPreferredSizeMix(from, to, .5, sizeKeywords) : undefined;
+@@ -1173,6 +1317,7 @@
+     try { eff = new KeyframeEffect(el, [{ [key]: from }, { [key]: to }], { duration, delay, easing: at('transition-timing-function', 'ease'), fill: 'backwards' }); }
+     catch (e) { eff = new KeyframeEffect(el, [{ [key]: from }, { [key]: to }], { duration, delay, fill: 'backwards' }); }
+     const a = new CSSTransition(eff, document.timeline);
++    waAssociateTransition(a, el, prop);
+     a._trProp = prop;
+     if (WA_PREFERRED_SIZE.test(prop)) eff._sizeKeywords = sizeKeywords;
+     const done = () => { const m = trRunning.get(el); if (m && m.get(prop) === a) { m.delete(prop); if (!m.size) trRunning.delete(el); } };
+@@ -1189,9 +1334,15 @@
+ }
+ /* transitions and CSS animations of removed or display:none elements are cancelled */
+ function trCancelUnrendered() {
+-    const gone = el => !el.isConnected || N.computed(el, 'display') === 'none';
+-    for (const [el, m] of [...trRunning]) if (gone(el)) for (const a of [...m.values()]) a.cancel();
+-    for (const [el, l] of [...caRunning]) if (gone(el)) { caRunning.delete(el); for (const a of l) a.cancel(); }
++    if (trCheckingOwners) return;
++    trCheckingOwners = true;
++    try {
++        const gone = el => !N.connected(el) || N.computed(el, 'display') === 'none';
++        waVisitOwners((a, owner) => {
++            if (gone(owner.element) || waTransitionStillMatches(N.computed(owner.element, 'transition-property'), owner) === false) waCancelTransition(a);
++        });
++        for (const [el, l] of [...caRunning]) if (gone(el)) { caRunning.delete(el); for (const a of l) a.cancel(); }
++    } finally { trCheckingOwners = false; }
+ }
+ function trPoll() {
+     if (trConstructing) return false;

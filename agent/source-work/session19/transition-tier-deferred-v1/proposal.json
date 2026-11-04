@@ -1,0 +1,63 @@
+{
+  "status": "draft only; independent producer/bridge/consumer review and runtime gates required",
+  "normative_sources": [
+    "https://drafts.csswg.org/css-cascade-5/#cascade-sort",
+    "https://drafts.csswg.org/css-animations-1/#keyframes",
+    "https://drafts.csswg.org/css-transitions-2/#animation-cascade-level",
+    "https://drafts.csswg.org/css-transitions-2/#animation-composite-order",
+    "https://drafts.csswg.org/web-animations-1/#applying-the-composited-result",
+    "https://drafts.csswg.org/web-animations-1/#replacing-animations"
+  ],
+  "ordering": [
+    "author normal",
+    "inline normal",
+    "ordinary animations",
+    "author important",
+    "inline important",
+    "UA important",
+    "genuine CSS transitions"
+  ],
+  "scope": [
+    "stable-partition existing inline declaration sequence; preserve matched rule order",
+    "separate private sampled channels without Node size or public WebIDL changes",
+    "drop authored !important from both channels before programmatic transition tagging",
+    "existing dependency/var/font/flow/all and family replay algorithms unchanged",
+    "Private native computed-list membership and owned-transition replacement guard prevent stale transition origin"
+  ],
+  "brand": "captured native WeakSet, populated only by internal trStart after genuine construction; no instanceof/_trProp/public constructor classification",
+  "private_records": "native captured Map, apush and numeric traversal prevent new tier flags from passing through author collection hooks",
+  "property_contribution": "waEffectValue marks actual nonempty property keyframes; unrelated transition effects cannot lift ordinary sampled properties",
+  "cache_clear": "both channels compared separately and cleared together for cancellation and needBase reads",
+  "ownership": "move valid Decl.value into one existing anim_decls vector, NULL source then free parser container; invalid authored-priority values freed in parser result",
+  "limitations": [
+    "pre-existing general keyframe grammar/composite/value validation is not rewritten",
+    "full rule/layer/origin rollback is not implemented",
+    "native priority flags in authored CSSStyleDeclaration or keyframe objects are not changed/exposed",
+    "Cancellation membership for supported shorthand/alias pairs without existing expansion metadata remains conservatively unresolved; full transition-property expansion is not claimed."
+  ],
+  "required_controls": [
+    "inline important vs later inline normal and source-order reversal",
+    "author important vs inline normal/important; UA important if supported independent fixture",
+    "custom properties/font-relative/logical-flow/currentColor/all dependency neighbors",
+    "ordinary animation below important; transition above inline/author important",
+    "ordinary animation spoofed _trProp/prototype/Symbol.hasInstance does not gain transition tier",
+    "authored !important keyframe values rejected in both sampled channels",
+    "noncontributing transition does not lift unrelated ordinary property",
+    "cancel/finish restores underlying importance; no stale transition channel",
+    "existing range/intrinsic/interpolate family priority controls",
+    "fresh exact-source native218 and unchanged full1248 prior-pass union",
+    "engine replacement cancellation then replay uses ordinary tier",
+    "public cancel then replay retains transition tier",
+    "completion followed by removal/replay ownership behavior",
+    "mixed ordinary/transition effect stack with last actual contributor origin",
+    "equal-valued ordinary contribution changes final origin",
+    "public cancel/finish then later owner removal/replay loses ownership",
+    "no strong animation retention and stale weak records pruned",
+    "transition-property none or property exclusion clears owner before replay",
+    "owned finished filling transition is not auto-removed as replaceable"
+  ],
+  "lifecycle_current_scope": "Permanent private class brand; separate WeakMap ownership with WeakRef records. Engine replacement/unrendered cancellation clears ownership including completed/public-cancelled objects; public cancel/finish retain ownership. Captured native cache/record operations; records pruned on scans and each32 associations.",
+  "authored_keyframe_priority": "Existing parseDecls(keyframe=true) drops cssKeyframeImportant(rawValue) before CSSOM map insertion. No redundant new public priority getter. Native sampled parser rejects authored priority in both raw sample channels before trusted marking.",
+  "effect_stack": "Genuine CSS transition class first, existing order within each class; final cascade tier comes from last actual property contributor, including equal-valued ordinary effects.",
+  "membership": "Snapshot existing SHORTHAND_OF, border/grid/flex/CIS children and canonical legacy animation aliases. Exact/all/known-containing names match; unresolved supported shorthand/alias membership returns unknown and retains association; only demonstrated exclusion cancels. No general expansion model."
+}

@@ -1,0 +1,23 @@
+{
+  "base_head": "d742d8a299e7a5263520635107ac68daff34abdc",
+  "prepared_utc": "2026-11-04T10:56:49.690913+00:00",
+  "file": "src/css/style.c",
+  "base_sha256": "b2749eddc27e7596d57646702eb03fe954571ec5eb37edd1a8a0490dcfe1e381",
+  "candidate_sha256": "8a9bef421048d94d850c59d2ee0d2179ada6ee099d172c99098d0ed8ad743f4a",
+  "patch_sha256": "0448cb6e7fe7233ec29490ca30282b5362c34b30610cb8fb98aebf7b0ad6fc35",
+  "scope": "Static nodes only: existing importance-tier partition. Any anim_decls pointer retains the exact previous inline/sample/stylesheet assembly.",
+  "excluded": [
+    "private transition channel bridge",
+    "transition ownership/composite order changes",
+    "new Node fields",
+    "general origin/layer rollback",
+    "namespace timeout fix"
+  ],
+  "required_gates": [
+    "native218 exact candidate",
+    "importance20 + prior range/intrinsic/typed/font/flow controls",
+    "sampled animation/transition prior-pass controls unchanged",
+    "full1248 prior-pass union"
+  ],
+  "full_tier_draft": "agent/ops/session19/inline-importance-draft retained UNINTEGRATED for future work, with new false-exclusion and cancellation exposure risks documented"
+}

@@ -1,0 +1,29 @@
+{
+  "candidate": 1913,
+  "prepared_utc": "2026-11-04T10:59:54.672644+00:00",
+  "production_commit": "f9c432d4172142f5e95869926e4f56d087f4779e",
+  "source_tree": "313e8671497c770f38ec0276d63686515277f545",
+  "included_since1912": [
+    "d742d8a299e7a5263520635107ac68daff34abdc",
+    "f9c432d4172142f5e95869926e4f56d087f4779e"
+  ],
+  "production_delta_paths": [
+    "src/css/style.c",
+    "src/js/prelude/03-element.js"
+  ],
+  "native_changed": true,
+  "requires_fresh_native218": true,
+  "sampled_effect_assembly_unchanged": true,
+  "full_transition_tier_draft_integrated": false,
+  "baseline1912_status": "HOLD namespace harness after51PASS; new semantic controls passed",
+  "last_full_qualified_candidate": 1908,
+  "required_unset_flags": [
+    "LUMEN_TRACE_LOAD",
+    "LUMEN_PROFILE_PRELUDE"
+  ],
+  "build_native_focused_full_pending": true,
+  "hold_tracked_source_git_status_through_native218": true,
+  "iteration": 29,
+  "checkpoint30_due": false,
+  "last_qualified_sample_score": 62.580128205128204
+}

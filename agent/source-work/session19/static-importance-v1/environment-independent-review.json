@@ -1,0 +1,43 @@
+{
+  "reviewed_utc": "2026-11-04T10:57:45.663540+00:00",
+  "reviewer": "environment_delivery independent built-in agent",
+  "manifest_sha256": "222cda254644f966c5acc2d1e7ae9ca02a48a56202107562da69d752ebbf8138",
+  "status": "ACCEPTED FOR INTEGRATION; native and browser qualification pending",
+  "identity_checks": {
+    "base": true,
+    "candidate": true,
+    "patch": true,
+    "canonical_base": true
+  },
+  "candidate_sha256": "8a9bef421048d94d850c59d2ee0d2179ada6ee099d172c99098d0ed8ad743f4a",
+  "patch_sha256": "0448cb6e7fe7233ec29490ca30282b5362c34b30610cb8fb98aebf7b0ad6fc35",
+  "scope": "One native assembly branch in src/css/style.c; no animation JS, bridge signatures, ownership, property membership, Node fields or new parsing.",
+  "static_order": [
+    "author normal",
+    "inline normal",
+    "author important",
+    "inline important",
+    "UA important"
+  ],
+  "animated_equivalence": "For every non-null anim_decls pointer, the inline filter is always true, then the same sampled declarations and complete stylesheet-important subsequence are appended with the same MDecl metadata. Existing animated assembly is preserved.",
+  "other_review": [
+    "Within-tier source order is preserved, including duplicate and invalid declarations handled by existing parser/application paths.",
+    "Missing style attribute does not read stale cached inline declarations.",
+    "Existing range/intrinsic/font/flow replay metadata is unchanged.",
+    "UA important retains precedence over author inline important.",
+    "The separate same-name CSSOM guard is independently reviewed in cssom-importance-guard-independent-review-v1.json."
+  ],
+  "limitations": [
+    "Full six-file sampled transition-origin draft remains unintegrated.",
+    "Any element with a sampled-declaration pointer retains prior animated importance behavior, including unrelated sampled properties.",
+    "No general layer/origin rollback repair and no namespace timeout claim.",
+    "No native compile or WPT gain is asserted by this static review."
+  ],
+  "required_gates": [
+    "native218 exact candidate",
+    "importance20 + prior range/intrinsic/typed/font/flow controls",
+    "sampled animation/transition prior-pass controls unchanged",
+    "full1248 prior-pass union"
+  ],
+  "primary_source": "https://www.w3.org/TR/css-cascade-5/#cascade-sort"
+}

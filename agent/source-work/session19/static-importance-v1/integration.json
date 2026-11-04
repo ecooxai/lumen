@@ -1,0 +1,14 @@
+{
+  "iteration": 29,
+  "start_utc": "2026-11-04T10:58:34.448331+00:00",
+  "end_utc": "2026-11-04T10:58:34.563770+00:00",
+  "source_mutation_commit_seconds": 0.11545410199323669,
+  "commit": "f9c432d4172142f5e95869926e4f56d087f4779e",
+  "source_tree": "313e8671497c770f38ec0276d63686515277f545",
+  "manifest_sha256": "222cda254644f966c5acc2d1e7ae9ca02a48a56202107562da69d752ebbf8138",
+  "review_sha256": "39290dc013fe487ef98ecb9b0046c313eca740d7bce38b9220573bebb39ac3e1",
+  "status": "independently reviewed static-only source integrated; runtime qualification pending",
+  "sampled_effect_assembly_unchanged": true,
+  "full_transition_tier_draft_integrated": false,
+  "score_from_last_full_qualification": 62.580128205128204
+}

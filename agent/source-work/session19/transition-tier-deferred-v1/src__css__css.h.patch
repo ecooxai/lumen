@@ -1,0 +1,12 @@
+--- a/src/css/css.h
++++ b/src/css/css.h
+@@ -547,7 +547,8 @@
+ char *css_get_computed_pseudo(Node *el, int which, const char *prop);
+ char *css_get_animation_value(Node *el, const char *prop); /* computed, not CSSOM used values */
+ void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s, void (*cb)(Node *, const char *, const char *, const char *));
+-void css_set_anim_style(Node *n, const char *css);   /* Web Animations declaration layer; "" clears it */
++bool css_transition_property_includes(const char *list, const char *property);
++void css_set_anim_style(Node *n, const char *css, const char *transitions); /* private sampled layers; empty strings clear both */
+ extern const char *css_ua_sheet;
+ 
+ /* tokenizer (exposed for value parsing) */

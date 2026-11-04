@@ -1,6 +1,6 @@
 # Continue Lumen Linux — session19 active
 
-Updated 2026-11-04T10:14:49.047982+00:00. Session started2026-11-04T06:33:55Z and remains active.
+Updated 2026-11-04T10:59:54.672644+00:00. Session started2026-11-04T06:33:55Z and remains active.
 Work through RubyWebTerm in `/mnt/p3/project/browser/lumen-android/lumen-android`.
 Branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104`.
 Read AGENTS.md, the complete user request in agent/task.md, and the latest entries in
@@ -48,59 +48,63 @@ next-candidate fixes. The manifest is1248 selected HTTP/default-timeout DOM/CSS 
 URLs from1247 files, not all WPT. Historical pinned Chromium150.0.7871.114 scored1062/1248;
 this is not a current latest-Chromium run or an overall browser quality score.
 
-## Current source and candidate1912
+## Current source and candidate1913
 
-Production HEAD `b9a98b328b6647271e1ff97e11ebd54c2cdc63f3`, source tree
-`639d5b6ce603c6b89affd6590be98e43aa321d76`. Candidate1912 adds three separate reviewed
-commits to immutable1911:
+Production HEAD `f9c432d4172142f5e95869926e4f56d087f4779e`, source tree
+`313e8671497c770f38ec0276d63686515277f545`. Two separate reviewed commits follow1912:
 
-- `a0061811f7852ee184f6e68bb6eb6a422bde6a30`: CSSStyleDeclaration WebIDL conversion,
-  required arguments, private genuine receiver state, indexed properties, live iterator,
-  parentRule and computed readonly behavior. Existing color validation is reused.
-- `abf3591f756ea2292f59b8b9a5cbc26d18f40612`: all captured declaration operations use
-  the immutable canonical public receiver; raw-target dispatch is removed. Computed
-  grid/font recursion uses captured internal operations. This fixes an interaction caught
-  during independent review before any candidate1912 runtime qualification.
-- `b9a98b328b6647271e1ff97e11ebd54c2cdc63f3`: range-only specified calc serialization
-  preserves wrappers and typed zero while simplifying supported exact terms and sorting
-  percentage/dimension operands. Native grammar/computed behavior is unchanged.
+- `d742d8a299e7a5263520635107ac68daff34abdc` (iteration28): generic same-name parsed
+  declarations preserve an earlier important value against a later normal declaration.
+  Explicit setProperty replacement and font-face descriptors remain unchanged. This does
+  not fix padding/margin shorthand expansion or claim that WPT gain.
+- `f9c432d4172142f5e95869926e4f56d087f4779e` (iteration29): nodes without anim_decls
+  apply static inline important after author important and before UA important. Nodes with
+  any sampled declaration layer retain the exact previous assembly, including its known
+  animation/transition priority limitations. Dependency, family replay and rollback algorithms
+  are unchanged. The larger transition-tier/ownership proposal was not integrated.
 
-Independent reviews and exact integration intervals are retained in
-agent/source-work/session19/css-declaration-api-v1, css-declaration-receiver-v1 and
-range-calc-v1. Margin/padding storage expansion, constructor availability, broad cascade
-rollback and immunity of every pre-existing parser helper to arbitrary overrides are not
-claimed. API state is private and frozen; legitimate same-origin cross-realm borrowing
-uses the existing private REALM bridge, with exceptions created by the calling operation's
-realm. The separate generic inline importance assembly correction is approved for a later
-bounded draft, not included in1912.
+Exact reviews, source intervals and the deferred proposal are preserved in source-work/session19
+cssom-importance-guard-v1, static-importance-v1 and transition-tier-deferred-v1. Candidate1913
+requires fresh exact-source native218 because style.c changed, plus frozen static/API/sample
+retention controls and the full1248 prior-pass union. Hold tracked source/Git/status until the
+independent test owner releases build/native freeze. Iteration30 durable WORK/HOLD checkpoint
+is not yet due; accepted public source remains1908.
 
-Candidate1912 build/startup and frozen API50, API boundary/realm/receiver controls, range
-controls and prior-pass/full1248 gates are pending. Hold all tracked source/Git/status
-writes until the test owner releases the exact frozen candidate. Diagnostic flags
-LUMEN_TRACE_LOAD and LUMEN_PROFILE_PRELUDE must remain unset during qualification.
+Candidate1912 frozen HEAD `fa69ebd287c91270a19dafc45d0711fe27fa7b11` built in87.179s,
+binary SHA256 `ce39fecf7918d48973d1b2ae3a88502800d4d22c2f5e8fed6db0af9cf1f2fded`.
+Its native source was unchanged from1911, so no1912 exact native pass is claimed. Frozen313
+had nine gained URLs/25 assertions and no prior assertion losses, but namespace again timed
+out after51 PASS assertions. It remains HOLD; full replay was not launched to rescue it.
+Independent170 passed168/170 versus122/170 prior, with zero old PASS losses; all new API,
+receiver/realm and range-calc controls passed. Two old independent limitations remained.
 
-Candidate1911, exact frozen HEAD `a16d5f4bdda91036fd01c8a99325460285b6143a`, passed
-build/startup and native218 (218/218 in201.16s), frozen307 URLs (180/307 and3670/4468,
-+3 URLs/+7 assertions, no prior losses) and independent110 (108/110, no old PASS loss).
-Binary SHA256 `46b373e10f613ceedab6e58106279a617faa3e38e0616401ae7ed60e30777f0c`.
-Its unchanged full1248 run completed10:14:04.54UTC with783/1248 URLs and23110/26245
-assertions. Three new URLs and seven assertions passed, but the namespace URL lost its
-required harnessOK/fullURL status despite all51 assertions passing. All1248 browser exits,
-pins and cleanup were valid; no assertion PASS was lost. The original run is HOLD and must
-not be relabeled by later passing runs. Last fully qualified full candidate remains1908.
+Candidate1911 full remains HOLD:783/1248 URLs,23110/26245 assertions, three gained URLs,
+seven gained assertions and one lost required namespace harnessOK/fullURL. No assertion
+PASS loss; all1248 exits0 and pins/cleanup valid. Original1903 HOLD also remains. Last fully
+qualified full candidate is1908,781/1248. The rejected1910 shape optimization is fully reverted;
+its failed CPU/wall thresholds and unused reflection plan remain retained.
 
-The isolated1910 descriptor-batching hypothesis was rejected after all six fixed
-comparisons: owned CPU15.383061s to15.431443s did not meet5% improvement, and namespace
-wall8.583s to8.3747s improved2.426890%, below3%. Only RSS passed. Production64fd6463 was
-reverted in051a0d6408ff5c00874fd300fe4d15df964ad2c0. The benchmark receipts and unused
-reflection plan remain retained; no extra runs may erase this rejection.
+## Latest authenticated user steering and immediate priority
+
+Received through the session preview at2026-11-04T10:52:35Z, exact text:
+
+> current lumen can not login x.com via google.com, after return from google acc auth it show error, find whats wrong and fix, also optimize x.com performance like scroll, ensure not high cpu usage
+
+Seal1913 first. Environment owns relevant UI, sanitized authentication-return evidence and
+one-second scroll CPU measurements; source owns engine diagnosis from those observations.
+Do not bypass cookie/origin/security checks, invent causes or expose credentials/tokens.
+Append this exact steering to agent/task.md after the build/native freeze releases.
+The earlier unused initial-about:blank realm opportunity is read-only: frame_create invokes
+full initialization for both the initial document and later navigation, but observable window,
+document, load and ID entrypoints currently lack a shared lazy-initialization barrier. Skipping
+the context outright is unsafe; no performance implementation is approved.
 
 ## Reliability and profiler evidence
 
-Original1903 namespace harness TIMEOUT after51 PASS assertions remains HOLD. Similar
+Original1903,1911 and1912 namespace harness TIMEOUT after51 PASS assertions remain HOLD. Similar
 historical1808 behavior and fixed diagnostics are retained; no timeout change or claimed
 lifecycle fix was made. Successful phase traces show prompt final parent-load completion,
-with about95–96% of child initialization CPU/wall in prelude execution. Cached script
+with about95–96% of child initialization CPU/wall in prelude execution. Matched failing1908/1912 traces show80 child prelude sums10.016/10.020s wall and7.950/7.836s thread CPU; final parent unblocked-to-complete is1.743/1.151ms with zero remaining blockers. This is slow completed work, not evidence of a lost load notification. Cached script
 binding takes only about5ms across80 children. No mutable realm objects or globals are shared.
 Separate default-off Linux diagnostics LUMEN_TRACE_LOAD and LUMEN_PROFILE_PRELUDE remain
 explicitly unset for qualification/performance OFF scenarios. Sampler ON measurements

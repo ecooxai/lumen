@@ -17,13 +17,14 @@ unsealed follow-ups are in agent/continue.md. This selected DOM/CSS manifest is 
 current latest Chromium parity or a95/100 product-quality claim. Historical details below
 are retained background, not the current runtime or qualification state.
 
-Candidate1910 descriptor batching failed the frozen CPU/wall thresholds and was reverted
-without removing the later range-priority, root-pseudo and StyleSheetList commits. Candidate1911
-passed native/focused gates but its completed full run has a retained namespace harness HOLD.
-Candidate1912 seals reviewed CSSStyleDeclaration API/public-receiver and range specified-calc
-fixes separately; runtime qualification is pending. The approved narrow generic importance
-assembly investigation remains outside1912 and outside the previously rejected broad rollback
-rewrite. Exact source/review/acceptance distinctions are in agent/continue.md.
+Candidate1910 descriptor batching failed frozen CPU/wall thresholds and is reverted.
+Candidates1911 and1912 retain namespace harness HOLDs after51 PASS assertions; no timeout
+change or lifecycle fix is claimed. Candidate1913 seals the reviewed same-name CSSOM guard
+and static-only importance assembly. Sampled animation/transition assembly stays unchanged;
+the larger private transition-tier proposal is explicitly deferred and unintegrated.
+The latest authenticated preview request is X/Google authentication-return failure diagnosis
+and X scrolling CPU optimization. Exact text, ownership and security boundaries are recorded
+in agent/continue.md; preserve it in agent/task.md after the current freeze releases.
 Coordinate exact tracked source/Git/status freezes before builds and native gates; immutable
 sealed binaries may be tested while subsequent source is prepared. Use never-reused IDs
 and one heavy job under the existing480% shared quota. Preserve all old HOLDs and private

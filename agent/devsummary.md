@@ -838,3 +838,22 @@ Production b9a98b328b6647271e1ff97e11ebd54c2cdc63f3, source tree639d5b6ce603c6b8
 Qualified1908 delivery verified public commit9d3882d753faa45fc5c52f9e9748b9f7cdaaf7e4, archive10424331bytes SHA2560f6156e1c9649236e2ec227e22df9539be56f6dc8435a059aa38fc4881a9435e, offline recovery and complete HTTPS readback at09:41:18.884971UTC. Environment worklog separately retains receipt-linked publication6.80s, packaging8.19s and readback20.38s; overlapping task wall intervals are not added to user elapsed time. Test owner timing ledgers retain every run, including failures and rejectedperformance versions. Iteration30 triggers the next work checkpoint if reached.
 
 Candidate1911 full completion update10:14:04.54UTC:783/1248 and23110/26245, with three gained URLs/seven gained assertions but one required namespace harnessOK/fullURL loss. All51 namespace assertions passed before TIMEOUT. No assertion PASS loss; all1248 exits0 and pins/cleanup valid. Result remains HOLD, accepted1908 prior-pass obligations remain binding for1912. The preceding broad docs whitespace check stopped on unchanged reviewed patch-context whitespace and the helper's final blank line; a check restricted to non-patch/non-include continuity files passed. Reviewed artifact bytes were preserved, not rewritten.
+
+
+### Iteration28 — Same-name parsed declaration importance
+
+Start 2026-11-04T10:53:07.244722+00:00; end 2026-11-04T10:53:07.305032+00:00; measured source mutation/commit interval 0.060333s. Commit d742d8a299e7a5263520635107ac68daff34abdc. Preserves earlier important generic declarations against later normal same-name declarations after existing validation. Explicit API replacement and descriptors stay unchanged; padding/margin shorthand storage remains excluded. Independent static review passed; candidate1913 native/browser qualification is pending. Score remains62.580128/100 from accepted1908 selected1248 manifest. Source-operation intervals are not model compute time.
+
+
+### Iteration29 — Static inline declaration importance with sampled order preserved
+
+Start 2026-11-04T10:58:34.448331+00:00; end 2026-11-04T10:58:34.563770+00:00; measured source mutation/commit interval 0.115454s. Commit f9c432d4172142f5e95869926e4f56d087f4779e. Static nodes partition existing declaration tiers correctly. Any anim_decls pointer keeps the exact previous assembly. The more extensive transition-tier/ownership draft was reviewed, retained and deliberately not integrated after false-exclusion/new-priority risks emerged. No animation-origin, lifecycle or namespace fix is claimed. Independent static review passed; candidate1913 native/browser qualification is pending. Score remains62.580128/100 from accepted1908 selected1248 manifest. Source-operation intervals are not model compute time.
+
+
+## Candidate1913 freeze — 2026-11-04T10:59:54.672644+00:00
+
+Production f9c432d4172142f5e95869926e4f56d087f4779e, source tree313e8671497c770f38ec0276d63686515277f545. Elapsed session wall 15959.673s. Two bounded source commits follow1912; fresh native218 and frozen controls/full prior-pass gate pending. Iteration29 complete; iteration30 durable work checkpoint not yet due. Larger transition-tier proposal is UNINTEGRATED with exact artifacts/review limitations retained.
+
+1912 build/startup87.179s, native unchanged from1911 (no1912 exact native gate claimed). Focused313 gained9URLs/25assertions but retained namespace TIMEOUT after51PASS, so HOLD/no rescue full run. Independent170:168/170 versus122/170 prior, zero lost PASS; all new API/range controls pass. Matched four diagnostic namespace runs all timed out with51PASS on both1908 and1912; the596-assertion sentinel always passed. Paired ON traces show80 child preludes10,016.252/10,019.867ms wall and7,950.273/7,835.521ms CPU, with parent completion1.743/1.151ms after unblocking. No missing-load evidence or added-API CPU regression is established by that pair. These diagnostic runs do not qualify either HOLD.
+
+Latest authenticated preview steering received10:52:35UTC requests X/Google return-error diagnosis and scrolling CPU optimization; exact text is in continue and will be appended to task after the freeze. Environment owns sanitized UI/resource evidence, source owns engine diagnosis. Root authorized the important-bug extension with absolute deadline12:33:55UTC, targeting final Linux acceptance by12:00 for delivery. User wall time and overlapping task sums remain distinct.

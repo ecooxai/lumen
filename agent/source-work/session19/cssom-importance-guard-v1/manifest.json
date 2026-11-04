@@ -1,0 +1,11 @@
+{
+  "base_head": "fa69ebd287c91270a19dafc45d0711fe27fa7b11",
+  "prepared_utc": "2026-11-04T10:45:25.059616+00:00",
+  "file": "src/js/prelude/03-element.js",
+  "base_sha256": "8eb713f41d9cb658235ba34eebbafbafa39bb4d640d2d78f9a1d91c481606b29",
+  "candidate_sha256": "56038ccdf393fabff5054725345ea0725630076ff22b400d50eb4cf7c56ea838",
+  "patch_sha256": "3c65c3d819a91d20d60013e87dbcc2551c63582e80769395a4b4a4c9b44bff80",
+  "scope": "Generic same-name parse-time priority guard only; explicit setProperty unchanged, font-face descriptors excluded; keyframe priority rejection unchanged",
+  "excluded": "margin/padding shorthand expansion; no claim of cssstyledeclaration-csstext-important.html gain",
+  "runtime_pending": true
+}
