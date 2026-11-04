@@ -549,7 +549,7 @@ function cssRuleDeclarations(rule, text) {
     return parseDecls(text, type === 5, type === 8, type === 1 || type === 8);
 }
 class CSSRuleStyle extends CSSStyleDeclaration {
-    constructor(rule, text) { super(null); const state = cssDeclarationLocalState(this); state.parent = rule; state.operations = cssRuleDeclarationOperations; if (cssOwnerGet(rule).type === 5) cssDescriptorStyleAdd(this); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
+    constructor(rule, text) { super(null); const state = cssDeclarationLocalState(this), type = cssOwnerGet(rule).type; state.parent = rule; state.ruleType = type; state.operations = cssRuleDeclarationOperations; if (type === 5) cssDescriptorStyleAdd(this); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
     _m() { return new SMap(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(cssRuleDeclarations(this._rule, String(v))); }

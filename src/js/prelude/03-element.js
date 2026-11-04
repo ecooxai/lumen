@@ -1934,7 +1934,7 @@ function cssDeclarationInstall(proto) {
 }
 
 class CSSStyleDeclaration {
-    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); cssDeclarationWeakSet(cssDeclarationStates, this, {receiver: this, parent: null, readonly: !!ro, operations: ro ? cssDeclarationComputedOperations : cssDeclarationInlineOperations}); }
+    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); cssDeclarationWeakSet(cssDeclarationStates, this, {receiver: this, parent: null, ruleType: null, readonly: !!ro, operations: ro ? cssDeclarationComputedOperations : cssDeclarationInlineOperations}); }
     get parentRule() { return cssDeclarationState(this).parent; }
     /* parsed declarations of the current style attribute; callers that modify take a copy */
     _m() {
@@ -2048,7 +2048,12 @@ cssDeclarationInstall(CSSStyleDeclaration.prototype);
 Object.defineProperty(CSSStyleDeclaration.prototype, Symbol.iterator,
     {value: cssDeclarationArrayValues, writable: true, configurable: true});
 function cssDeclarationProperty(target, key) {
-    return typeof key === 'string' && (cssPropKnown(key) || key.startsWith('--') || cssDescriptorStyleHas(target));
+    if (typeof key !== 'string') return false;
+    if (cssPropKnown(key) || key.startsWith('--') || cssDescriptorStyleHas(target)) return true;
+    /* @page exposes this descriptor separately from ordinary CSS properties.
+     * Use the private rule kind; do not broaden parsing or alias handling. */
+    const state = cssDeclarationLocalState(target);
+    return !!state && state.ruleType === 6 && (key === 'page-orientation' || key === 'pageOrientation');
 }
 const styleHandler = {
     get(t, p, receiver) {
