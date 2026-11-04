@@ -1,65 +1,79 @@
 {
-  "candidate": 1902,
-  "status": "INDEPENDENTLY REVIEWED FOCUSED DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
-  "tested_source_commit": "565fd239d34dbdaade8b232483fa8aeffba8d767",
-  "tested_binary_sha256": "1c93f3537eec3c9db6f159aec4205843c1a1633c3aa2544e46071d2ad92c765d",
-  "source_manifest_digest": "6564591a09785bec9018d6254f1963ca421b3315e94493da3809ce55e8e944df",
-  "public_parent": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
+  "candidate": 1906,
+  "status": "INDEPENDENTLY REVIEWED COMPLETE SELECTED1248 DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
+  "tested_source_commit": "f454cf2097ab4742064664643c3b0447c71137eb",
+  "tested_binary_sha256": "cba377366b0992b81a27c5a3108c0d1ec24053f6750459c2ebda051d707b6cb4",
+  "source_manifest_digest": "897f43e0d475d3104410b7b088d54ff18e7cfcbc1a500cc9415bc611a1cdeaa1",
+  "public_parent": "28cdeb590fafa03b04363755245638f2d673290d",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1906-20261104",
   "all_recorded_inputs_exact": true,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
   "private_history_included": false,
   "publication_performed": false,
   "validation_summary": {
-    "qualification": "Focused development checkpoint, not whole-platform acceptance",
-    "focused_selected_urls": {
-      "lumen_passed": 64,
-      "total": 136,
-      "baseline1808_passed": 62,
-      "chromium150_passed": 105
+    "qualification": "Qualified complete unchanged selected1248-URL development checkpoint; not all upstream WPT or a device delivery claim",
+    "selected_urls": {
+      "lumen_passed": 772,
+      "total": 1248,
+      "baseline1808_passed": 759,
+      "pass_percent": 61.85897435897436
     },
-    "focused_assertions": {
-      "lumen_passed": 1652,
-      "total": 2455,
-      "baseline1808_passed": 1608,
-      "chromium150_passed": 1970
+    "selected_assertions": {
+      "lumen_passed": 23024,
+      "total": 26245,
+      "baseline1808_passed": 22826,
+      "pass_percent": 87.72718613069156
     },
-    "new_passing_urls": 2,
-    "new_assertion_passes": 44,
-    "lost_baseline_passes": 0,
+    "new_passing_urls": 13,
+    "new_assertion_passes": 198,
+    "lost_preregistered_pass_identities": 0,
+    "lost_required_fully_passing_urls": 0,
     "harness_regressions": 0,
-    "unchanged_known_harness_timeouts": 3,
-    "all_case_process_exits_zero": true,
-    "focused_wrapper_seconds": 157.108,
-    "focused_audit_sha256": "78dab21540db2907dde935c4c02bcc31775783c03a7c151562881bee629ee943",
-    "historical_full_selected_baseline": {
-      "candidate": 1808,
-      "passed_urls": 759,
-      "total_urls": 1248,
-      "passed_assertions": 22826,
-      "total_assertions": 26245
+    "required_and_retained_passing_assertions": 23024,
+    "harness_statuses": {
+      "OK": 1238,
+      "ERROR": 1,
+      "TIMEOUT": 9
     },
-    "new_full1248_replay_performed": false,
-    "chromium_reference_version": "150.0.7871.114",
-    "build_and_startup_passed": true
+    "all_case_process_exits_zero": true,
+    "cleanup_complete": true,
+    "full_wrapper_seconds": 1257.4533593539963,
+    "full1248_replay_performed": true,
+    "source_and_binary_identity_valid": true,
+    "raw_results_sha256": "07bb4641b35db759ea57773c267e12aba897fc38f5838a2e3da9fe9ef41810e2",
+    "runtime_receipt_sha256": "cbe0551deb6c61dd3de245b70304eae7fa5d054ee729d1001c95f6dcd325ad42",
+    "prior_union_acceptance_sha256": "751ac274605e766cca7e1b3dca56e476a3fcdec3e86b50100484c5d02f3c503d",
+    "comparison_audit_sha256": "e34b87d111288049bb7ed954bf9886cd70a48c43f4a3bcd80aa5eeae382749ff",
+    "full_plan_sha256": "fa196cc57292ee2b8c863fb92819fd416914de821259235718d8302ff209f6c1",
+    "prior_union_registry_sha256": "3f95e3b1f1fd0bb1c73ef52ca65d439beba096aafacb2cd20c5cc83d262ce610",
+    "historical_pinned_reference": {
+      "version": "150.0.7871.114",
+      "passed_urls": 1062,
+      "total_urls": 1248,
+      "passed_assertions": 24541,
+      "total_assertions": 26064,
+      "source": "previous retained full reference; no fresh full Chromium run claimed"
+    },
+    "build_and_startup_passed": true,
+    "namespace_reliability": "This full run completed the namespace harness; intermittent earlier failure remains retained and no source-level reliability fix is claimed"
   },
   "limitations": [
-    "The current1902 result is a136-URL focused comparison; the full1248-URL rate remains historical1808 evidence.",
-    "The selected DOM/CSS testharness sample is not all WPT, visual coverage, Chromium parity or an overall95 quality claim.",
-    "Three known focused timeouts remain, and the historical1808 namespace completion timeout remains unexplained.",
-    "No new candidate1902 Linux display0 or Android installation is claimed by this source checkpoint.",
-    "Random syntax/type acceptance has no sampling/cache runtime; broader styling, layout, platform and browser coverage remain incomplete.",
-    "The export contains approved public Git ancestry and exact tested engine inputs only; private task Git history, profiles, credentials, message queues and validation machinery are excluded.",
+    "The complete measured scope is the frozen selected1248 HTTP/default-timeout DOM/CSS testharness URLs from1247 source files, not all upstream WPT.",
+    "772/1248=61.86% is a selected-test pass rate, not overall product quality, full Chromium parity, visual/rendering coverage or a95-quality claim.",
+    "One harnessERROR and nineTIMEOUT outcomes remain; all original failures and earlier held runs are retained.",
+    "The Chromium150 full reference is historical and has a different assertion registration denominator; no unsupported aggregate assertion parity is claimed.",
+    "This exact source includes already-tested capped diagnostic tracing, normally disabled; later phase instrumentation and pending range/DOM drafts are excluded.",
+    "No new1906 Linux display0 or Android installation is claimed by this source publication.",
+    "The export includes approved public ancestry and exact recorded source inputs, not private task history, profiles, credentials, message queues or guarded validation machinery.",
     "Source archive recovery is not an independent browser rebuild; external dependencies remain external."
   ],
   "independent_review": {
     "agent": "source_steward",
-    "reviewed_utc": "2026-11-04T07:21:43.782324+00:00",
+    "review_receipt_sha256": "42f54dbfa2b0067782f65e2aad9696409c23151edc8d93c5b5bed91dd3f27d6d",
+    "preparation_receipt_sha256": "bb72d602eb7526d7290a5d120938351c799cc25c504e6b6482c564f1c5b48158",
     "all843_public_inventory_hashes_verified": true,
     "all743_recorded_inputs_verified_against_tested_source": true,
-    "private_history_excluded": true,
-    "focused_only_results": true,
-    "preparation_receipt_sha256": "064f31d3420092be6534f2fa60463952a73a7ccc59159695146cc15e57a3c5c2"
+    "private_history_excluded": true
   }
 }

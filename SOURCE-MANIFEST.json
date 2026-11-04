@@ -1,12 +1,12 @@
 {
-  "candidate": 1902,
-  "tested_source_commit": "565fd239d34dbdaade8b232483fa8aeffba8d767",
-  "tested_binary_sha256": "1c93f3537eec3c9db6f159aec4205843c1a1633c3aa2544e46071d2ad92c765d",
-  "recorded_input_digest": "6564591a09785bec9018d6254f1963ca421b3315e94493da3809ce55e8e944df",
+  "candidate": 1906,
+  "tested_source_commit": "f454cf2097ab4742064664643c3b0447c71137eb",
+  "tested_binary_sha256": "cba377366b0992b81a27c5a3108c0d1ec24053f6750459c2ebda051d707b6cb4",
+  "recorded_input_digest": "897f43e0d475d3104410b7b088d54ff18e7cfcbc1a500cc9415bc611a1cdeaa1",
   "recorded_input_count": 743,
-  "source_manifest_file_sha256": "a3e00fd5ec9f333d7a82d78b3a18505cfdb0190a3a2c2f719fab31ced9c2bb5f",
-  "public_parent": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
+  "source_manifest_file_sha256": "d6f23a66f18e1b8fb97c5f0676e3acbff6c1abd9a99238bc9b6869a7a044d5ee",
+  "public_parent": "28cdeb590fafa03b04363755245638f2d673290d",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1906-20261104",
   "recorded_inputs": {
     "CMakeLists.txt": {
       "sha256": "39135ade2090484ca003089b98004a8e28ed3aad5bc244c0921df7cc8798190b",
@@ -325,7 +325,7 @@
       "mode": "100644"
     },
     "src/js/frames.cc": {
-      "sha256": "9ccedab9359da92e8ce75c514469341b8103bc54c6e15053a2cf0225953351df",
+      "sha256": "a1861000ce55bba85afb112f146845167ac8ae7a448811c0a9173b31c5a01e5f",
       "mode": "100644"
     },
     "src/js/js.cc": {
@@ -361,7 +361,7 @@
       "mode": "100644"
     },
     "src/js/prelude/01-events.js": {
-      "sha256": "a074f3ef897176986ab236cc237511623f781716d8ce79f3b0706c5839b26399",
+      "sha256": "46fb1a71378946df4c4cebc3ec63d14a75feeb51b3db3d3894194ed61f41ef3b",
       "mode": "100644"
     },
     "src/js/prelude/02-node.js": {
@@ -369,7 +369,7 @@
       "mode": "100644"
     },
     "src/js/prelude/03-element.js": {
-      "sha256": "2dbcba06ad7f415abc05e980d27ac9c6a2fd71032242502505278284f5442337",
+      "sha256": "afbd7e93740b364c8f5556052d5d7d1ec1f5931bed82abfa210b188a8c3bce43",
       "mode": "100644"
     },
     "src/js/prelude/03c-svg.js": {
@@ -413,7 +413,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06b-activate.js": {
-      "sha256": "1de1e46acfa74e6ba32e382f75f64bf374fd6cf2e997c16a51b744811cdea59d",
+      "sha256": "059d7789c5e8e28a6b714a53077d8c051f4e9671a990c12f1329c458929adf4c",
       "mode": "100644"
     },
     "src/js/prelude/06c-traversal.js": {
