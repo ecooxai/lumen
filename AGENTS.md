@@ -2,6 +2,20 @@
 
 Start with `agent/continue.md` and `agent/devsummary.md`. The original user request is in `agent/task.md`. Historical root `devsummary.md`, `agents/archive/` and the archived prior AGENTS file remain evidence; their old candidate standings are not current-branch qualification.
 
+## Active session19 coordination — 2026-11-04
+
+Current task branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104`.
+Session started06:33:55UTC with a five-hour development budget. Root is CTO; source_steward
+owns canonical engine/Git edits, test_baseline owns tests, environment_delivery owns
+preview/monitors/runtime delivery. Read current agent/continue.md for live state and
+agent/archive/continue-session18-20261104T063800Z.md for the exact previous handoff.
+The full task text in agent/task.md already matches the current user request and was
+rewritten unchanged. Previous tracked state was clean; historical untracked evidence was
+preserved. Preflight source/binary fingerprints are in agent/source-work/session19/preflight.json.
+New candidates must use never-used1901+IDs and exact expected HEAD. Coordinate source and
+Git freezes before builds; keep one heavy job at a time under the480%shared quota.
+The historical metrics below remain the starting evidence until fresh qualified results.
+
 ## Host compilation CPU budget
 
 All new project compilation may share 60% of all host logical CPUs, per the
@@ -100,7 +114,7 @@ Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
 
-## Current development handoff - session18 final checkpoint
+## Historical development handoff - session18 final checkpoint
 
 Read `agent/continue.md`, `agent/devsummary.md` and the verbatim request in
 `agent/task.md`. The canonical workspace is `/mnt/p3/project/browser/lumen-android/lumen-android`;
