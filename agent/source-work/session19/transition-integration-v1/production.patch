@@ -1,0 +1,141 @@
+diff --git a/src/js/prelude/03-element.js b/src/js/prelude/03-element.js
+index a38e227..e2b16b3 100644
+--- a/src/js/prelude/03-element.js
++++ b/src/js/prelude/03-element.js
+@@ -115,7 +115,7 @@ function parseDecls(s, fontFace = false, keyframe = false, supportedNames = true
+         else if (c === ')') depth--;
+     }
+     finish(s.length);
+-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
++    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
+     return m;
+ }
+ /* The native enum parser owns acceptance; authored pending tokens remain opaque. */
+@@ -151,6 +151,76 @@ function cssEasingSet(map, property, value, priority, cascade = false) {
+     return true;
+ }
+ 
++/* CSS Transitions 2: classify complete components with the existing native
++ * longhand grammars, then serialize in canonical property/time/easing order.
++ * Pending substitution remains an unparsed value; this does not add a new
++ * transition animation evaluator or change the native longhand store. */
++function cssTransitionParse(value) {
++    const text = String(value).trim();
++    if (!text || !cssVarSyntax(text)) return null;
++    if (cssBorderPending(text) && text.includes('(')) return text;
++    const tokens = cssGridTokens(text);
++    if (!tokens || !tokens.length) return null;
++    if (tokens.length === 1 && cssGridWide(cssGridDecode(tokens[0]))) return cssGridDecode(tokens[0]).toLowerCase();
++    const layers = [[]];
++    for (const token of tokens) {
++        if (token === ',') layers.push([]);
++        else layers[layers.length - 1].push(token);
++    }
++    const result = [], zero = v => /^0(?:s|ms)$/.test(v);
++    for (const parts of layers) {
++        if (!parts.length) return null;
++        let property = null, duration = null, delay = null, easing = null, behavior = null;
++        for (const token of parts) {
++            const low = cssGridDecode(token).toLowerCase();
++            if (cssGridWide(low)) return null;
++            const time = cssNumericDimensionParse('transition-delay', token);
++            if (time !== null) {
++                if (duration === null) {
++                    duration = cssNumericDimensionParse('transition-duration', token);
++                    if (duration === null) return null;
++                } else if (delay === null) delay = time;
++                else return null;
++                continue;
++            }
++            if (easing === null) {
++                const parsed = N.cssEasing(token);
++                if (parsed !== null) { easing = parsed; continue; }
++            }
++            if (behavior === null && /^(normal|allow-discrete)$/.test(low)) { behavior = low; continue; }
++            if (property !== null) return null;
++            property = N.cssTransitionProperty(token);
++            if (property === null) return null;
++        }
++        if (property === 'none' && layers.length !== 1) return null;
++        /* A custom property name can collide with another component keyword.
++         * Preserve that ordering rather than reparse it with a different role. */
++        if (property !== null && (N.cssEasing(property) !== null || /^(normal|allow-discrete)$/i.test(property))) {
++            result.push(parts.join(' ')); continue;
++        }
++        property = property ?? 'all'; duration = duration ?? '0s'; delay = delay ?? '0s';
++        easing = easing ?? 'ease'; behavior = behavior ?? 'normal';
++        const out = [];
++        if (property !== 'all') out.push(property);
++        if (!zero(duration) || !zero(delay)) out.push(duration);
++        if (easing !== 'ease') out.push(easing);
++        if (!zero(delay)) out.push(delay);
++        if (behavior !== 'normal') out.push(behavior);
++        result.push(out.length ? out.join(' ') : 'all');
++    }
++    return result.join(', ');
++}
++function cssTransitionSet(map, value, priority, cascade = false) {
++    if (value === '') { if (cascade) return false; map.delete('transition'); return true; }
++    if (priority && !/^important$/i.test(priority)) return false;
++    const parsed = cssTransitionParse(value);
++    if (parsed === null) return false;
++    const old = map.get('transition');
++    if (cascade && old && old[1] && !priority) return true;
++    map.delete('transition'); map.set('transition', [parsed, priority ? 'important' : '']);
++    return true;
++}
++
+ const CSS_IMAGE_LONGHAND = /^(background-clip|border-image-repeat|border-image-slice)$/;
+ function cssImageLonghandSet(map, property, value, priority, cascade = false) {
+     if (value === '') { if (cascade) return false; map.delete(property); return true; }
+@@ -959,6 +1029,7 @@ function mathValid(p, v) {
+     if (p === 'z-index') return N.cssSupports('(z-index:' + v + ')');
+     if (CSS_IMAGE_LONGHAND.test(p)) return N.cssImageLonghand(p, v) !== null;
+     if (CSS_EASING_LONGHAND.test(p)) return N.cssEasing(v) !== null;
++    if (p === 'transition') return cssTransitionParse(v) !== null;
+     if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
+     if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
+     if (cssBorderRelevant(p)) return cssBorderParse(p, v) !== null;
+@@ -1243,6 +1314,7 @@ function cssScalarSpecified(property, value) {
+ }
+ 
+ function specNormalize(p, v) {
++    if (p === 'transition') return cssTransitionParse(v) ?? v;
+     if (p === 'z-index') {
+         /* Preserve integer token syntax across CSSOM serialization. Converting
+          * long decimal integers through Number/String creates exponent tokens,
+@@ -1429,6 +1501,11 @@ class CSSStyleDeclaration {
+             if (!cssEasingSet(m, p, v, pri)) return;
+             this._el.setAttribute('style', serDecls(m)); return;
+         }
++        if (p === 'transition') {
++            const m = new SMap(this._m());
++            if (!cssTransitionSet(m, v, pri)) return;
++            this._el.setAttribute('style', serDecls(m)); return;
++        }
+         if (CSS_IMAGE_LONGHAND.test(p)) {
+             const m = new SMap(this._m());
+             if (!cssImageLonghandSet(m, p, v, pri)) return;
+@@ -1501,7 +1578,7 @@ const styleHandler = {
+     has(t, p) { return p in t || cssPropKnown(p); },
+ };
+ class ComputedStyleDeclaration extends CSSStyleDeclaration {
+-    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = cssStylePropertyName(this, String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [this.getPropertyValue(p), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
++    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = cssStylePropertyName(this, String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [this.getPropertyValue(p), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if (k === 'transition' && v) v = cssTransitionParse(v) ?? v; if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
+     get cssText() { return ''; } get length() { return this._names().length; }
+     /* an invalid pseudo-element or an element outside the document has an empty style */
+     _names() { return this._none || !this._el.isConnected || !N.computed(this._el, 'display') || mediaChild(this._el) ? [] : computedNames(); }   /* no style: outside the flat tree */
+diff --git a/src/js/prelude/06b-activate.js b/src/js/prelude/06b-activate.js
+index b0c6d81..528acc1 100644
+--- a/src/js/prelude/06b-activate.js
++++ b/src/js/prelude/06b-activate.js
+@@ -610,6 +610,9 @@ class CSSRuleStyle extends CSSStyleDeclaration {
+                 const parsed = cssBoxShadowParse(value); if (parsed === null) return;
+                 m.delete(p); m.set(p, [parsed, priority ? 'important' : '']);
+             }
++        } else if (p === 'transition' && type !== 5) {
++            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
++            if (!cssTransitionSet(m, value, priority)) return;
+         } else if (p === 'transition-property') {
+             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+             if (value === '') m.delete(p);

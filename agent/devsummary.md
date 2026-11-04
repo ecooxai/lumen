@@ -584,3 +584,15 @@ startup or conformance acceptance is claimed. CandidateID1901remains consumed.
 Added a small shared C/C++ declaration header and included it in both translation paths.
 Only declaration visibility changes; namespace behavior unchanged. MutationObserver and
 transition drafts remain excluded. Independent retry must use fresh1902 and exactHEAD.
+
+
+## Session19 iteration02 — transition shorthand integration pending gates
+
+Author:environment_delivery; integrator:source_steward. Integration start:2026-11-04T06:59:45.382569+00:00;end:2026-11-04T06:59:45.395695+00:00.
+Namespace-only candidate1902build/startup passed82.14s with immutable binary
+SHA1c93f3537eec3c9db6f159aec4205843c1a1633c3aa2544e46071d2ad92c765d.
+Source freeze explicitly released before this change. Applied exact reviewed03draft
+(base+resultSHAverified), plus06bCSSRuleStyle atomic dispatch excluding font-face descriptors.
+Transition uses existing native time/easing/property grammars and preserves pending values.
+No native animation timing or longhand expansion change. Independent frozen136WPT and
+extra controls pending; sample compatibility score remains last-qualified60.82/100.
