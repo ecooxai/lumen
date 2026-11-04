@@ -3621,6 +3621,9 @@ static int image_longhand_kind(const char *property) {
     if (!strcmp(property, "background-clip")) return 1;
     if (!strcmp(property, "border-image-repeat")) return 2;
     if (!strcmp(property, "border-image-slice")) return 3;
+    if (!strcmp(property, "background-attachment")) return 4;
+    if (!strcmp(property, "background-origin")) return 5;
+    if (!strcmp(property, "background-repeat")) return 6;
     return 0;
 }
 /* CLexer's numeric scratch buffer is intentionally small. Reparse the complete
@@ -3681,7 +3684,7 @@ char *css_image_longhand_parse(const char *property, const char *value) {
         if (type == CT_WS) { free(token.str); continue; }
         if (type == CT_COMMA || type == CT_EOF) {
             free(token.str);
-            if (!count || (type == CT_COMMA && kind != 1)) goto invalid;
+            if (!count || (type == CT_COMMA && (kind == 2 || kind == 3))) goto invalid;
             if (var_wide_keyword(parts[0])) {
                 if (count != 1 || out.n || type != CT_EOF) goto invalid;
                 sb_puts(&out, parts[0]);
@@ -3700,6 +3703,25 @@ char *css_image_longhand_parse(const char *property, const char *value) {
                         strcmp(parts[i], "round") && strcmp(parts[i], "space")) goto invalid;
                 sb_puts(&out, parts[0]);
                 if (count == 2 && strcmp(parts[0], parts[1])) { sb_putc(&out, ' '); sb_puts(&out, parts[1]); }
+            } else if (kind == 4 || kind == 5) {
+                if (count != 1) goto invalid;
+                if (kind == 4) {
+                    if (strcmp(parts[0], "scroll") && strcmp(parts[0], "fixed") &&
+                        strcmp(parts[0], "local")) goto invalid;
+                } else if (bg_box_kind(parts[0]) < 0) goto invalid;
+                if (out.n) sb_puts(&out, ", ");
+                sb_puts(&out, parts[0]);
+            } else if (kind == 6) {
+                if (count > 2) goto invalid;
+                bool axis_alias = count == 1 &&
+                    (!strcmp(parts[0], "repeat-x") || !strcmp(parts[0], "repeat-y"));
+                if (!axis_alias) for (unsigned i = 0; i < count; i++)
+                    if (bg_repeat_mode(parts[i]) < 0) goto invalid;
+                if (out.n) sb_puts(&out, ", ");
+                sb_puts(&out, parts[0]);
+                if (count == 2 && strcmp(parts[0], parts[1])) {
+                    sb_putc(&out, ' '); sb_puts(&out, parts[1]);
+                }
             } else {
                 unsigned first = 0, last = count; bool fill = false;
                 if (!strcmp(parts[first], "fill")) { fill = true; first++; }
