@@ -1,0 +1,29 @@
+--- a/src/js/prelude/08-window.js
++++ b/src/js/prelude/08-window.js
+@@ -1066,13 +1066,23 @@
+     }
+     const CONST = /^[A-Z][A-Z0-9_]*$/;
+     const shape = (o, skip) => {
++        // Finalize this realm's own interface descriptors in the same key
++        // order, without crossing into the native property API per member.
++        let updates;
+         for (const k of Object.getOwnPropertyNames(o)) {
+             if (skip.has(k) || k[0] === '_') continue;
+             const d = Object.getOwnPropertyDescriptor(o, k);
+             if (!d.configurable) continue;
+-            if (CONST.test(k) && typeof d.value === 'number') Object.defineProperty(o, k, { value: d.value, writable: false, enumerable: true, configurable: false });
+-            else if (!d.enumerable) { d.enumerable = true; Object.defineProperty(o, k, d); }
+-        }
++            if (CONST.test(k) && typeof d.value === 'number') {
++                if (!updates) updates = Object.create(null);
++                updates[k] = { value: d.value, writable: false, enumerable: true, configurable: false };
++            } else if (!d.enumerable) {
++                d.enumerable = true;
++                if (!updates) updates = Object.create(null);
++                updates[k] = d;
++            }
++        }
++        if (updates) Object.defineProperties(o, updates);
+     };
+     const PROTO_SKIP = new SSet(['constructor']), STATIC_SKIP = new SSet(['length', 'name', 'prototype', 'arguments', 'caller']);
+     for (const name of Object.getOwnPropertyNames(G)) {

@@ -1,8 +1,8 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session19",
-  "phase": "Candidate1906 completed the unchanged selected1248-URL WPT replay:772 passed, up13 URLs and198 assertions, with every required prior pass and harness obligation preserved. Phase1907 diagnostic tracing is running separately; range/DOM improvements remain under development.",
+  "phase": "Candidate1908 adds real range endpoints and DOM repairs; native218 passed and targeted browser qualification is under review, with a new unchanged1248-URL replay queued. Candidate1909 startup sampling is diagnostic only. Qualified1906 remains the accepted full result and public source download.",
   "iteration": 1906,
-  "session_iteration": 10,
+  "session_iteration": 19,
   "score": 61.85897435897436,
   "selected_case_score": 61.85897435897436,
   "score_candidate": 1906,
@@ -23,8 +23,8 @@
   "overall_assessment": "Candidate1906 passes772/1248 selected URLs and23024/26245 assertions, gaining13 URLs and198 assertions over1808 with no prior-pass or harness losses. OneERROR and nineTIMEOUT harness outcomes remain. Historical pinnedChromium150 passes1062/1248. Whole-platform parity and overall95 quality remain unachieved.",
   "overall_result_label": "Session19 active;1906 full selected replay qualified at61.86%",
   "accepted_iteration": 1906,
-  "active_iteration": 1907,
-  "active_candidate": 1907,
+  "active_iteration": 1909,
+  "active_candidate": 1908,
   "accepted_binary_sha256": "cba377366b0992b81a27c5a3108c0d1ec24053f6750459c2ebda051d707b6cb4",
   "accepted_binary_scope": "Qualified complete unchanged selected1248 replay on1906:772 fully passing URLs,23024/26245 assertions, every23024 preregistered pass retained, zero required URL/harness losses. This is measured development scope; final device delivery is pending.",
   "coverage": "772/1248 selected cases and23024/26245 assertions; all23024 required passes retained. Historical pinnedChromium150:1062/1248 and24541/26064. Selected scope, not allWPT.",
@@ -34,14 +34,14 @@
     "All1248 case processes exited0; cleanup, immutable binary/source identity and pins verified. Wrapper1257.453s.",
     "Harness outcomes remain1238OK,1ERROR and9TIMEOUT. Earlier held runs, including1903 namespace intermittency, remain historical evidence; no source-level reliability repair is claimed.",
     "PinnedChromium150.0.7871.114 historical full reference:1062/1248 URLs and24541/26064 assertions. Different assertion-registration totals are retained.",
-    "Native range endpoint storage/computation and separate DOM fixes remain drafts or queued work, outside the1906 result.",
-    "Qualified1906 source is published with independently reviewed public ancestry, exact source inputs, offline Git restoration and complete HTTPS archive hash readback."
+    "Qualified1906 source is published with independently reviewed public ancestry, exact source inputs, offline Git restoration and complete HTTPS archive hash readback.",
+    "Candidate1908 native218 passed after117-second build; browser qualification and its new full1248 replay remain pending. StyleSheetList, root-pseudo rem and range importance follow-ups are isolated reviewed drafts, outside the profiler baseline."
   ],
   "findings": [
     "The full selected replay confirms all13 focused URL gains and198 assertion gains without losing earlier passes.",
     "Improvements cover namespace selector serialization, transition ordering, observer handling, constructed stylesheets, range/random validation and abs/sign/hypot serialization.",
     "Namespace lifecycle diagnostics are continuing under unchanged timing and scheduling. Passing this full run is not a causal reliability-fix proof.",
-    "Independent review is checking actual range longhand storage, native computed values, root font units and dynamic inherited endpoint changes before integration.",
+    "Real range endpoint storage/computation and separate DOM repairs are integrated in1908; source review identified isolated root-pseudo rem and parsed-priority follow-ups, which remain separate from profiling.",
     "The existing display0 and authorized Android installations remain preserved until final accepted-candidate delivery."
   ],
   "historical": {
@@ -73,9 +73,9 @@
   },
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104",
-  "working_commit": "4a7449b247e60836dda0b56df8b1841a868e02d1",
-  "updated_utc": "2026-11-04T08:37:48.793350+00:00",
-  "updated_at": "2026-11-04T08:37:48.793350+00:00",
+  "working_commit": "554b75a7c3798daa7d20d4f58045229480e43dd9",
+  "updated_utc": "2026-11-04T09:02:06.123378+00:00",
+  "updated_at": "2026-11-04T09:02:06.123378+00:00",
   "runtime_candidate": 1808,
   "runtime_note": "Existing verified candidate1808 desktop process remains untouched while session19 development proceeds; Android still needs final candidate delivery.",
   "qualified_prior_candidate_scope": {
@@ -423,7 +423,7 @@
     "full1248_ran": false
   },
   "score_basis": "772/1248 selected HTTP/default-timeout test URLs from1247 source files, qualified candidate1906 full replay.",
-  "working_commit_role": "Separate phase1907 diagnostic snapshot; the qualified functional1906 binary was built fromf454cf2097ab4742064664643c3b0447c71137eb. Later range/DOM drafts are excluded from its measured source.",
+  "working_commit_role": "Diagnostic1909 sampler on1908 functional source; it is separate from qualified1906. No sampler or pending follow-up fix is mixed into the1906 public source archive.",
   "public_source_commit": "0d76bf0aeefb3c975b94b550f831681c41e3beda",
   "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1906-20261104",
   "source_archive_external_hash_verified": true,
@@ -553,5 +553,11 @@
     "overall_candidate_on_hold": true
   },
   "full_replay_finished_utc": "2026-11-04T08:24:19Z",
-  "full_replay_audited_utc": "2026-11-04T08:25:48.622809Z"
+  "full_replay_audited_utc": "2026-11-04T08:25:48.622809Z",
+  "profiler_candidate": 1909,
+  "pending_full_replay": {
+    "candidate": 1908,
+    "status": "queued after fixed sampler diagnostics; no full rate claimed",
+    "preserve_accepted_candidate": 1906
+  }
 }

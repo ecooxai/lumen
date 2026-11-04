@@ -1,0 +1,19 @@
+{
+  "candidate": 1910,
+  "performance_hypothesis_only": true,
+  "production_commit": "64fd64631b8eae3ea34d61daa4b0e600f6e5d930",
+  "source_tree": "37c2e7b88ef4c202115bd1b3116e51941fa3dc06",
+  "frozen_utc": "2026-11-04T09:12:08.709833+00:00",
+  "isolated_baseline_head": "554b75a7c3798daa7d20d4f58045229480e43dd9",
+  "isolated_baseline_candidate": 1909,
+  "production_delta_paths": [
+    "src/js/prelude/08-window.js"
+  ],
+  "excluded_functional_drafts": [
+    "range priority",
+    "root pseudo rem",
+    "StyleSheetList"
+  ],
+  "required_profile_flag": "LUMEN_PROFILE_PRELUDE unset for timings/qualification",
+  "build_and_measurements_pending": true
+}

@@ -1,0 +1,16 @@
+{
+  "start_utc": "2026-11-04T09:12:08.632587+00:00",
+  "end_utc": "2026-11-04T09:12:08.709833+00:00",
+  "mutation_commit_seconds": 0.07722481701057404,
+  "production_commit": "64fd64631b8eae3ea34d61daa4b0e600f6e5d930",
+  "source_tree": "37c2e7b88ef4c202115bd1b3116e51941fa3dc06",
+  "kind": "isolated performance hypothesis; measurement pending",
+  "baseline_candidate": 1909,
+  "baseline_head": "554b75a7c3798daa7d20d4f58045229480e43dd9",
+  "only_production_path": "src/js/prelude/08-window.js",
+  "code_sha256": "53cd7d1ebc4fd315daf8418c9d72eb7499758a219e194979d5d156a3f53a6da1",
+  "patch_sha256": "93461bf1847963fad8b42ca6fc21026efbb5eb905ab8bc3a139630ed5af9b6c7",
+  "independent_review": "environment reviewer approved semantic equivalence subject to paired timing and reflection/realm controls",
+  "failure_semantics": "actual old shape has no per-key catch; controlled ordinary interface targets, valid copied descriptors, same own-key definition order",
+  "acceptance": "reject if negligible/slower or semantic difference; no gain claim before fixed paired OFF CPU/RSS evidence"
+}

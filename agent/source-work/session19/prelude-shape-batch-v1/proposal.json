@@ -1,0 +1,26 @@
+{
+  "created_utc": "2026-11-04T09:07:23.345250+00:00",
+  "status": "isolated optimization draft only; benefit unproven",
+  "base_commit": "554b75a7c3798daa7d20d4f58045229480e43dd9",
+  "base_sha256": "ce3c69f8d49ceed0f60a893ce3eb00948d323b97f47fcf174c995024601253b3",
+  "result_sha256": "53cd7d1ebc4fd315daf8418c9d72eb7499758a219e194979d5d156a3f53a6da1",
+  "patch_sha256": "93461bf1847963fad8b42ca6fc21026efbb5eb905ab8bc3a139630ed5af9b6c7",
+  "evidence": "sealed1909 sampler: shape self230/1869 child ticks12.306%; top20 printed categories truncated, lower-bound attribution; own function line08-window1068",
+  "scope": "batch only the final per-interface descriptor updates; same own string-key traversal, skip decisions and descriptor values/order",
+  "invariants": [
+    "every required interface/member initialized before factory return",
+    "each realm still allocates its own constructors/prototypes/closures",
+    "no mutable object shared across realms",
+    "all property flags, getter/setter/value identities and own-key order preserved",
+    "only one function changed; no CSS/DOM/list/range corrections included",
+    "updates map allocated only when a descriptor actually changes; null prototype avoids metadata key setters"
+  ],
+  "required_evidence": [
+    "independent source review",
+    "exact isolated candidate build/startup",
+    "unchanged namespace2 paired baseline/candidate OFF with fixed scenarios and1s CPU/RSS monitors",
+    "realm/prototype/constructor isolation and reflection descriptors/order controls",
+    "prior-pass identity preservation; no observed CPU/RSS regression"
+  ],
+  "acceptance": "performance hypothesis only; reject or revise if measured gain is not useful or any semantic difference appears"
+}
