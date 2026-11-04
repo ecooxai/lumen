@@ -1,0 +1,28 @@
+{
+  "created_utc": "2026-11-04T08:44:15.561613+00:00",
+  "scope": "Linux-only opt-in native V8 sampling of unchanged prelude evaluation; diagnostic only",
+  "base_sha256": "64fa5bc063a6ffc818ef0a14a1743cd3a215c0738d014fb1f2652b2d86920626",
+  "candidate_sha256": "78b2b76223476ec2774f468bdf424343682502f1cef20e8b2f23834dd5e68047",
+  "patch_sha256": "90ceb3fac3967ddc6ea03ea3f543a9dda29663dc05c5af1cb6eeacc9f92caf3a",
+  "enable": "LUMEN_PROFILE_PRELUDE=1",
+  "limits": {
+    "realms_per_thread": 8,
+    "sampling_interval_us": 500,
+    "max_samples_per_realm": 16384,
+    "maximum_log_rows_per_realm": 61,
+    "maximum_log_rows_per_thread": 488
+  },
+  "primary_api": "installed V8 15.6.75.8 v8-profiler.h CpuProfilingOptions, LineTick and StartProfiling status reviewed",
+  "invariants": [
+    "existing prelude Run/Call condition unchanged",
+    "no new JS or DOM callbacks",
+    "no shared mutable realms/globals",
+    "owned prelude function names/line positions only; other scripts and VM aggregated",
+    "profile deleted and profiler disposed immediately after initialization evaluation",
+    "default-off returns before touching V8 profiler",
+    "Android excluded by compile guards"
+  ],
+  "pending": "independent review and later separate diagnostic candidate after1908 build/native gate release",
+  "observability_revision": "Total row reports selected realm ordinal, sample count/cap, all key counts and row limit; top lists intentionally bounded20",
+  "revised_utc": "2026-11-04T08:46:39.144063+00:00"
+}

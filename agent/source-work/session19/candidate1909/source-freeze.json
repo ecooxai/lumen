@@ -1,0 +1,12 @@
+{
+  "candidate": 1909,
+  "diagnostic_only": true,
+  "production_commit": "a9d8403dc6d78facfa1976e996af956380e41ff2",
+  "source_tree": "2c13f16d4a5ceb873bc8baaa74e1d2f42e1f21ba",
+  "frozen_utc": "2026-11-04T08:49:01.086295+00:00",
+  "scope": "candidate1908 functional source plus default-off Linux prelude CPU sampler",
+  "required_env_off": "LUMEN_PROFILE_PRELUDE unset on OFF and qualification runs",
+  "diagnostic_env_on": "LUMEN_PROFILE_PRELUDE=1",
+  "test_plan_owner": "test_baseline",
+  "build_and_diagnostics_pending": true
+}

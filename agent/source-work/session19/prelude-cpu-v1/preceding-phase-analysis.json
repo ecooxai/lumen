@@ -1,0 +1,117 @@
+{
+  "created_utc": "2026-11-04T08:45:08.653993+00:00",
+  "analyst": "source_steward",
+  "scope": "two retained successful1907 ON runs only; no failed-load causality or speed-fix claim",
+  "runs": {
+    "run02-on": {
+      "raw_log_sha256": "5e69275319a19f696eb286a93c5d232f869952d9b7bc7d257f444423d4bb5e7e",
+      "trace_records": 1456,
+      "complete_realms": 81,
+      "complete_child_realms": 80,
+      "child_stage_totals": {
+        "realm-bootstrap-begin->realm-context-ready": {
+          "wall_ms": 88.095,
+          "thread_cpu_ms": 78.623,
+          "median_wall_ms": 0.924,
+          "max_wall_ms": 3.33
+        },
+        "realm-context-ready->realm-native-ready": {
+          "wall_ms": 186.671,
+          "thread_cpu_ms": 170.691,
+          "median_wall_ms": 2.123,
+          "max_wall_ms": 5.286
+        },
+        "realm-native-ready->realm-code-ready": {
+          "wall_ms": 5.256,
+          "thread_cpu_ms": 4.807,
+          "median_wall_ms": 0.056,
+          "max_wall_ms": 0.165
+        },
+        "realm-code-ready->realm-prelude-ready": {
+          "wall_ms": 7166.993,
+          "thread_cpu_ms": 6171.354,
+          "median_wall_ms": 84.643,
+          "max_wall_ms": 190.688
+        },
+        "realm-prelude-ready->realm-api-ready": {
+          "wall_ms": 17.877,
+          "thread_cpu_ms": 15.129,
+          "median_wall_ms": 0.178,
+          "max_wall_ms": 1.373
+        },
+        "realm-api-ready->realm-microtasks-ready": {
+          "wall_ms": 22.814,
+          "thread_cpu_ms": 20.363,
+          "median_wall_ms": 0.244,
+          "max_wall_ms": 1.586
+        }
+      },
+      "all_child_init_wall_ms": 7487.706,
+      "all_child_init_thread_cpu_ms": 6460.967,
+      "prelude_share_wall_percent": 95.717,
+      "prelude_share_thread_cpu_percent": 95.517,
+      "last_root_record": {
+        "event": "complete",
+        "ready": "2",
+        "phase": "2",
+        "kids": "0",
+        "fetches": "0"
+      }
+    },
+    "run04-on": {
+      "raw_log_sha256": "961a7cfe688431cb8e47aa5a05b767ac3268f113245b9fcf3eef3cefb08960eb",
+      "trace_records": 1456,
+      "complete_realms": 81,
+      "complete_child_realms": 80,
+      "child_stage_totals": {
+        "realm-bootstrap-begin->realm-context-ready": {
+          "wall_ms": 88.929,
+          "thread_cpu_ms": 81.424,
+          "median_wall_ms": 1.091,
+          "max_wall_ms": 4.137
+        },
+        "realm-context-ready->realm-native-ready": {
+          "wall_ms": 197.774,
+          "thread_cpu_ms": 179.518,
+          "median_wall_ms": 2.303,
+          "max_wall_ms": 6.056
+        },
+        "realm-native-ready->realm-code-ready": {
+          "wall_ms": 5.582,
+          "thread_cpu_ms": 5.254,
+          "median_wall_ms": 0.065,
+          "max_wall_ms": 0.227
+        },
+        "realm-code-ready->realm-prelude-ready": {
+          "wall_ms": 7079.031,
+          "thread_cpu_ms": 5940.58,
+          "median_wall_ms": 77.719,
+          "max_wall_ms": 221.557
+        },
+        "realm-prelude-ready->realm-api-ready": {
+          "wall_ms": 18.875,
+          "thread_cpu_ms": 16.498,
+          "median_wall_ms": 0.191,
+          "max_wall_ms": 0.9
+        },
+        "realm-api-ready->realm-microtasks-ready": {
+          "wall_ms": 24.711,
+          "thread_cpu_ms": 21.204,
+          "median_wall_ms": 0.251,
+          "max_wall_ms": 1.539
+        }
+      },
+      "all_child_init_wall_ms": 7414.902,
+      "all_child_init_thread_cpu_ms": 6244.478,
+      "prelude_share_wall_percent": 95.47,
+      "prelude_share_thread_cpu_percent": 95.133,
+      "last_root_record": {
+        "event": "complete",
+        "ready": "2",
+        "phase": "2",
+        "kids": "0",
+        "fetches": "0"
+      }
+    }
+  }
+}

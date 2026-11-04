@@ -1,0 +1,18 @@
+{
+  "start_utc": "2026-11-04T08:49:00.986325+00:00",
+  "end_utc": "2026-11-04T08:49:01.086295+00:00",
+  "mutation_commit_seconds": 0.09998411999549717,
+  "production_commit": "a9d8403dc6d78facfa1976e996af956380e41ff2",
+  "source_tree": "2c13f16d4a5ceb873bc8baaa74e1d2f42e1f21ba",
+  "kind": "diagnostic only; no behavior or performance improvement claim",
+  "sample_limits": {
+    "realms_per_thread": 8,
+    "sampling_interval_us": 500,
+    "max_samples_per_realm": 16384,
+    "maximum_log_rows_per_realm": 61,
+    "maximum_log_rows_per_thread": 488
+  },
+  "code_sha256": "78b2b76223476ec2774f468bdf424343682502f1cef20e8b2f23834dd5e68047",
+  "patch_sha256": "90ceb3fac3967ddc6ea03ea3f543a9dda29663dc05c5af1cb6eeacc9f92caf3a",
+  "review": "test steward independently reviewed API/guards/unchanged Run/Call condition; cap observability revision adds metadata only"
+}
