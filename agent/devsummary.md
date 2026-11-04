@@ -607,3 +607,20 @@ transient cleanup, and original-source identity/deduplication for nested transie
 Only01-events.jsnotify()changed; delivery/parser/realm code retained. Fresh23URLbaseline
 was13/23and158/174with allharnessOK(27.15s). Independent candidate tests pending; no gain
 claimed. Sample compatibility score remains last-qualified60.82/100, not overallquality.
+
+
+### Session19 candidate1903 cumulative gate freeze
+
+Recorded 2026-11-04T07:07:12.610825+00:00; session elapsed 1997.6s.
+Independent namespace-only1902 focused136 result:64/136URLs,1652/2455assertions,
++2URLs/+44PASSassertions, zero lost passes or harness regressions versus fresh1808.
+The existing native218 controller requires the exact current HEAD and tracked-clean state.
+Consequently the native gate is assigned to cumulative1903, whose native namespace source
+is unchanged. No native acceptance is attributed to1902; no guard is bypassed.
+Transition64168e0 and MutationObserver314389c remain pending their independent gates.
+Animation-range draft remains excluded pending explicit-default serialization controls.
+The environment owner authorized committing its current status snapshot and holds tracked
+writes through the build and native gate. All agents must hold source/Git changes until release.
+Sample score remains60.82/100 from the last qualified1248URL run, not overall browser quality.
+The initial session preflight's provisional overallscore is superseded by this explicit
+measured-sample scoring policy; this focused improvement is not extrapolated to fullWPT.

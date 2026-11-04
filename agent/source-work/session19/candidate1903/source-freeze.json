@@ -1,0 +1,29 @@
+{
+  "created_utc": "2026-11-04T07:07:12.610825+00:00",
+  "candidate": 1903,
+  "status": "frozen source for independent build and cumulative native gate; not accepted",
+  "production_head": "314389cbea2b33fc5e75d7d248834830d9baa77d",
+  "src_tree": "f19dcf1a9766579b06579d4943af506e6fdb64d9",
+  "included_commits": {
+    "namespace": "8dd1e3e8ff0debabe5496c3359dcaff5ad14aa46",
+    "namespace_declarations": "565fd239d34dbdaade8b232483fa8aeffba8d767",
+    "transition": "64168e091d887c56f5ab7aec244e61175bbad8d9",
+    "mutation_observer": "314389cbea2b33fc5e75d7d248834830d9baa77d"
+  },
+  "excluded": "animation-range draft, pending independent literal-default controls",
+  "namespace1902_focused": {
+    "passed_urls": 64,
+    "urls": 136,
+    "passed_assertions": 1652,
+    "assertions": 2455,
+    "gained_urls": 2,
+    "gained_assertions": 44,
+    "lost_passes": 0,
+    "harness_regressions": 0
+  },
+  "native_gate": "Cumulative1903 exact-HEAD gate; native namespace source identical to1902. No guard bypass or1902native qualification claim.",
+  "score_scope": "Last qualified selected1248URL baseline759/1248, not whole-browser quality",
+  "sample_compatibility_score": 60.817307692307686,
+  "elapsed_session_seconds": 1997.610825,
+  "status_sha256": "1eb8cb2fb95816f2fbbfc89a8ef86d93de651ea0282fa8b75993c3c483774e77"
+}

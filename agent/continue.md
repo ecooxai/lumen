@@ -27,7 +27,15 @@ pinned Chromium150 historical reference is1062/1248 URLs and24541/26064 assertio
 This is1248 selected HTTP/default-timeout DOM/CSS testharness URLs from1247files,
 not whole WPT or present-day Chromium parity. First1808 full run remains HOLD due to
 namespace completion timeout after51/51assertions; subsequent reliability replay passed.
-No new engine build or measurement has yet been completed in session19.
+Session19 namespace-only1902 build/startup passed in82.14s. Its independently measured
+focused136 cohort is64/136URLs and1652/2455assertions (+2URLs/+44assertions, zero pass
+losses or harness regressions). Full1248URL sample score has not yet been remeasured.
+Candidate1901 failed compilation in23.13s and is consumed. Candidate1903 combines the
+namespace declaration fix, transition serialization64168e0, and observer semantics314389c.
+Its exact source receipt isagent/source-work/session19/candidate1903/source-freeze.json.
+All tracked source/Git/status writes are frozen for its build plus cumulative native218 gate.
+Animation-range is excluded pending independent controls; constructed-sheet lifecycle is
+the approved next bounded investigation after gate release. No candidate1903 acceptance yet.
 
 ## Next work
 
