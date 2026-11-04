@@ -908,3 +908,15 @@ Final docs seal timestamp 2026-11-04T12:41:45.086677+00:00; elapsed sessionwall2
 ## Session20 start — 2026-11-04T12:57:59.346055+00:00
 
 Authorized start12:52:19UTC, deadline17:52:19UTC. project_steward connected through rubywebterm, read mandatory handoffs, verified tracked-clean state, checkpointed a891047 and created session20-x-google branch. Candidate1915 remains selected; no new test/fix claim. Root coordinates; auth_fix and platform_qa run independent implementation and gates. Iteration0 setup quality64/100 is provisional project readiness, not a WPT-derived overall quality certification. Exact request captured in agent/task.md; prior handoffs archived. Resource monitoring applies to all subsequent builds/tests.
+
+## Session20 iteration1 — accepted candidate2002
+
+Root start2026-11-04T12:52:19Z; record2026-11-04T13:55:55.636067+00:00; measured wall elapsed3816.636s. Primary deadline17:52:19UTC; extension undecided. Overall assessment64/100 (root), selected URL passrate64.102564%; goal95 remains unmet. Parallel worker durations are not elapsed user time or model compute.
+
+Candidate2002 sequence13:15:20.647–13:49:18.554UTC, source32e1354 and binary784c0551…e77185c. Source build2001 actual47.14s, peakRSS790.44MB; startupbuild2002 actual8.24s, peak172.94MB; native218/218 actual215.53s, peak278.71MB. Native wrapper216.109s and startup wrapper8.387s include orchestration. Full browser cohort13:28:18.233–13:49:17.471UTC1259.185s; orchestration1261.257s. Expected21-minute full1248 within historical17–23min, not an abnormally slow build. One-second process CPUmedian69.001/max249.999%, peakRSS615.023MB/PSS317.075MB; shared cgroupweighted87.06%. Samples can miss short-lived peaks and summedRSS can double-count pages.
+
+Result800/1248completeURLs,23168/26245assertions,1238harnessOK; +4URLs/+10assertions over1915. No missing/changed registered identities or perURL registration counts. Exact inherited23158passing identities/796completeURLs/1238OK harnesses retained. New required union23168/800/1238 frozen. Four newcomplete URLs:background-attachment-invalid(2/2),background-origin-invalid(4/4),background-repeat-computed(13/13),background-repeat-invalid(3/3). Native218 exact-source, focused18 and independent32 retained;14Chromium authored disagreements disclosed separately. Original1harnessERROR/9TIMEOUT remain.
+
+Independent full audit0.740s verified743testedGit inputblobs, immutablebinary,173frameworkpins,1248upstreamfiles, exactregistration and lifecyclecleanup. Root accepted selected-cohort baseline; runtime/MI8 deliberately remain1915 duringauthdiagnostics. Source publication2002 is being prepared via approved public ancestry; no new publicarchive or deviceinstall is claimed yet.
+
+Auth:real Google returnerror reproduced; valid Jetfuel response carries genericerror. Requestcorrectness underinvestigation; noenginepatch. Parallel edit-only worktrees created from32e1354 (auth0.477s,platform0.541s), no shared nativecache. Records:agent/ops/session20/iteration1-accepted2002.json,accepted-baseline2002.json,candidate2002-independent-full-acceptance.json.
