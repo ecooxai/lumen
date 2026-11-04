@@ -1,0 +1,22 @@
+{
+  "created_utc": "2026-11-04T07:33:46.047449+00:00",
+  "candidate": 1904,
+  "status": "frozen pending independent build and all acceptance gates",
+  "production_head": "61bf3e0ee0dc81e4e635a6faecdc09480af7f7ff",
+  "src_tree": "1fd03b14a77e51b880ecac46f0879635d7b59d68",
+  "new_commits": {
+    "constructed_lifecycle": "45f0fa80322cea7381bf5eca7cc2fc39416844af",
+    "random_size": "acb8f55249f1f115f1e6838454231d9826e1f628",
+    "animation_range": "61bf3e0ee0dc81e4e635a6faecdc09480af7f7ff"
+  },
+  "prior_candidate1903": {
+    "native_gate": "218/218 PASS198.12s atbc0c3af",
+    "mutation_cohort": "16/23URLs,163/174assertions,allharnessOK,zero losses",
+    "focus_status": "HOLD: Document-createElement-namespace.html harnessTIMEOUT despite51PASS; transition gained3URLs/32assertions without semantic loss",
+    "reliability": "Six alternating immutable1808/1903 namespace2 runs retained; final1903 run reproduced completion timeout. No cause or acceptance inferred."
+  },
+  "sample_compatibility_score": 60.817307692307686,
+  "sample_score_note": "Last qualified1248URL result is1808; focused gains are not full-WPT or overall95 quality.",
+  "status_sha256": "817dafb5c7b7941a98670137757105147ba0989a6e61b76188a5bdc51476a2c6",
+  "elapsed_session_seconds": 3591.047449
+}

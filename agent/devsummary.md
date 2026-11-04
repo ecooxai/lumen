@@ -668,3 +668,21 @@ CSSRuleStyle dispatch validates before mutation and excludes font-face descripto
 cssText retains endpoint-preserving spelling; relative/calc computation, longhand override
 architecture, and animation runtime remain unchanged. Independent focusedWPT and controls
 pending; no new gains claimed. Sample compatibility score remains60.82/100.
+
+
+### Session19 candidate1904 freeze and retained reliability HOLD
+
+Recorded:2026-11-04T07:33:46.047449+00:00; total session elapsed3591.047s
+from06:33:55UTC. Constructed45f0fa80, randomacb8f552, and range61bf3e0 remain separate
+reviewable production commits. All source and intentional env status changes are included
+in the clean-tree candidate snapshot. No diagnostic instrumentation is included.
+Independent1903 mutation23 improved13→16passingURLs and158→163PASSassertions, all
+harnessOK and zero prior losses; native218 passed. Its focused run remainsHOLD because
+Document-createElement-namespace finished51PASSassertions but harnessTIMEOUT. The fixed
+six-run alternating diagnostic reproduced that timeout once on1903; prior1808 history
+also contains this pattern. Host pressure is observed; causality remains unproven.
+Original failed/held receipts remain unchanged. No timeout, oracle, skip or guard changed.
+Public1902 source backup independently checked843inventoryhashes and743recordedinputs
+against tested565fd239, then environment published/readback-verified it. Evidence is
+public-checkpoint1902-review.json and the environment's artifacts1902 receipt.
+Sample score remains last-qualified60.82/100; no overall95 or Chromium parity claim.

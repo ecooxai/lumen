@@ -33,9 +33,15 @@ losses or harness regressions). Full1248URL sample score has not yet been remeas
 Candidate1901 failed compilation in23.13s and is consumed. Candidate1903 combines the
 namespace declaration fix, transition serialization64168e0, and observer semantics314389c.
 Its exact source receipt isagent/source-work/session19/candidate1903/source-freeze.json.
-All tracked source/Git/status writes are frozen for its build plus cumulative native218 gate.
-Animation-range is excluded pending independent controls; constructed-sheet lifecycle is
-the approved next bounded investigation after gate release. No candidate1903 acceptance yet.
+Candidate1903 native218 and mutation23 gates passed, but its focusedWPT remainsHOLD
+due to namespace test harnessTIMEOUT after51PASSassertions; all original evidence is retained.
+Candidate1904 now includes constructed45f0fa80, randomacb8f552 and range61bf3e0 fixes,
+with source receipt agent/source-work/session19/candidate1904/source-freeze.json.
+The environment has sealed its intentional status update; all tracked source/Git/status
+writes are frozen for candidate1904 build until the test owner explicitly releases them.
+Next priority is bounded diagnostic instrumentation of iframe/parent load completion
+if root approves. Do not change WPT or timeouts, and do not infer source causality from
+intermittent completion failures. StyleSheetList liveness/item proposal remains deferred.
 
 ## Next work
 

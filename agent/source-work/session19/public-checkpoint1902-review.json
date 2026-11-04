@@ -1,0 +1,17 @@
+{
+  "reviewer": "source_steward",
+  "recorded_utc": "2026-11-04T07:33:46.047449+00:00",
+  "reviewed_preparation_sha256": "064f31d3420092be6534f2fa60463952a73a7ccc59159695146cc15e57a3c5c2",
+  "tested_source_commit": "565fd239d34dbdaade8b232483fa8aeffba8d767",
+  "public_parent": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
+  "inventory_files_checked": 843,
+  "inventory_hash_mismatches": 0,
+  "recorded_inputs_independently_compared_to_git": 743,
+  "source_mismatches": 0,
+  "prohibited_private_path_matches": 0,
+  "current_private_commit_in_public_object_database": false,
+  "aggregate_claims_reviewed": "64/136URLs,1652/2455assertions,+2URLs/+44assertions;1248URLrateexplicitlyhistorical",
+  "published_by": "environment_delivery",
+  "publication_receipt": "agent/ops/session19/artifacts1902/public-readback.json",
+  "status": "Independent source/export review passed before publication"
+}

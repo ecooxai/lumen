@@ -1,6 +1,6 @@
 {
-  "title": "Lumen Linux · WPT improvement session19",
-  "phase": "Namespace selector fix is in its isolated build retry. Transition shorthand patch is drafted for independent review; focused baseline remains unchanged.",
+  "title": "Lumen Linux \u00b7 WPT improvement session19",
+  "phase": "Candidate 1903 is on HOLD after a namespace completion failure in its focused run. MutationObserver changes independently improved the 23-URL cohort to 16 passes, up 3 URLs and 5 assertions; unchanged namespace diagnostics are investigating reliability.",
   "iteration": 1808,
   "session_iteration": 1,
   "score": 60.817307692307686,
@@ -20,32 +20,35 @@
   "session_response_availability": "An active built-in agent polls session messages during this work session. Replies require this active session.",
   "goal_achieved": false,
   "goal_score": 95,
-  "overall_assessment": "Baseline audit underway. Selected sample pass rate is 60.82%; whole-platform Chromium parity and overall95 quality remain unachieved.",
-  "overall_result_label": "Session19 active; measured candidate1808 baseline",
+  "overall_assessment": "The historical selected 1248-URL pass rate remains 60.82%. A focused namespace improvement is qualified; whole-platform Chromium parity and overall 95 quality remain unachieved.",
+  "overall_result_label": "Session 19 active; 1902 namespace source published, 1903 on HOLD",
   "accepted_iteration": 1808,
-  "active_iteration": 1902,
-  "active_candidate": 1902,
+  "active_iteration": 1903,
+  "active_candidate": 1903,
   "accepted_binary_sha256": "79af7023284551d597ce61ff4a5e3954a7edd2a43b4b8ee2af5d63a1658ff46d",
   "accepted_binary_scope": "Historical session18 measured candidate1808: one unchanged reliability replay plus two namespace checks. First full namespace timeout remains retained.",
   "coverage": "759/1248 selected cases and22826/26245 assertions; all22826 required passes preserved. Reference Chromium150:1062/1248 and24541/26064. Selected scope, not allWPT.",
   "current_evidence": [
-    "Fresh immutable1808 focused baseline:62/136 URLs and1608/2455 assertions.",
-    "Fresh pinnedChromium150 focused reference:105/136 URLs and1970/2455 assertions.",
-    "Isolated Linux GUI smoke passed: keyboard, navigation/history, four page checks; settled idle CPU median0%, max1%, RSS peak142.8MB.",
-    "Candidate1901 build failed: undeclared CssNamespace; no accepted runtime replaced."
+    "Candidate 1902 frozen focused cohort: 64/136 URLs and 1652/2455 assertions, up 2 URLs and 44 assertions from fresh candidate 1808, with zero lost passes or harness regressions.",
+    "Fresh pinned Chromium 150 reference: 105/136 URLs and 1970/2455 assertions.",
+    "Candidate 1903: native contracts218/218 passed, but the focused WPT run is on HOLD after a namespace completion failure. MutationObserver cohort independently16/23 URLs, up3 URLs and5 assertions.",
+    "Isolated candidate 1808 Linux GUI smoke passed keyboard input, navigation/history and four page checks. Settled idle CPU median 0%, max 1%; whole-smoke RSS peak 142.8 MB.",
+    "Candidate 1901 build failure remains recorded; failed binary never replaced the runtime."
   ],
   "findings": [
-    "Source/checkpoint branch prepared.",
-    "Live preview and WebSocket telemetry available; new session posting is time-limited.",
-    "Builds/tests retain shared480% CPU quota and one-second process/cgroup monitors."
+    "Namespace CSS selector serialization now preserves namespace semantics.",
+    "Transition shorthand and MutationObserver changes have reached the native gate; unchanged WPT and independent controls determine qualification.",
+    "Range endpoint preservation and random-size syntax validation are separate reviewed drafts.",
+    "Live HTTPS preview, two-second telemetry, WebSocket latency and scoped session posting remain available.",
+    "Builds and tests use the shared 480% CPU quota and one-second process/cgroup monitoring."
   ],
   "historical": {
     "label": "Previous Linux311 same frozen1248 sample:686/1248files;21992/26245assertions.",
     "comparison": "Current pinned reference Chromium150. Older234/640-file measurements use different scope."
   },
   "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
-  "source_archive_label": "Candidate1808 verified development source; first timeout history retained",
-  "source_archive_note": "Exact tested source and approved public Git history. One preregistered reliability replay759/1248 plus two namespace checks and actual devices passed; original first full HOLD remains. Not whole-WPT/95 or production certification.",
+  "source_archive_label": "Candidate 1902 reviewed namespace source checkpoint",
+  "source_archive_note": "Focused development checkpoint: 64/136 selected URLs and 1652/2455 assertions, up 2 URLs and 44 assertions from fresh candidate 1808, with no lost passes or harness regressions. Full 1248-URL rate remains historical candidate 1808 evidence. No new display0/Android installation, whole-WPT parity or overall95 claim.",
   "broad_current": {
     "iteration": 1808,
     "files": 1248,
@@ -66,8 +69,8 @@
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104",
   "working_commit": "9452dac0074ffe9c2c5845013dafd954d9a4ce5b",
-  "updated_utc": "2026-11-04T06:56:08.016344+00:00",
-  "updated_at": "2026-11-04T06:40:57.238474+00:00",
+  "updated_utc": "2026-11-04T07:26:33.000028+00:00",
+  "updated_at": "2026-11-04T07:21:42.638993+00:00",
   "runtime_candidate": 1808,
   "runtime_note": "Existing verified candidate1808 desktop process remains untouched while session19 development proceeds; Android still needs final candidate delivery.",
   "qualified_prior_candidate_scope": {
@@ -185,8 +188,8 @@
     "full_fixed1248_replayed": false,
     "native218_replayed": false
   },
-  "source_archive_candidate": 1808,
-  "source_archive_sha256": "e0ded35eb3968778f2a14af49d21dbcdae66437028cd25d3a316feeb4eed0e57",
+  "source_archive_candidate": 1902,
+  "source_archive_sha256": "b27d00867acd9ee9933a3494a1feb4dcbed16dab235b33ecf05b85a903fcc27e",
   "source_archive_bytes": 10344997,
   "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1804-20261103",
   "latest_broad_observation": {
@@ -463,9 +466,9 @@
     "full1248_ran": false
   },
   "score_basis": "714/1248 selected HTTP/default-timeout test cases/URLs from1247 source files; last regression-free1705 score, not whole WPT",
-  "working_commit_role": "Session19 task initialization; measured baseline remains immutable candidate1808.",
-  "public_source_commit": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
-  "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103",
+  "working_commit_role": "Active development branch; public source checkpoint 1902 is undergoing reviewed publication. Broad measured baseline remains immutable candidate 1808.",
+  "public_source_commit": "28cdeb590fafa03b04363755245638f2d673290d",
+  "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
   "source_archive_external_hash_verified": true,
   "source_archive_offline_restore_verified": true,
   "session18_delivery_history": {
@@ -473,5 +476,28 @@
     "artifact_save_finished_utc": "2026-11-03T13:08:18+00:00",
     "development_finished_utc": "2026-11-03T12:56:33.126372+00:00",
     "documentation_sealed_utc": "2026-11-03T13:10:09.155650+00:00"
+  },
+  "focused_current": {
+    "candidate": 1902,
+    "source_commit": "565fd239d34dbdaade8b232483fa8aeffba8d767",
+    "passed_urls": 64,
+    "total_urls": 136,
+    "baseline1808_passed_urls": 62,
+    "chromium150_passed_urls": 105,
+    "passed_assertions": 1652,
+    "total_assertions": 2455,
+    "baseline1808_passed_assertions": 1608,
+    "lost_passes": 0,
+    "harness_regressions": 0,
+    "known_timeouts": 3,
+    "full1248_replay_performed": false
+  },
+  "mutation_current": {
+    "candidate": 1903,
+    "passed_urls": 16,
+    "total_urls": 23,
+    "new_passing_urls": 3,
+    "new_assertion_passes": 5,
+    "overall_candidate_on_hold": true
   }
 }
