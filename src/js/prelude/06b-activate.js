@@ -622,6 +622,9 @@ class CSSRuleStyle extends CSSStyleDeclaration {
         } else if (p === 'transition' && type !== 5) {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (!cssTransitionSet(m, value, priority)) return;
+        } else if (p === 'animation-range' && type !== 5) {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (!cssAnimationRangeSet(m, value, priority)) return;
         } else if (p === 'transition-property') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (value === '') m.delete(p);

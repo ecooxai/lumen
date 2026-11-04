@@ -653,3 +653,18 @@ retains font-face descriptor behavior. Pending substitutions remain deferred by 
 validation. No runtime sampling/cache or global math allowlist/serialization changes.
 Fresh independent focus136 includes20random URLs and valid/invalid neighbors.
 Runtime qualification pending; no new gains claimed. Sample score remains60.82/100.
+
+
+## Session19 iteration06 — animation range storage and serialization pending gates
+
+Author:environment_delivery; integrator:source_steward. Start:2026-11-04T07:32:47.676484+00:00;end:2026-11-04T07:32:47.706234+00:00.
+Integration write interval0.030s after independent draft/spec review.
+The original draft was held because shortening an explicit unnamed100% end during storage
+changed its longhand. Fresh Chromium diagnostic confirmed shorthand omission but longhand
+preservation, so the integrated version stores both endpoints and compresses only reads.
+Exact-zero exponent mantissas and escaped dimension units preserve lexical token boundaries;
+the integrator additionally rejected escaped-percent identifiers as non-percentage tokens.
+CSSRuleStyle dispatch validates before mutation and excludes font-face descriptors.
+cssText retains endpoint-preserving spelling; relative/calc computation, longhand override
+architecture, and animation runtime remain unchanged. Independent focusedWPT and controls
+pending; no new gains claimed. Sample compatibility score remains60.82/100.

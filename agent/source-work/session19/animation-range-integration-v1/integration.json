@@ -1,0 +1,20 @@
+{
+  "author": "environment_delivery",
+  "integrator": "source_steward",
+  "started_utc": "2026-11-04T07:32:47.676484+00:00",
+  "ended_utc": "2026-11-04T07:32:47.706234+00:00",
+  "integration_write_seconds": 0.02975,
+  "base_commit": "acb8f55249f1f115f1e6838454231d9826e1f628",
+  "draft03_sha256": "26631c6eeaf0210ddac9e277a35e1f9016ebd32c793068e1f2773272b3dbd4b9",
+  "source03_sha256": "c29091d6f43fe3084533dffb2431c186fb787613175e9d851ef8a010051b5ed4",
+  "source06b_sha256": "059d7789c5e8e28a6b714a53077d8c051f4e9671a990c12f1329c458929adf4c",
+  "scope": "Validated range endpoints remain stored; shorthand reads omit defaults without losing explicit end longhand values",
+  "limits": [
+    "cssText keeps endpoint-preserving representation; complete CSS declaration-block shorthand serialization is not claimed",
+    "Longhand override/cascade architecture and relative-unit/calc computation are unchanged",
+    "No animation runtime changes"
+  ],
+  "integration_correction": "Reject escaped-percent dimension identifier rather than converting its decoded unit into a percentage token.",
+  "status": "implemented; independent runtime gates pending",
+  "sample_compatibility_score": 60.817307692307686
+}
