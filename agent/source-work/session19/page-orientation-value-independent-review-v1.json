@@ -1,0 +1,36 @@
+{
+  "reviewed_at_utc": "2026-11-04T12:01:18.587183Z",
+  "reviewer": "environment_delivery / GPT-6 Astra Pro built-in subagent",
+  "disposition": "ACCEPTED FOR RUNTIME QUALIFICATION; not a runtime pass",
+  "manifest_sha256": "a3699f017969355c6448c13d7556eda5a85a4ffc039526ff397c7704c551f39c",
+  "source_base_06b_sha256": "14412d92e1c33dcf4448a53ea45feb0b2a501c067ab50a3578999e9eca6f7279",
+  "candidate_06b_sha256": "538751c28b4931b9188159fcd0d5b06ced9b756737fe9430b5504b6a5c74104f",
+  "validation": {
+    "exact_no_fuzz_patch_reconstruction": true,
+    "candidate_and_manifest_hashes": true,
+    "node_check_input_type_commonjs": true,
+    "duration_seconds": 0.067451932,
+    "terminal_id": 27708
+  },
+  "scope": "Only CSSPageRule page-orientation nonempty setProperty validation, before existing _m/_w. Native decoded keyword validation/case normalization; syntactically valid deferred-token preservation; invalid keyword, extra ordinary tokens, priority and top-level delimiters return before mutation. Empty removal unchanged. Canonical public receiver/private type routing retained.",
+  "reviewed_boundaries": [
+    "private page rule type only",
+    "CSS-wide keywords",
+    "escaped and commented identifiers",
+    "captured lowercase intrinsic",
+    "token-aware function detection rather than regex custom-ident detection",
+    "invalid declarations atomic before mutation",
+    "no native, general parser, storage or alias rewrite"
+  ],
+  "primary_sources": [
+    "https://drafts.csswg.org/css-page-3/#page-orientation-prop",
+    "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty",
+    "https://drafts.csswg.org/css-values-4/#keywords",
+    "https://drafts.csswg.org/css-values-5/#arbitrary-substitution"
+  ],
+  "limits": [
+    "Existing deferred-value parser semantics and bounds retained; no complete arbitrary-substitution grammar expansion claim.",
+    "Runtime original descriptor controls and frozen supplement remain required.",
+    "This review supplies no WPT pass-rate or final-release qualification."
+  ]
+}

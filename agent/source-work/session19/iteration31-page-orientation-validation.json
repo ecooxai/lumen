@@ -1,0 +1,19 @@
+{
+  "iteration": 31,
+  "candidate": 1915,
+  "source_operation_start_utc": "2026-11-04T12:01:53.957194+00:00",
+  "source_operation_end_utc": "2026-11-04T12:01:54.272048+00:00",
+  "source_operation_seconds": 0.3372642070171423,
+  "iteration_start_utc": "2026-11-04T11:59:11.799152+00:00",
+  "iteration_end_utc": "2026-11-04T12:01:54.272048+00:00",
+  "iteration_elapsed_seconds": 162.472896,
+  "before_head": "b5aae63d294223dc9ba61599cc459b91b9a1187c",
+  "production_commit": "b63df22ad8b67399a416ac0bc16c6d21613d23aa",
+  "source_tree": "c90cb233430c82237c7f05076415f2e7c28fac05",
+  "manifest_sha256": "a3699f017969355c6448c13d7556eda5a85a4ffc039526ff397c7704c551f39c",
+  "review": "environment_delivery exact a3699f0 accepted12:01:18UTC; receipt follows",
+  "native_unchanged": true,
+  "status": "integrated, build/target/full gates pending; original1914 changed-risk retained",
+  "score": 62.580128205128204,
+  "score_basis": "accepted1908 selected1248 URL pass percentage; no new acceptance claim"
+}

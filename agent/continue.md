@@ -1,141 +1,33 @@
-# Continue Lumen Linux — session19 active
+# Continue Lumen Linux — session19 final handoff
 
-Updated 2026-11-04T10:59:54.672644+00:00. Session started2026-11-04T06:33:55Z and remains active.
-Work through RubyWebTerm in `/mnt/p3/project/browser/lumen-android/lumen-android`.
-Branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104`.
-Read AGENTS.md, the complete user request in agent/task.md, and the latest entries in
-agent/devsummary.md. The previous session handoff remains archived at
-agent/archive/continue-session18-20261104T063800Z.md; intermediate handoffs are archived too.
+## Accepted source and actual runtime
 
-## Roles, freezes and resource policy
+Candidate1915 was accepted and selected at12:23:57UTC before the12:24 release cutoff. Frozen selectedWPT:796/1248URLs (63.782051%),23158/26245assertions; +37/+332 over1808 and +15/+55 over1908. No required prior assertion/URL/harness loss,1248/1248 actualexits0, original pins/cleanup valid. This is not allWPT or Chromium parity.
 
-Root is CTO. source_steward owns canonical source/Git/index and continuity records;
-test_baseline owns independent builds/tests and immutable candidate reservations;
-environment_delivery owns preview, monitors, public exports, runtime/device delivery and
-agent/progress/status.json. Coordinate explicit tracked source/Git/status freezes before
-builds; native218 also requires the exact tracked-clean HEAD throughout its run. After a
-build seal, immutable tests may continue while new source is edited. Never reuse consumed
-candidate IDs or alter trusted guards, WPT assertions, expected outcomes, timeouts or workers.
-Preserve historical evidence and all HOLDs. Public exports use reviewed approved ancestry,
-exact source blobs and narrow allowlists, never private canonical history or runtime data.
+TestedHEAD `b63df22ad8b67399a416ac0bc16c6d21613d23aa`; src tree `c90cb233430c82237c7f05076415f2e7c28fac05`; Linuxbinary `71478e23bcfffeead3cbe0edc694a02bfae2b8ce78321f27212a5a656ef9c908`. The current taskbranch is `gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104`; final continuity commits advanceHEAD only in docs/evidence. Default and immutablei1915 bytes were already identical; no fallback1908 checkout occurred. Source/default handoff receipt: agent/ops/session19/delivery-runtime/source-default-handoff1915.json.
 
-Use project-backed temporary files because /tmp is nearly full. One heavy task at a time,
-under the existing shared480% CPU quota, with one-second CPU/RSS monitoring. Preserve the
-required owned WPT server when reconciling cgroup tasks; inspect identity before any cleanup.
-Test/build task timing is separate from source mutation time and model compute time.
-The five-hour budget runs to2026-11-04T11:33:55Z; an extra hour is only for important fixes.
+Exact native218/218 belongs to1913HEAD238b68ba84881d3d853bb78fcf53202cdd40900a. Later1914/1915 are JS-only with approved native rerun omission.1915 independent73/73 and upstream59 regressiongate34fullyPASS/511of592assertions/all59harnessOK passed. Full proof: agent/validation/linux-wpt-20261104-session19/candidate1915-full-prior-union-acceptance-v1.json, SHA70d3d7b134696c128292ba7a6e9571c7a3d507e2ddd28b442f082f38a6fcb204.
 
-## Latest fully qualified result — candidate1908
+Linux display:0 finalrestart accepted12:27:37. Android exactsourceAPK177615794bytes SHA`b564cb4fc6e7e75d64d47bd70803cc67d809cbaff6cd5d228a81d4e23baf56aa` installed with profile/UID preserved; finalrestart four checks/six samples and signaturemetadata sealed12:33:02.5. Original failed shutdown/stale-CXX-model check receipts remain, with bounded operational recoveries. Android23+10packaged checks passed12:32:16, install12:32:51, finalrestart12:33:00. No AndroidWPT claim. Two36s1280x960own-page showcase videos were visually verified.
 
-Exact source HEAD: `d995e1a5eb8daebd07ec7b67f0572f40b70fc6e6`.
-Source tree: `487bed118fb7920b8872bd038b575364165f61ad`.
-Binary SHA256: `cf2692999572a09524c11697d76de073ccbba7e3c6fe496b89bb241ccfc9bdc9`.
-Build/startup117.23s; native218 passed218/218 in200.22s at the exact clean HEAD.
-Full unchanged1248 replay completed09:18:50UTC in1040.14s: **781/1248 URLs**
-(62.580128/100 selected-manifest compatibility), **23103/26245 assertions**.
-This is +9 URLs/+79 assertions over1906 and +22/+277 over1808. Every previously passing
-URL, assertion and harness result was retained; all1248 processes exited0, source/binary
-pins and cleanup passed. Full acceptance SHA256:
-`c6c1341edd3feb1171651cebf943bbd65fbac91438f203aa6f94366a31d7c058`.
-Raw receipt SHA256: `f72ea86207eaa207802d86d9ad17d821687a860dbd150dcc1fb77fcf9075bb28`.
-Evidence lives under agent/validation/linux-wpt-20261104-session19 and
-agent/source-work/session19/test-baseline.
+## Public persistence
 
-The frozen266-URL union passed154/266 and3525/4256. Independent DOM26 and inert9 passed
-26/26 and9/9. Range24 passed23/24, with parsed declaration importance still failing;
-two separate root-pseudo rem controls also failed. These known cases were retained for
-next-candidate fixes. The manifest is1248 selected HTTP/default-timeout DOM/CSS testharness
-URLs from1247 files, not all WPT. Historical pinned Chromium150.0.7871.114 scored1062/1248;
-this is not a current latest-Chromium run or an overall browser quality score.
+Qualified source: https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1915-20261104, commit80fdbe8ccf9c38325c3f0ab16fd75cbc192402c1. Archive: https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz?checkpoint=1915,10463864bytes SHA`521185eb206a2671a66dc3d6d80a80e484e6b30667e6f13a690048d11f9f51ab`; offline recovery and completeHTTPSreadback passed12:31:25.721UTC. Receipt agent/ops/session19/artifacts1915/public-readback.json. WORK30 remains https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-work-iteration30-20261104 at264562c7148e1454d094ce1cc4f2a4a454616419, explicitly pre-repairWORK/HOLD. PreparedWORK31 was superseded by the qualified1915 release and not separatelypublished.
 
-## Current source and candidate1913
+Final media/research/editableprompt branch is published only after exact20artifact approval: build/codex-session19-tools/final-handoff/publication.json is authoritative for its final URLs/commit. It preserves approved1908 public parent code and clearlylinks selected1915 source. Research is under UNINTEGRATED-transition-tier, never production. The editable prompt is agent/next-agent-prompt.md, exact publicSHAaa9626be1a255ae0a625b5fe3ae81f8a10fac7dd6c6cb3f2431563b08cf8a483.
 
-Production HEAD `f9c432d4172142f5e95869926e4f56d087f4779e`, source tree
-`313e8671497c770f38ec0276d63686515277f545`. Two separate reviewed commits follow1912:
+## Verification and retained limitations
 
-- `d742d8a299e7a5263520635107ac68daff34abdc` (iteration28): generic same-name parsed
-  declarations preserve an earlier important value against a later normal declaration.
-  Explicit setProperty replacement and font-face descriptors remain unchanged. This does
-  not fix padding/margin shorthand expansion or claim that WPT gain.
-- `f9c432d4172142f5e95869926e4f56d087f4779e` (iteration29): nodes without anim_decls
-  apply static inline important after author important and before UA important. Nodes with
-  any sampled declaration layer retain the exact previous assembly, including its known
-  animation/transition priority limitations. Dependency, family replay and rollback algorithms
-  are unchanged. The larger transition-tier/ownership proposal was not integrated.
+Read AGENTS.md, agent/task.md and agent/devsummary.md first. Canonical repo /mnt/p3/project/browser/lumen-android/lumen-android; WPT /mnt/p3/project/browser/wpt. Use RubyWebTerm MCP canonicalworkspace_id and relative paths. Selected1248manifestSHAa97bc7c43083140f02c5f7ae3a46de905c8da6506c6a834928dbaa99d3ae63a6/upstream0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb, frozen173frameworkpins and existing adapters. PinnedChromium150.0.7871.114 reference1062/1248,24541/26064; compare commonidentities, not differentassertiondenominators. Preserve original2worker15ssettings and allpriorpass obligations.
 
-Exact reviews, source intervals and the deferred proposal are preserved in source-work/session19
-cssom-importance-guard-v1, static-importance-v1 and transition-tier-deferred-v1. Candidate1913
-requires fresh exact-source native218 because style.c changed, plus frozen static/API/sample
-retention controls and the full1248 prior-pass union. Hold tracked source/Git/status until the
-independent test owner releases build/native freeze. Iteration30 durable WORK/HOLD checkpoint
-is not yet due; accepted public source remains1908.
+Original1808/1903/1911full/1912focus/1913full namespace51PASS+TIMEOUTs remainHOLD.1913 also lost pageOrientation;1914 restoredgetter but routedinvalidaliasmutation regressed canonicalstate.1915 fixes/qualifies that boundary; no lifecycle reliability fix.1910 batching failed fixedCPU/wall criteria and was reverted. Initialaboutblank creates duplicate80realms/40remote frames; no safe central lazybarrier was found. Larger transitiontier/lifecycle research is UNINTEGRATED due logical/physical matching and newpriorityrisks. Static!important fixes preserve oldanimatednodeassembly; fullallreset/UAhidden-input rules and animatedcascade remainincomplete.
 
-Candidate1912 frozen HEAD `fa69ebd287c91270a19dafc45d0711fe27fa7b11` built in87.179s,
-binary SHA256 `ce39fecf7918d48973d1b2ae3a88502800d4d22c2f5e8fed6db0af9cf1f2fded`.
-Its native source was unchanged from1911, so no1912 exact native pass is claimed. Frozen313
-had nine gained URLs/25 assertions and no prior assertion losses, but namespace again timed
-out after51 PASS assertions. It remains HOLD; full replay was not launched to rescue it.
-Independent170 passed168/170 versus122/170 prior, with zero old PASS losses; all new API,
-receiver/realm and range-calc controls passed. Two old independent limitations remained.
+The Xloginreturn/scrollrequest remainsunresolved. No originalreturnerror or stablefeedscrollbenchmark wasreproduced; user-owned Googlechallengeexpired. Passing account-free GSI/messagingcontrols do not establishauthsuccess. Keepprivateauthscreenshots/logs/clientdownloads outofpublicexports. LandingCPU/RSSobservations applyonlytologged-outi1808, notscrollperformance.
 
-Candidate1911 full remains HOLD:783/1248 URLs,23110/26245 assertions, three gained URLs,
-seven gained assertions and one lost required namespace harnessOK/fullURL. No assertion
-PASS loss; all1248 exits0 and pins/cleanup valid. Original1903 HOLD also remains. Last fully
-qualified full candidate is1908,781/1248. The rejected1910 shape optimization is fully reverted;
-its failed CPU/wall thresholds and unused reflection plan remain retained.
+## Next work and operating rules
 
-## Latest authenticated user steering and immediate priority
+Start with actual Xreturnerror evidence and measuredscrolling; avoid speculativecookie/origin/securitybypasses. Then address specificnativeCSS/DOM gaps with preserved priorPASSidentities. Keep same-model built-inagents, mainCTOonly; independenttester and deliveryowner, explicit file/index/freezes. Atmostoneheavylane shared480%CPUquota via tools/codex_compile.py;1sresourcewatch, project-backedtmp. Diagnoseabnormal>5minwork;17–23minfullsuite isexpected. No unrelatedkill/dataerase. Preserveoriginalfailures, no blindrescuerepeats/guardororaclechanges.
 
-Received through the session preview at2026-11-04T10:52:35Z, exact text:
+Operationaldashboard is agent/ops/session19/delivery-dashboard/server.mjs, live mutablemirrorstatus there, runtime symlinktoagent/progress/runtime. Postingdeadline12:33:55 haspassed; do not silentlyextend. Canonicalstatus maylaguntilcoordinatedsync. Neverexportcapabilitykeys/queues. Allsource/deviceguardsreleased12:33:02.5; noactivebuildfreeze remains. Production work isfinished; currentposttaskworkisdocs/publicationonly.
 
-> current lumen can not login x.com via google.com ,after return from google acc auth it show error , find whats wrong and fix, also optimize x.com peformance like scroll,ensure not high cpu usage
-
-Candidate1913 is immutable and its fresh exact-source native218 passed. Environment owns relevant UI, sanitized authentication-return evidence and
-one-second scroll CPU measurements; source owns engine diagnosis from those observations.
-Do not bypass cookie/origin/security checks, invent causes or expose credentials/tokens.
-The original wording is appended verbatim to agent/task.md; the earlier normalized quote is retained only in the archived handoff.
-The earlier unused initial-about:blank realm opportunity is read-only: frame_create invokes
-full initialization for both the initial document and later navigation, but observable window,
-document, load and ID entrypoints currently lack a shared lazy-initialization barrier. Skipping
-the context outright is unsafe; no performance implementation is approved.
-
-## Reliability and profiler evidence
-
-Original1903,1911 and1912 namespace harness TIMEOUT after51 PASS assertions remain HOLD. Similar
-historical1808 behavior and fixed diagnostics are retained; no timeout change or claimed
-lifecycle fix was made. Successful phase traces show prompt final parent-load completion,
-with about95–96% of child initialization CPU/wall in prelude execution. Matched failing1908/1912 traces show80 child prelude sums10.016/10.020s wall and7.950/7.836s thread CPU; final parent unblocked-to-complete is1.743/1.151ms with zero remaining blockers. This is slow completed work, not evidence of a lost load notification. Cached script
-binding takes only about5ms across80 children. No mutable realm objects or globals are shared.
-Separate default-off Linux diagnostics LUMEN_TRACE_LOAD and LUMEN_PROFILE_PRELUDE remain
-explicitly unset for qualification/performance OFF scenarios. Sampler ON measurements
-identify shape230/1869 child ticks (~12.3%) and WebGL install192 (~10.3%); printed top20
-counts are lower bounds. The isolated batching hypothesis was measured, rejected, and reverted.
-
-## Public persistence and remaining delivery
-
-Qualified1908 public commit: `9d3882d753faa45fc5c52f9e9748b9f7cdaaf7e4`.
-The live exact-source archive is10,424,331 bytes, SHA256
-`0f6156e1c9649236e2ec227e22df9539be56f6dc8435a059aa38fc4881a9435e`.
-Offline recovery and full external HTTPS readback verified at09:41:18.884971UTC.
-Receipt: agent/ops/session19/artifacts1908/public-readback.json, copied into source-work.
-The1906 archive remains safely archived. Iteration20 work-only public commit is
-`e86534d5831f4d1a66b9fec029f44d2a0c3350cc`; it is not a qualified runtime artifact.
-The next mandatory work checkpoint is iteration30 if reached. Environment has prepared
-only a lightweight1911 source inventory; no1911 full acceptance or promotion is implied.
-
-The normal five-hour deadline is11:33:55UTC. Root approved up to one additional hour only
-if the concrete generic importance bug's validation/delivery needs it; absolute cap12:33:55UTC.
-Keep user elapsed wall time separate from summed parallel task durations. Do not invent
-unmeasured model compute time. Continue authorized development and preserve all evidence.
-After final acceptance, finalize AGENTS/continue/devsummary and agent/next-agent-prompt.md,
-publish the exact reviewed source, and restart on display:0 and the authorized connected
-MI8 with install-r/data preservation. Source publication, desktop execution and Android
-installation have separate identities and receipts. Linux results do not imply Android
-conformance. Root/environment own final delivery.
-
-
-### Candidate1913 native release and live X diagnosis
-
-Native218 passed all218 contracts at2026-11-04T11:04:55.811Z in190.109s on exactHEAD238b68ba84881d3d853bb78fcf53202cdd40900a; report SHA2561b4f358018800f43142c0b7f090eac0e715cdf521244d116874e35d9923d863a. Source/Git/status freeze is released; immutable browser218 and382 remain pending. The full accepted runtime remains1908.
-
-Current display:0 is immutable1808 on an X logged-out landing. Sanitized historical navigation reached Google GSI transform, which can complete through popup messaging rather than navigation. No original authentication error has yet been reproduced. A later UI javascript-address diagnostic was misdelivered and caused a separate malformed-page error; it is excluded from OAuth evidence. The source read confirms inactive-tab message pumping and stable popup IDs exist; no causal fix has been selected. Existing live diagnostics are stderr and1s process counters. Do not add a bridge, bypass origin/cookie policy, guess at credentials, or claim the reported login/scroll problem fixed without observed evidence.
+Sessionstart06:33:55UTC; fivehours plusauthorizedimportantbugextension ended12:33:55. This handoffcapture 2026-11-04T12:40:49.366207+00:00 isposttaskreceiptwork; elapsedwall22014.366s.231logged monitorstages=115outer+116nested, overlappingstage sums arenotelapsed/modelcompute. Finaltimingledger:test-build-timings-v8.json; finalQA:gpt-6-astra-pro_builtin-subagents_rubywebterm_session19_final_qa.json, both under agent/source-work/session19/test-baseline.

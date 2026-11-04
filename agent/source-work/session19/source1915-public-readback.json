@@ -1,0 +1,31 @@
+{
+  "candidate": 1915,
+  "started_utc": "2026-11-04T12:31:08.437643+00:00",
+  "finished_utc": "2026-11-04T12:31:25.721014+00:00",
+  "seconds": 17.283427186019253,
+  "public_commit": "80fdbe8ccf9c38325c3f0ab16fd75cbc192402c1",
+  "archive_sha256": "521185eb206a2671a66dc3d6d80a80e484e6b30667e6f13a690048d11f9f51ab",
+  "archive_bytes": 10463864,
+  "offline_restore_verified": true,
+  "external_readback_verified": true,
+  "checks": [
+    {
+      "path": "/healthz",
+      "http_status": 200,
+      "bytes": 42,
+      "sha256": "f417e3d0a6d8497555f8224ffd18538e2e6ae72a529723dccdfe60bc76607329"
+    },
+    {
+      "path": "/api/status",
+      "http_status": 200,
+      "bytes": 20787,
+      "sha256": "3356e9f38e67c00b8df2acc1a7e07c24bc298c76fe08b94c650361fb5f4c9df8"
+    },
+    {
+      "path": "/src.tar.gz?checkpoint=1915",
+      "http_status": 200,
+      "bytes": 10463864,
+      "sha256": "521185eb206a2671a66dc3d6d80a80e484e6b30667e6f13a690048d11f9f51ab"
+    }
+  ]
+}

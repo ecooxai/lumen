@@ -1,0 +1,69 @@
+{
+  "reviewed_utc": "2026-11-04T12:35:30.248308+00:00",
+  "reviewer": "GPT-6 Astra Pro built-in test_baseline independent agent via rubywebterm",
+  "scope": "Post-task evidence and visual review only; no new builds, device input, tests or source changes.",
+  "candidate": 1915,
+  "tested_head": "b63df22ad8b67399a416ac0bc16c6d21613d23aa",
+  "linux_binary_sha256": "71478e23bcfffeead3cbe0edc694a02bfae2b8ce78321f27212a5a656ef9c908",
+  "android_apk_sha256": "b564cb4fc6e7e75d64d47bd70803cc67d809cbaff6cd5d228a81d4e23baf56aa",
+  "accepted": true,
+  "linux": {
+    "display": ":0",
+    "exact_live_process_identity_verified": true,
+    "desktop_interaction_and_final_restart_accepted": true,
+    "final_restart_finished_utc": "2026-11-04T12:27:37.728499+00:00",
+    "prior_shutdown_timing_failure_and_recovery_retained": true
+  },
+  "android": {
+    "exact_packaged_installed_apk_match": true,
+    "original_apk_checks": 23,
+    "rtc_checks": 10,
+    "all_checks_passed": true,
+    "one_positive_model_matching_all_three_packaged_build_ids": true,
+    "operational_repair": "Only unidentifiable local stale model is nonmatching; packagedIDs/readelfsuccess/exactlyonepositivematch remain mandatory. Original check failure retained.",
+    "installed_and_restarted": true,
+    "final_restart_finished_utc": "2026-11-04T12:33:00.032581+00:00",
+    "own_page_checks_passed": 4,
+    "profile_preserved": true,
+    "data_cleared": false,
+    "visual_review": "Safe owned page renders correctly with stacked readable mobile cards and exact selected metrics; no blank frame.",
+    "android_wpt_claimed": false
+  },
+  "media": {
+    "duration_seconds": 36,
+    "width": 1280,
+    "height": 960,
+    "aspect_ratio": "4:3",
+    "codec": "H264",
+    "audio_streams": 0,
+    "ffprobe_metadata_independently_read": true,
+    "showcase_sha256": "0525be4a390e43b6b9d8709162c425bca2df9fb9771c020e33e1cc9b1ba01adf",
+    "clean_recording_sha256": "df66b0e614acc677401869b7dcece165cfe1b61c7bad0378454fff9e3dfb0107",
+    "frames_reviewed_seconds": [
+      4,
+      15,
+      30
+    ],
+    "visual_review": "All sampled frames render readable owned-page content, correct796/1248 and23158/26245 scope, visible native browser chrome and input changes. White-on-black GPT-6 Astra Pro / built-in agents / RubyWebTerm credit is clear; no black frame.",
+    "all_video_frames_reviewed": false
+  },
+  "evidence_pins": {
+    "agent/ops/session19/delivery-runtime/linux1915-desktop-v1/receipt.json": "6b216b62d014076e1ad3141895347267610590410f6f5d40eb7b39cb2a9a820f",
+    "agent/ops/session19/delivery-runtime/linux1915-final-restart-v1/receipt.json": "170a01f6be55a07ef1bb12a3596a3bb2932eda7bb3f076ee13edc3847f3c9a3d",
+    "agent/ops/session19/delivery-runtime/linux1915-showcase-v1/receipt.json": "5ad86cb671a9b41ab4f93bc6231afb53906c36c711d66bec133579f0fa1128ec",
+    "agent/ops/session19/delivery-runtime/final1915-linux-recovery-v1/receipt.json": "db97afeae49bceb244599c47e524873716bb72270ea6f13e07771c2897382887",
+    "agent/ops/session19/delivery-runtime/android1915-build-v1/receipt.json": "79e7382fe0040db7769b0cb9ae859dd4b47400491aa383d18473894dc5c395fb",
+    "agent/ops/session19/delivery-runtime/android1915-check-v1-model-recovery/receipt.json": "5186ce56d7942423d5567d42a0fecde0cbf1bb0fea119912c7407f4f1d96d1ad",
+    "agent/ops/session19/delivery-runtime/android1915-deploy-v1/receipt.json": "1279701d2d045440bc5d927f90ec570637eb4bd7f2a575580d61ef7b016dde41",
+    "agent/ops/session19/delivery-runtime/android1915-final-restart-v1-focus-recovery/receipt.json": "2053d83b4348248dbb69b344297f42aa1f1355330e283634328fb4d2680e969c",
+    "agent/ops/session19/delivery-runtime/android_delivery_model_recovery.py": "a1adbb3cb30f846c94977504bfc24514813c6e2c776a39b0437139cfec56d58b",
+    "agent/ops/session19/delivery-runtime/android1915-check-v1-model-recovery/model-selection/models.json": "b13f1a08efad8804dd1d171e01c4996d6b212c755a2f83b8086cf16779e0a255",
+    "agent/validation/linux-wpt-20261101-session15/session19-candidate1915-android-apk-check-v1/apk-evidence.json": "bc3a99c773146d24981157ab75db2507ced6cf3dd42add880739642e13dad143",
+    "agent/ops/session19/delivery-runtime/final1915-linux-v1/receipt.json": "0752397514cee8aa68a8159eb214c214430a1dfb9f757ab61d3bb5e7ba8d9fd6",
+    "agent/ops/session19/delivery-runtime/android1915-check-v1/receipt.json": "a7a00f2eb99b6207367d6e4126b2514c3675a0ea7eb93633c32983c3f23d12e2",
+    "agent/ops/session19/delivery-runtime/showcase1915-frames/frame-04.png": "020467f8ba7a75529810d141354eee8181608d5d9f726322059314924e6d25a7",
+    "agent/ops/session19/delivery-runtime/showcase1915-frames/frame-15.png": "6647992bc68264784c1887520618cb8f3dd62856d83cdf65688ede1b4860ab2b",
+    "agent/ops/session19/delivery-runtime/showcase1915-frames/frame-30.png": "9aa40c077179010ce9219ec9c21f62891c21067d70b0c057e5240440ebb5e9a0",
+    "agent/ops/session19/delivery-runtime/android1915-final-restart-v1-focus-recovery/owned-page.png": "d0f151f61930ff938164ffd6028aede1089e78da89a9000e44b661d882956bf1"
+  }
+}
