@@ -1,0 +1,10 @@
+{
+  "recorded_utc": "2026-11-04T06:55:55.665521+00:00",
+  "failed_candidate": 1901,
+  "failed_build_seconds": 23.13,
+  "failure": "CssNamespace undeclared in jsnative.cc; C++ bridge does not include full CSS header",
+  "fix": "Shared C/C++ selector-serialize.h exports namespace context type and API; included by C CSS and C++ native binding",
+  "candidate1901_reusable": false,
+  "new_candidate": 1902,
+  "tests": "Independent build and runtime gates pending"
+}

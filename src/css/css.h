@@ -468,8 +468,7 @@ bool css_parse_query_selector_list(const char *src, SelList *out);   /* querySel
 bool css_supports_selector(const char *src);   /* one complex selector, recursively supported */
 void css_sellist_free(SelList *l);
 char *css_selector_text(const char *src); /* canonical CSSOM serialization; NULL if invalid */
-typedef struct CssNamespace { const char *prefix, *uri; } CssNamespace;
-char *css_selector_text_ns(const char *src, const CssNamespace *namespaces, int count);
+#include "selector-serialize.h"
 /* Syntax only: matching always observes live DOM/state. Caller frees scratch. */
 const SelList *css_query_syntax(Document *d, const char *text, SelList *scratch);
 extern uint64_t css_has_stats[2];

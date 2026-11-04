@@ -2,6 +2,7 @@
 #include "js_int.h"
 #include "../css/color.h"
 #include "../css/easing.h"
+#include "../css/selector-serialize.h"
 #include <algorithm>
 #include <cmath>
 #include <functional>

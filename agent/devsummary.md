@@ -574,3 +574,13 @@ validity gate retained. Source diff check completed; no browser test or build by
 Test agent owns immutable1808 baseline and candidate build/136URLgates. Candidate not yet
 qualified; sample compatibility score remains last-qualified60.82/100(759/1248URLs),
 not overall browser quality. Primary spec and acceptance scope in namespace slice PLAN.md.
+
+
+### Session19 iteration01 build failure and declaration fix
+
+Recorded:2026-11-04T06:55:55.665521+00:00. Candidate1901failed after23.13s:CssNamespace
+was declared only in full C CSS header, which jsnative.cc does not include. No binary,
+startup or conformance acceptance is claimed. CandidateID1901remains consumed.
+Added a small shared C/C++ declaration header and included it in both translation paths.
+Only declaration visibility changes; namespace behavior unchanged. MutationObserver and
+transition drafts remain excluded. Independent retry must use fresh1902 and exactHEAD.
