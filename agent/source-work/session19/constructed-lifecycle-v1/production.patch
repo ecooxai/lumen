@@ -1,0 +1,108 @@
+diff --git a/src/js/prelude/06b-activate.js b/src/js/prelude/06b-activate.js
+index 528acc1..080a8f2 100644
+--- a/src/js/prelude/06b-activate.js
++++ b/src/js/prelude/06b-activate.js
+@@ -244,7 +244,14 @@ function cssReplaceRules(sheet, next) {
+     d.owner = owner;
+ }
+ function cssReplaceSheet(sheet, text) {
+-    const next = cssParseList(String(text), sheet, null);
++    const parsed = cssParseList(String(text), sheet, null), next = new CSSRuleList();
++    /* Constructed replacement discards imports before applying any sheet text.
++     * Read private rule kinds, not author-overridable type accessors. */
++    for (let i = 0; i < parsed.length; i++) {
++        const rule = cssListOwn(parsed, i).value;
++        if (cssOwnerGet(rule).type !== 3)
++            cssListDefine(next, next.length, { value: rule, writable: true, enumerable: true, configurable: true });
++    }
+     cssReplaceRules(sheet, next);
+     sheet._sync();
+ }
+@@ -993,6 +1000,8 @@ function cssInsert(list, rule, index, sheet, parent) {
+     if (index > list.length) throw new DOMException(`Failed to execute 'insertRule' on 'CSSStyleSheet': The index provided (${index}) is larger than the maximum index (${list.length}).`, 'IndexSizeError');
+     const items = cssSplit(String(rule)), r = items.length === 1 ? cssMkRule(items[0], sheet, parent) : null;
+     if (!r) throw new DOMException(`Failed to execute 'insertRule' on 'CSSStyleSheet': Failed to parse the rule '${rule}'.`, 'SyntaxError');
++    if (!parent && sheet && cssSheetState(sheet).constructed && cssOwnerGet(r).type === 3)
++        throw new DOMException('Constructed stylesheets cannot contain import rules.', 'SyntaxError');
+     list.splice(index, 0, r);
+     if (!parent) cssRefreshNamespaces(sheet, list);
+     return index;
+@@ -1006,9 +1015,34 @@ function cssDelete(list, i) {
+     cssListDefine(list, 'length', { value: list.length - 1 });
+     cssDetachRule(removed);
+ }
+-class StyleSheet {}
++/* Construction provenance survives detachment and never depends on ownerNode.
++ * Disabled constructed sheets retain their rules; only their application mirrors
++ * are empty until the flag is cleared. */
++function cssSheetState(sheet) {
++    const state = cssOwnerGet(sheet);
++    if (!state || !state.list) throw new TypeError('Illegal StyleSheet invocation.');
++    return state;
++}
++function cssMirrorText(sheet) { return cssSheetState(sheet).disabled ? '' : sheet._text(); }
++class StyleSheet {
++    get disabled() { return cssSheetState(this).disabled; }
++    set disabled(value) {
++        const state = cssSheetState(this), disabled = !!value;
++        if (state.disabled === disabled) return;
++        state.disabled = disabled;
++        if (state.constructed) this._sync();
++    }
++}
+ class CSSStyleSheet extends StyleSheet {
+-    constructor(opts) { super(); const list = new CSSRuleList(); cssOwnerSet(this, { owner: { sheet: this }, list }); def(this, '_owner', null); def(this, '_src', null); def(this, '_list', list); def(this, '_media', cssCreateMediaList(opts && opts.media != null ? cssMediaString(opts.media) : '')); this.disabled = false; }
++    constructor(opts) {
++        super();
++        const list = new CSSRuleList(), state = { owner: { sheet: this }, list, constructed: true, disabled: false };
++        cssOwnerSet(this, state);
++        def(this, '_owner', null); def(this, '_src', null); def(this, '_list', list);
++        def(this, '_media', cssCreateMediaList(opts && opts.media != null ? cssMediaString(opts.media) : ''));
++        /* Initialization does not invoke an author-overridden disabled setter. */
++        state.disabled = !!(opts && opts.disabled);
++    }
+     get ownerNode() { return this._owner; } get type() { return 'text/css'; } get parentStyleSheet() { return null; } get ownerRule() { return null; }
+     get href() { const o = this._owner; return o && N.name(o) === 'link' ? o.href : null; }
+     get title() { const o = this._owner; return (o && N.attr(o, 'title')) || null; }
+@@ -1025,12 +1059,21 @@ class CSSStyleSheet extends StyleSheet {
+     deleteRule(i) { this._load(); cssDelete(this._list, i); cssRefreshNamespaces(this, this._list); this._sync(); }
+     addRule(sel = 'undefined', style = 'undefined', i) { this._load(); this.insertRule(`${sel} { ${style} }`, i === undefined ? this._list.length : i); return -1; }
+     removeRule(i = 0) { this.deleteRule(i); }
+-    replace(t) { cssReplaceSheet(this, t); return Promise.resolve(this); }
+-    replaceSync(t) { cssReplaceSheet(this, t); }
++    replace(t) {
++        try {
++            if (!cssSheetState(this).constructed) throw new DOMException('Only constructed stylesheets can be replaced.', 'NotAllowedError');
++            cssReplaceSheet(this, t);
++            return Promise.resolve(this);
++        } catch (error) { return Promise.reject(error); }
++    }
++    replaceSync(t) {
++        if (!cssSheetState(this).constructed) throw new DOMException('Only constructed stylesheets can be replaced.', 'NotAllowedError');
++        cssReplaceSheet(this, t);
++    }
+     _text() { return this._list.map(r => r.cssText).join('\n'); }
+     _sync() {   /* constructed sheets apply only through adoptedStyleSheets: mirror their text into each adopting scope */
+         const o = this._owner;
+-        if (!o) { if (this._mirrors) { const t = this._text(); for (const n of this._mirrors.values()) N.setText(n, t); } return; }
++        if (!o) { if (this._mirrors) { const t = cssMirrorText(this); for (const n of this._mirrors.values()) N.setText(n, t); } return; }
+         if (N.name(o) === 'style') { const t = this._text(); this._src = t; N.setText(o, t); }
+     }
+ }
+@@ -1042,14 +1085,14 @@ function adoptSheets(scope, v) {
+     for (const s of list) {
+         if (!s._mirrors) def(s, '_mirrors', new SMap());
+         let n = s._mirrors.get(scope);
+-        if (n) { if (n.parentNode) N.remove(n); } else { n = N.create('style', 0); def(n, '__mirror', true); s._mirrors.set(scope, n); N.setText(n, s._text()); }
++        if (n) { if (n.parentNode) N.remove(n); } else { n = N.create('style', 0); def(n, '__mirror', true); s._mirrors.set(scope, n); N.setText(n, cssMirrorText(s)); }
+         if (root) N.insert(root, n, null);
+     }
+ }
+ function readopt(scope) { if (scope.__ass.some(s => { const n = s._mirrors && s._mirrors.get(scope); return !n || !n.parentNode; })) adoptSheets(scope, scope.__ass); }
+ function adoptedGet(scope) { return new Proxy((scope.__ass || []).slice(), { set(t, k, val) { t[k] = val; adoptSheets(scope, t); return true; } }); }
+ function scopeSheets(scope) { return N.query(scope, 'style,link[rel~=stylesheet]', true).filter(el => !el.__mirror).map(sheetFor); }
+-function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); def(s, '_owner', el); def(s, '_media', cssCreateMediaList(N.attrNS(el, null, 'media') || '', null, el)); def(el, '__sheet', s); } return el.__sheet; }
++function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); cssSheetState(s).constructed = false; def(s, '_owner', el); def(s, '_media', cssCreateMediaList(N.attrNS(el, null, 'media') || '', null, el)); def(el, '__sheet', s); } return el.__sheet; }
+ /* CSS.registerProperty: validates the definition (name, syntax, a computationally independent initial value) */
+ const registeredProps = new SMap();
+ const RP_TYPES = new SSet(['length', 'number', 'percentage', 'length-percentage', 'color', 'image', 'url', 'integer', 'angle', 'time', 'resolution', 'transform-function', 'custom-ident', 'transform-list', 'string']);

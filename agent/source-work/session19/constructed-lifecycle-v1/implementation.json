@@ -1,0 +1,28 @@
+{
+  "agent": "source_steward",
+  "started_utc": "2026-11-04T07:14:10.369649+00:00",
+  "source_base_commit": "bc0c3af69bf60437cbb3141a6325cb63117fa05e",
+  "source_before_sha256": "28f847d1c049013cdc95622672769aa8293bd0197ef725ceb8089d4911971fba",
+  "source_after_sha256": "93ac30ca15e4692f74f49d709a8eb6d76226e839fe9948b37ef5e1b8cf1887ca",
+  "status": "implemented and static-reviewed; independent runtime gates pending",
+  "target_urls": [
+    "/css/cssom/CSSStyleSheet-constructable.html",
+    "/css/cssom/CSSStyleSheet-constructable-disallow-import.tentative.html",
+    "/css/cssom/CSSStyleSheet-constructable-disabled-regular-sheet-insertion.html",
+    "/css/cssom/CSSStyleSheet-constructable-replace-on-regular-sheet.html"
+  ],
+  "scope": [
+    "private constructed provenance",
+    "regular replacement throws/rejected Promise before mutation",
+    "constructed import rejection and replacement filtering",
+    "disabled constructed mirror application retaining CSSRules"
+  ],
+  "limits": [
+    "Imported CSSImportRule.styleSheet getter remains null",
+    "Regular stylesheet disabled rendering remains existing behavior",
+    "Adoption order, cross-document adoption, imports loading and async parsing remain unchanged"
+  ],
+  "sample_compatibility_score": 60.817307692307686,
+  "ended_utc": "2026-11-04T07:15:47.485897+00:00",
+  "implementation_and_review_seconds": 97.116248
+}
