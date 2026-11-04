@@ -955,6 +955,56 @@ class CSSKeyframeRule extends CSSRule {
     get style() { return ruleStyle(this); } set style(value) { this.style.cssText = value; }
     get cssText() { return `${cssKeyframeGet(this).text} ${blockText(this)}`; }
 }
+// CSSKeyframesRule is a live, getter-only indexed legacy platform object.
+// Keep one exposed identity from creation, before owner and child links exist.
+const CssKeyframesRuleProxy = Proxy;
+const cssKeyframesRuleReflect = {
+    get: Reflect.get, has: Reflect.has, ownKeys: Reflect.ownKeys,
+    getOwnPropertyDescriptor: Reflect.getOwnPropertyDescriptor,
+    set: Reflect.set, defineProperty: Reflect.defineProperty, deleteProperty: Reflect.deleteProperty
+};
+const cssKeyframesRuleIndex = key => {
+    if (typeof key !== 'string') return -1;
+    const index = +key;
+    return index >= 0 && index < 4294967295 && index % 1 === 0 && '' + index === key ? index : -1;
+};
+const cssKeyframesRuleHandler = {
+    get(target, key, receiver) {
+        const index = cssKeyframesRuleIndex(key), list = target._list;
+        if (index >= 0 && list && index < list.length) return list[index];
+        return cssKeyframesRuleReflect.get(target, key, receiver);
+    },
+    has(target, key) {
+        const index = cssKeyframesRuleIndex(key), list = target._list;
+        return index >= 0 && list && index < list.length || cssKeyframesRuleReflect.has(target, key);
+    },
+    ownKeys(target) {
+        const list = target._list, keys = [];
+        for (let i = 0; list && i < list.length; i++) apush(keys, '' + i);
+        const own = cssKeyframesRuleReflect.ownKeys(target);
+        for (let i = 0; i < own.length; i++) apush(keys, own[i]);
+        return keys;
+    },
+    getOwnPropertyDescriptor(target, key) {
+        const index = cssKeyframesRuleIndex(key), list = target._list;
+        if (index >= 0 && list && index < list.length)
+            return { value: list[index], enumerable: true, configurable: true, writable: false };
+        return cssKeyframesRuleReflect.getOwnPropertyDescriptor(target, key);
+    },
+    set(target, key, value, receiver) {
+        const index = cssKeyframesRuleIndex(key), list = target._list;
+        if (index >= 0 && list && index < list.length) return false;
+        return cssKeyframesRuleReflect.set(target, key, value, receiver);
+    },
+    defineProperty(target, key, descriptor) {
+        return cssKeyframesRuleIndex(key) >= 0 ? false : cssKeyframesRuleReflect.defineProperty(target, key, descriptor);
+    },
+    deleteProperty(target, key) {
+        const index = cssKeyframesRuleIndex(key), list = target._list;
+        return index >= 0 ? !list || index >= list.length : cssKeyframesRuleReflect.deleteProperty(target, key);
+    },
+    preventExtensions() { return false; }
+};
 class CSSKeyframesRule extends CSSRule {
     get type() { return 7; } get name() { return this._name; } set name(v) { this._name = String(v); this._changed(); }
     get cssRules() { return this._list; } get length() { return this._list.length; }
@@ -981,7 +1031,8 @@ class CSSKeyframesRule extends CSSRule {
     get cssText() { return `@keyframes ${N.cssKeyframesNameText(this._name)} ${CSSGroupingRule.prototype._inner.call(this)}`; }
 }
 function cssMk(C, props) {
-    const r = Object.create(C.prototype), parent = props._parent;
+    const target = Object.create(C.prototype);
+    const r = C === CSSKeyframesRule ? new CssKeyframesRuleProxy(target, cssKeyframesRuleHandler) : target, parent = props._parent;
     const type = C === CSSStyleRule ? 1 : C === CSSImportRule ? 3 : C === CSSMediaRule ? 4 :
         C === CSSFontFaceRule ? 5 : C === CSSPageRule ? 6 : C === CSSKeyframesRule ? 7 :
         C === CSSKeyframeRule ? 8 : C === CSSNamespaceRule ? 10 : C === CSSSupportsRule ? 12 : 0;
