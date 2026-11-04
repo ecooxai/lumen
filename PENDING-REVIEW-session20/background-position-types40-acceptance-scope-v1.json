@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "frozen_utc": "2026-11-04T17:37:38.132773+00:00",
+  "scope": "Before source edit:37 required type/grammar/retention identities; all40 original rows/oracles remain unchanged. Three inherited shorthand size/list reporting failures remain observations, with exact already-correct position components retained. No whole-shorthand size/repeat repair.",
+  "manifest": "agent/ops/session20/platform-qa/background-position-types40-v1-manifest.json",
+  "manifest_sha256": "da1bf9d654d63945131b3d2a3b5c3dbeacb1fd5a55af6578d7dc075f15f5aa12",
+  "fixture_sha256": "fadd106697652a085855eced609217b246c6b60039e1272efd33b15e950be84c",
+  "baseline": {
+    "candidate": 2006,
+    "source": "0f3d179e295da31945a461e06e0a7ff2221529db",
+    "report": "agent/validation/linux-wpt-20261104-session20/background-position-types40-baseline2006-v1/report.json",
+    "sha256": "27fa7829d0916b6b0c6ba4aa5248c1499c34641b27f1d05afe3f230273834f93",
+    "registered": 40,
+    "passing": 17
+  },
+  "reference": {
+    "report": "agent/validation/linux-wpt-20261104-session20/background-position-types40-reference-v1/report.json",
+    "sha256": "4fcb6a65d5723a7451b3a6e4bc0ae0583d6e57d7ee63dbf46b647f9e737fdd1e",
+    "registered": 40,
+    "passing": 40
+  },
+  "required_names": [
+    "attribute rejects number math calc(2)",
+    "stylesheet rejects number math calc(2)",
+    "var substitution rejects number math calc(2)",
+    "CSSOM rejects number math calc(2)",
+    "attribute rejects number math calc(0)",
+    "stylesheet rejects number math calc(0)",
+    "var substitution rejects number math calc(0)",
+    "CSSOM rejects number math calc(0)",
+    "attribute rejects number math min(1, 2)",
+    "stylesheet rejects number math min(1, 2)",
+    "var substitution rejects number math min(1, 2)",
+    "CSSOM rejects number math min(1, 2)",
+    "attribute rejects number math max(0, 0)",
+    "stylesheet rejects number math max(0, 0)",
+    "var substitution rejects number math max(0, 0)",
+    "CSSOM rejects number math max(0, 0)",
+    "attribute rejects number math clamp(0, 1, 2)",
+    "stylesheet rejects number math clamp(0, 1, 2)",
+    "var substitution rejects number math clamp(0, 1, 2)",
+    "CSSOM rejects number math clamp(0, 1, 2)",
+    "attribute rejects number math calc(2px / 1px)",
+    "stylesheet rejects number math calc(2px / 1px)",
+    "var substitution rejects number math calc(2px / 1px)",
+    "CSSOM rejects number math calc(2px / 1px)",
+    "native valid bare zero",
+    "native valid signed zero",
+    "native valid pixel lengths",
+    "native valid percentages",
+    "native valid length functions",
+    "native valid mixed length percentage",
+    "native valid four component edges",
+    "native valid three component end",
+    "native valid three component start",
+    "native valid two layers",
+    "native x offset rejects number math",
+    "native y offset rejects number math",
+    "native axis length functions remain valid"
+  ],
+  "retained_pass_names": [
+    "CSSOM rejects number math calc(2)",
+    "CSSOM rejects number math calc(0)",
+    "CSSOM rejects number math min(1, 2)",
+    "CSSOM rejects number math max(0, 0)",
+    "CSSOM rejects number math clamp(0, 1, 2)",
+    "CSSOM rejects number math calc(2px / 1px)",
+    "native valid bare zero",
+    "native valid signed zero",
+    "native valid pixel lengths",
+    "native valid percentages",
+    "native valid length functions",
+    "native valid mixed length percentage",
+    "native valid four component edges",
+    "native valid three component end",
+    "native valid three component start",
+    "native valid two layers",
+    "native axis length functions remain valid"
+  ],
+  "observations": [
+    {
+      "name": "valid background shorthand three component size",
+      "baseline_pass": false,
+      "required_position_components": {
+        "position": "calc(100% - 2px) 100%",
+        "x": "calc(100% - 2px)",
+        "y": "100%"
+      },
+      "baseline_observations": {
+        "position": "calc(100% - 2px) 100%",
+        "x": "calc(100% - 2px)",
+        "y": "100%",
+        "size": "auto",
+        "repeat": "repeat",
+        "expected": "calc(100% - 2px) 100%",
+        "sizeExpected": "10px 20px"
+      }
+    },
+    {
+      "name": "valid background shorthand four component gradient",
+      "baseline_pass": false,
+      "required_position_components": {
+        "position": "2px 4px",
+        "x": "2px",
+        "y": "4px"
+      },
+      "baseline_observations": {
+        "position": "2px 4px",
+        "x": "2px",
+        "y": "4px",
+        "size": "auto",
+        "repeat": "repeat",
+        "expected": "2px 4px",
+        "sizeExpected": "8px 9px"
+      }
+    },
+    {
+      "name": "valid background shorthand two layers",
+      "baseline_pass": false,
+      "required_position_components": {
+        "position": "0px 0px, 100% 100%",
+        "x": "0px, 100%",
+        "y": "0px, 100%"
+      },
+      "baseline_observations": {
+        "position": "0px 0px, 100% 100%",
+        "x": "0px, 100%",
+        "y": "0px, 100%",
+        "size": "auto",
+        "repeat": "repeat",
+        "expected": "0px 0px, 100% 100%",
+        "sizeExpected": "auto, auto"
+      }
+    }
+  ],
+  "source_boundary": "src/css/style.c bg_length only: reject number-valued math functions while preserving bare unitless zero and existing length-percentage grammar/full consumption.",
+  "existing_consumer": "src/paint/display.c background_length(s->bg_pos[0/1], area minus image size), first layer; no painter changes.",
+  "primary_sources": [
+    "https://drafts.csswg.org/css-values-4/#calc-type-checking",
+    "https://drafts.csswg.org/css-backgrounds-3/#background-position"
+  ],
+  "upstream_gain_claim": null
+}

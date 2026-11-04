@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "created_utc": "2026-11-04T17:33:25.789698+00:00",
+  "scope": "Frozen before any follow-up engine edit. Public native ingress versus CSSOM type consistency; native bg_pos has an existing first-layer painter consumer. Whole-background invalid-shorthand validation is excluded; valid shorthand retained. No upstream WPT gain claimed.",
+  "primary_sources": [
+    "https://drafts.csswg.org/css-backgrounds-3/#background-position",
+    "https://drafts.csswg.org/css-values-4/#calc-type-checking"
+  ],
+  "fixtures": [
+    {
+      "name": "background-position-types40-v1",
+      "fixture": "agent/ops/session20/platform-qa/background-position-types40-v1.html",
+      "marker": "background-position-types40-v1",
+      "row_prefix": "BACKGROUND_POSITION_TYPE_ROW ",
+      "expected_count": 40,
+      "assertion_names": [
+        "attribute rejects number math calc(2)",
+        "stylesheet rejects number math calc(2)",
+        "var substitution rejects number math calc(2)",
+        "CSSOM rejects number math calc(2)",
+        "attribute rejects number math calc(0)",
+        "stylesheet rejects number math calc(0)",
+        "var substitution rejects number math calc(0)",
+        "CSSOM rejects number math calc(0)",
+        "attribute rejects number math min(1, 2)",
+        "stylesheet rejects number math min(1, 2)",
+        "var substitution rejects number math min(1, 2)",
+        "CSSOM rejects number math min(1, 2)",
+        "attribute rejects number math max(0, 0)",
+        "stylesheet rejects number math max(0, 0)",
+        "var substitution rejects number math max(0, 0)",
+        "CSSOM rejects number math max(0, 0)",
+        "attribute rejects number math clamp(0, 1, 2)",
+        "stylesheet rejects number math clamp(0, 1, 2)",
+        "var substitution rejects number math clamp(0, 1, 2)",
+        "CSSOM rejects number math clamp(0, 1, 2)",
+        "attribute rejects number math calc(2px / 1px)",
+        "stylesheet rejects number math calc(2px / 1px)",
+        "var substitution rejects number math calc(2px / 1px)",
+        "CSSOM rejects number math calc(2px / 1px)",
+        "native valid bare zero",
+        "native valid signed zero",
+        "native valid pixel lengths",
+        "native valid percentages",
+        "native valid length functions",
+        "native valid mixed length percentage",
+        "native valid four component edges",
+        "native valid three component end",
+        "native valid three component start",
+        "native valid two layers",
+        "native x offset rejects number math",
+        "native y offset rejects number math",
+        "native axis length functions remain valid",
+        "valid background shorthand three component size",
+        "valid background shorthand four component gradient",
+        "valid background shorthand two layers"
+      ],
+      "sha256": "fadd106697652a085855eced609217b246c6b60039e1272efd33b15e950be84c"
+    }
+  ]
+}

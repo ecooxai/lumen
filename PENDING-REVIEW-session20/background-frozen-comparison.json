@@ -1,0 +1,416 @@
+{
+  "baseline2006": {
+    "registered": 40,
+    "passing": 17,
+    "source_report_sha256": "27fa7829d0916b6b0c6ba4aa5248c1499c34641b27f1d05afe3f230273834f93",
+    "rows": [
+      {
+        "name": "attribute rejects number math calc(2)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math calc(2)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math calc(2)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math calc(2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "attribute rejects number math calc(0)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math calc(0)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math calc(0)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math calc(0)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "attribute rejects number math min(1, 2)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math min(1, 2)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math min(1, 2)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math min(1, 2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "attribute rejects number math max(0, 0)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math max(0, 0)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math max(0, 0)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math max(0, 0)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "attribute rejects number math clamp(0, 1, 2)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math clamp(0, 1, 2)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math clamp(0, 1, 2)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math clamp(0, 1, 2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "attribute rejects number math calc(2px / 1px)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math calc(2px / 1px)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math calc(2px / 1px)",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math calc(2px / 1px)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid bare zero",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid signed zero",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid pixel lengths",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid percentages",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid length functions",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid mixed length percentage",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid four component edges",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid three component end",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid three component start",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid two layers",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native x offset rejects number math",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "native y offset rejects number math",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "native axis length functions remain valid",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "valid background shorthand three component size",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "valid background shorthand four component gradient",
+        "pass": false,
+        "observed": null
+      },
+      {
+        "name": "valid background shorthand two layers",
+        "pass": false,
+        "observed": null
+      }
+    ]
+  },
+  "reference": {
+    "registered": 40,
+    "passing": 40,
+    "source_report_sha256": "4fcb6a65d5723a7451b3a6e4bc0ae0583d6e57d7ee63dbf46b647f9e737fdd1e",
+    "rows": [
+      {
+        "name": "attribute rejects number math calc(2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math calc(2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math calc(2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math calc(2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "attribute rejects number math calc(0)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math calc(0)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math calc(0)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math calc(0)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "attribute rejects number math min(1, 2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math min(1, 2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math min(1, 2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math min(1, 2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "attribute rejects number math max(0, 0)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math max(0, 0)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math max(0, 0)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math max(0, 0)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "attribute rejects number math clamp(0, 1, 2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math clamp(0, 1, 2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math clamp(0, 1, 2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math clamp(0, 1, 2)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "attribute rejects number math calc(2px / 1px)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "stylesheet rejects number math calc(2px / 1px)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "var substitution rejects number math calc(2px / 1px)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "CSSOM rejects number math calc(2px / 1px)",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid bare zero",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid signed zero",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid pixel lengths",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid percentages",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid length functions",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid mixed length percentage",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid four component edges",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid three component end",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid three component start",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native valid two layers",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native x offset rejects number math",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native y offset rejects number math",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "native axis length functions remain valid",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "valid background shorthand three component size",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "valid background shorthand four component gradient",
+        "pass": true,
+        "observed": null
+      },
+      {
+        "name": "valid background shorthand two layers",
+        "pass": true,
+        "observed": null
+      }
+    ]
+  }
+}

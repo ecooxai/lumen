@@ -1,0 +1,27 @@
+{
+  "created_utc": "2026-11-04T18:12:31.335034+00:00",
+  "status": "UNQUALIFIED_PENDING_SOURCE_REVIEW_ARTIFACT_ONLY",
+  "accepted_baseline": 2006,
+  "accepted_source": "0f3d179e295da31945a461e06e0a7ff2221529db",
+  "object_stage_source": "2de18b314abacd5a027496b715bb28b91d676191",
+  "object_current_status": "Original full HOLD retained; one preregistered unchanged full reliability replay still running. This artifact does not promote the stage.",
+  "object_original_raw_sha256": "e868a979629a6dbe5ed99adb56bd1d494a9b7c0e2ea09a3dc49cc8e5cff3ea26",
+  "background_pending_commit": "e2145944f4e20643622a9736102da3d696c2e777",
+  "background_patch_base": "2de18b314abacd5a027496b715bb28b91d676191",
+  "background_built_or_qualified": false,
+  "background_frozen_controls": 40,
+  "background_required_rows": 37,
+  "background_observations": 3,
+  "background_baseline_pass": 17,
+  "background_reference_pass": 40,
+  "background_reference_version": "150.0.7871.114",
+  "background_original_oracles_unchanged": true,
+  "background_scope_sha256": "c508f2438e3263f75fea464fdb8c9ae5b1a25ccdcec2a31e0994907a28060edf",
+  "source_and_fixture_hashes": {
+    "object-position-stage-v4.patch": "83448ff743e940b13cc7837f389fc29f9a9b501c3d1384ddb7c902bc4cca1846",
+    "background-position-types-v1.patch": "87b888d8390312768260b4310ebef2e159e7f24e3dea86f149a52fbe62dd9e37",
+    "background-position-types40-v1.html": "fadd106697652a085855eced609217b246c6b60039e1272efd33b15e950be84c"
+  },
+  "private_accounts_profiles_auth_evidence_included": false,
+  "no_full_wpt_or_chromium_parity_claim": true
+}
