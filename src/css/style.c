@@ -4672,6 +4672,7 @@ static bool animation_range_differ(const ComputedStyle *a, const ComputedStyle *
  * retains normal all validation and nested other-style work is unaffected. */
 static _Thread_local const ComputedStyle *contain_intrinsic_projection_style;
 static _Thread_local const ComputedStyle *interpolate_size_projection_style;
+static _Thread_local const ComputedStyle *animation_range_projection_style;
 static void query_basis_copy(ComputedStyle *, const ComputedStyle *, int);
 static void css_apply_decl_inner(ComputedStyle *, const ComputedStyle *, const char *, const char *, StyleEngine *, Node *);
 /* Actual normal properties and lazy basis projections share the same guarded
@@ -5168,7 +5169,9 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
         else if (!strcmp(P, "all")) {
             /* Preserve authored all ordering for these native families. The
                CSS-wide branch has already validated the reset keyword. */
-            if (interpolate_size_projection_style == st)
+            if (animation_range_projection_style == st)
+                css_apply_decl(st, par, "animation-range", val, e, el);
+            else if (interpolate_size_projection_style == st)
                 css_apply_decl(st, par, "interpolate-size", val, e, el);
             else {
                 css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
@@ -7380,6 +7383,21 @@ static void apply_contain_intrinsic_declarations(ComputedStyle *st, const Comput
     }
     contain_intrinsic_projection_style = previous_projection;
 }
+/* Inline declarations retain their authored sequence in MDecl. Replay only
+ * the range family in the existing priority tiers, preserving source order
+ * within each tier and validating all before projecting its reset. */
+static void apply_animation_range_declarations(ComputedStyle *st, const ComputedStyle *par,
+        MDecl *v, int n, StyleEngine *e, Node *el) {
+    const ComputedStyle *previous_projection = animation_range_projection_style;
+    animation_range_projection_style = st;
+    for (int phase = 0; phase < 3; phase++) for (int i = 0; i < n; i++) {
+        const Decl *d = v[i].d;
+        if (!animation_range_kind(d->prop) && strcmp(d->prop, "all")) continue;
+        int priority = (v[i].key >> 62) == 3 ? 2 : !v[i].key && d->important ? 1 : 0;
+        if (priority == phase) css_apply_decl(st, par, d->prop, d->value, e, el);
+    }
+    animation_range_projection_style = previous_projection;
+}
 /* Resolve only the final declaration of a basis property. This keeps a
  * query's own-font context independent of declaration order, without
  * evaluating overridden conditions or changing the ordinary cascade pass. */
@@ -7636,14 +7654,15 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
         apply_font_declarations(st, par, v, n, e, el, author);
         for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     }
-    bool intrinsic_family = false, interpolation_policy = false;
+    bool intrinsic_family = false, interpolation_policy = false, range_family = false;
     for (int i = 0; i < n; i++) {
         const char *p = v[i].d->prop;
         if ((p[0] == '-' && p[1] == '-') || flow_basis_prop(p) || font_basis_prop(p) || !strcmp(p, "color")) continue;
         if (!strcmp(p, "interpolate-size")) { interpolation_policy = true; continue; }
+        if (animation_range_kind(p)) { range_family = true; continue; }
         if (contain_intrinsic_family(p)) {
             intrinsic_family = true;
-            if (!strcmp(p, "all")) interpolation_policy = true;
+            if (!strcmp(p, "all")) { interpolation_policy = true; range_family = true; }
             if (strcmp(p, "all")) continue;
         }
         if (author && unitless_invalid(p, v[i].d->value, el)) continue;
@@ -7667,6 +7686,7 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
         }
         interpolate_size_projection_style = previous_projection;
     }
+    if (range_family) apply_animation_range_declarations(st, par, v, n, e, el);
     var_resolver_finish(&resolver);
     if (typed_context) {
         for (int i = 0; i < QB_COUNT; i++) query_basis_copy(st, basis.computed, i);
