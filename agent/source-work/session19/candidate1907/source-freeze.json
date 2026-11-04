@@ -1,0 +1,44 @@
+{
+  "candidate": 1907,
+  "purpose": "diagnostic-only realm bootstrap phases",
+  "created_utc": "2026-11-04T08:24:51.777438+00:00",
+  "production_tip": "ed1a7624e5aaf9e7661462daac91d5b9d8289f41",
+  "source_tree": "1aed1be93fe7d3276ffaa277e643255f5058f1fa",
+  "functional_comparison_base": {
+    "candidate": 1906,
+    "head": "f454cf2097ab4742064664643c3b0447c71137eb",
+    "binary_sha256": "cba377366b0992b81a27c5a3108c0d1ec24053f6750459c2ebda051d707b6cb4"
+  },
+  "production_delta": [
+    "src/js/frames.cc native trace helper wrapper",
+    "src/js/js.cc seven native milestones",
+    "src/js/js_int.h wrapper declaration"
+  ],
+  "stage_association": "Direct initializing JsCtx pointer; id,parent,doc,thread and registry attachment precede first milestone; no lookup required",
+  "test_plan": "test lane to preregister immutable OFF/ON controls after full1248 heavy lane releases; unchanged namespace2/15s/2workers and guards",
+  "full1906": "running; started08:03:18UTC, no result claimed",
+  "qualifications": {
+    "numeric81": {
+      "before_urls": 37,
+      "after_urls": 39,
+      "urls": 81,
+      "before_assertions": 2820,
+      "after_assertions": 2840,
+      "assertions": 3462,
+      "harness_ok": 81,
+      "lost_passes": 0
+    },
+    "last_qualified_full": {
+      "candidate": 1808,
+      "urls": 1248,
+      "passed_urls": 759,
+      "score": 60.817307692307686
+    }
+  },
+  "not_included": [
+    "five held DOM drafts",
+    "range-family draft",
+    "any lifecycle or performance fix"
+  ],
+  "tracked_status_sha256": "93eaaee5e804c8199792deb125d5d575a229bba5cd2bd90f0b12e75096b37466"
+}

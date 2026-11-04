@@ -720,3 +720,9 @@ Candidate1904 focused union:106/198 passing URLs versus95/198 fresh1808;2058/282
 ### Iteration10 — bounded realm initialization phase diagnostic
 
 Start 2026-11-04T07:59:29.872337+00:00, end 2026-11-04T07:59:29.890215+00:00, measured mutation interval 0.017878 seconds. The sealed1905 ON traces assign about95% of successful namespace runtime to80 realm initializations, with4.82/4.89 seconds thread CPU. Added seven native phase milestones behind the existing disabled-by-default trace flag; no behavioral or optimization claim. Build is deferred until the independent full1248 heavy lane is free. Receipt: `agent/source-work/session19/realm-phase-trace-v1/implementation.json`. Score remains60.8173/100 selected-manifest compatibility. Important-progress public persistence remains the independently verified1902 checkpoint; next cumulative public checkpoint should follow qualified full evidence, preserving private diagnostic data.
+
+### Phase diagnostic clean freeze and iteration10 persistence
+
+At 2026-11-04T08:24:51.777438+00:00, canonical production remains diagnostic-only ed1a7624 (source tree1aed1be93fe7d3276ffaa277e643255f5058f1fa). Candidate1906 numeric81 qualified39/81 and2840/3462, +2 URLs/+20 assertions, all81 harnessesOK and no lostPASS. Its full1248 replay is still running; historical full score remains60.8173/100. Candidate1907 will profile seven native bootstrap stages without DOM/range draft changes after the heavy lane clears.
+
+Iteration10 isolated public work checkpoint8dd1c47c5d7ea9060bbb6ed8eab817d83888a88e was independently reviewed and remote-readback verified;843 hashes/modes,810 canonical source inputs and221 public ancestors were checked. It is explicitly unbuilt work-only, while live download stays1902. Independent review took0.478697s plus a separate manifest/mode verification; publication receipt reports3.39s. Private history/diagnostics were not exported. Receipts are retained under source-work/session19.

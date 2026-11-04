@@ -1,0 +1,24 @@
+{
+  "status": "independently reviewed, approved as work checkpoint only",
+  "created_utc": "2026-11-04T08:08:00.926840+00:00",
+  "seconds": 0.478697,
+  "preparation_sha256": "408217b1360430ba60f44fec87f6837ed68c84dc2a890e84ef417192df57f044",
+  "source_commit": "ed1a7624e5aaf9e7661462daac91d5b9d8289f41",
+  "public_parent": "28cdeb590fafa03b04363755245638f2d673290d",
+  "inventory_hashes_verified": 843,
+  "canonical_source_blobs_verified": 810,
+  "preserved_public_files_verified": 28,
+  "public_ancestry_commits_verified": 221,
+  "private_current_and_tested_commits_absent": true,
+  "private_history_alternates_absent": true,
+  "phase_delta_paths": [
+    "src/js/frames.cc",
+    "src/js/js.cc",
+    "src/js/js_int.h"
+  ],
+  "source_is_unbuilt_work_checkpoint": true,
+  "full1248_pending": true,
+  "download_remains1902": true,
+  "manifest_source_hashes_verified": 810,
+  "file_modes_verified": 843
+}

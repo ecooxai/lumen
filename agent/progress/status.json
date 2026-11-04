@@ -1,12 +1,12 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session19",
-  "phase": "Candidate 1903 is on HOLD after a namespace completion failure in its focused run. MutationObserver changes independently improved the 23-URL cohort to 16 passes, up 3 URLs and 5 assertions; unchanged namespace diagnostics are investigating reliability.",
+  "phase": "Candidate1906 full1248 selected WPT replay is running. Reviewed focused changes have gained13 URLs and198 assertions before that full replay; no new whole-selected-suite rate is claimed yet.",
   "iteration": 1808,
-  "session_iteration": 1,
+  "session_iteration": 10,
   "score": 60.817307692307686,
   "selected_case_score": 60.817307692307686,
   "score_candidate": 1808,
-  "score_note": "60.82/100 is the inherited selected1248-URL pass percentage, not a new session19 full run or whole-platform product quality.",
+  "score_note": "60.82/100 is the historical candidate1808 selected1248-URL pass percentage, not whole-platform product quality or a completed1906 result.",
   "score_scope": "1248 selected HTTP/default-timeout testharness URLs from1247 source files; separate assertion denominators.",
   "checkpoint": "fcf2d2d83686a554f492fbaf992173b12d924b64",
   "session_started_utc": "2026-11-04T06:33:55Z",
@@ -20,27 +20,28 @@
   "session_response_availability": "An active built-in agent polls session messages during this work session. Replies require this active session.",
   "goal_achieved": false,
   "goal_score": 95,
-  "overall_assessment": "The historical selected 1248-URL pass rate remains 60.82%. A focused namespace improvement is qualified; whole-platform Chromium parity and overall 95 quality remain unachieved.",
-  "overall_result_label": "Session 19 active; 1902 namespace source published, 1903 on HOLD",
+  "overall_assessment": "The historical selected1248-URL pass rate remains60.82% for candidate1808. Candidate1904 gained11 URLs and178 assertions in its reviewed198-URL union; candidate1906 separately gained2 URLs and20 assertions in81 numeric URLs. Full1906 qualification is pending; Chromium parity and overall95 quality remain unachieved.",
+  "overall_result_label": "Session19 active;1906 full1248 running, iteration10 work checkpoint saved",
   "accepted_iteration": 1808,
-  "active_iteration": 1903,
-  "active_candidate": 1903,
+  "active_iteration": 1906,
+  "active_candidate": 1906,
   "accepted_binary_sha256": "79af7023284551d597ce61ff4a5e3954a7edd2a43b4b8ee2af5d63a1658ff46d",
   "accepted_binary_scope": "Historical session18 measured candidate1808: one unchanged reliability replay plus two namespace checks. First full namespace timeout remains retained.",
   "coverage": "759/1248 selected cases and22826/26245 assertions; all22826 required passes preserved. Reference Chromium150:1062/1248 and24541/26064. Selected scope, not allWPT.",
   "current_evidence": [
-    "Candidate 1902 frozen focused cohort: 64/136 URLs and 1652/2455 assertions, up 2 URLs and 44 assertions from fresh candidate 1808, with zero lost passes or harness regressions.",
-    "Fresh pinned Chromium 150 reference: 105/136 URLs and 1970/2455 assertions.",
-    "Candidate 1903: native contracts218/218 passed, but the focused WPT run is on HOLD after a namespace completion failure. MutationObserver cohort independently16/23 URLs, up3 URLs and5 assertions.",
-    "Isolated candidate 1808 Linux GUI smoke passed keyboard input, navigation/history and four page checks. Settled idle CPU median 0%, max 1%; whole-smoke RSS peak 142.8 MB.",
-    "Candidate 1901 build failure remains recorded; failed binary never replaced the runtime."
+    "Candidate1904 reviewed targeted union:106/198 URLs and2058/2829 assertions versus95/198 and1880/2829 for fresh1808, gain11 URLs and178 assertions, zero prior-pass losses.",
+    "Candidate1906 reviewed numeric81:39/81 URLs and2840/3462 assertions versus37/81 and2820/3462 for1808, gain2 URLs and20 assertions, zero prior-pass losses and all81 harnesses OK.",
+    "Candidate1906 immutable full1248 replay started08:03:20.999 UTC and is running. Historical full baseline remains759/1248 URLs and22826/26245 assertions; no full gain is extrapolated.",
+    "Independent original numeric14 controls:1906 passes13/14; original reference passes12/14. The rejected percentage destination case and pinned signed-zero/spec discrepancy are retained; infectious NaN behavior follows CSS Values4.",
+    "Namespace harness completion remains intermittent; phase instrumentation is unbuilt diagnostic work, not a reliability-fix claim.",
+    "Iteration10 work source checkpoint is published with independently reviewed inventory and exact remote-commit readback. Qualified1902 remains the downloadable source archive."
   ],
   "findings": [
-    "Namespace CSS selector serialization now preserves namespace semantics.",
-    "Transition shorthand and MutationObserver changes have reached the native gate; unchanged WPT and independent controls determine qualification.",
-    "Range endpoint preservation and random-size syntax validation are separate reviewed drafts.",
-    "Live HTTPS preview, two-second telemetry, WebSocket latency and scoped session posting remain available.",
-    "Builds and tests use the shared 480% CPU quota and one-second process/cgroup monitoring."
+    "Namespace selector serialization, transition ordering, observer record handling, constructed-sheet behavior and range/random validation have reviewed focused gains.",
+    "Absolute-value, sign and hypotenuse serialization folding gained20 assertions in the81-URL numeric cohort, preserving prior passes and pending substitutions.",
+    "The full1248 replay uses the same frozen URL set and acceptance rules; complete results are still pending.",
+    "A separate draft is adding real animation-range longhands and computed endpoint values. It is not in the running1906 binary.",
+    "Existing display0 and authorized Android installations remain preserved until final accepted-candidate delivery."
   ],
   "historical": {
     "label": "Previous Linux311 same frozen1248 sample:686/1248files;21992/26245assertions.",
@@ -68,9 +69,9 @@
   },
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104",
-  "working_commit": "9452dac0074ffe9c2c5845013dafd954d9a4ce5b",
-  "updated_utc": "2026-11-04T07:26:33.000028+00:00",
-  "updated_at": "2026-11-04T07:21:42.638993+00:00",
+  "working_commit": "ed1a7624e5aaf9e7661462daac91d5b9d8289f41",
+  "updated_utc": "2026-11-04T08:13:46.710995+00:00",
+  "updated_at": "2026-11-04T08:13:46.710995+00:00",
   "runtime_candidate": 1808,
   "runtime_note": "Existing verified candidate1808 desktop process remains untouched while session19 development proceeds; Android still needs final candidate delivery.",
   "qualified_prior_candidate_scope": {
@@ -190,8 +191,8 @@
   },
   "source_archive_candidate": 1902,
   "source_archive_sha256": "b27d00867acd9ee9933a3494a1feb4dcbed16dab235b33ecf05b85a903fcc27e",
-  "source_archive_bytes": 10344997,
-  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1804-20261103",
+  "source_archive_bytes": 10365417,
+  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
   "latest_broad_observation": {
     "candidate": 1805,
     "qualification_status": "HOLD",
@@ -424,7 +425,7 @@
       }
     }
   },
-  "full_replay_candidate": null,
+  "full_replay_candidate": 1906,
   "candidate1806_diagnostic_scope": {
     "source_commit": "ea873d349771172867fad01ad45723ba2870ccc4",
     "accepted_for_release": false,
@@ -465,8 +466,8 @@
     "retained1318_ran": false,
     "full1248_ran": false
   },
-  "score_basis": "714/1248 selected HTTP/default-timeout test cases/URLs from1247 source files; last regression-free1705 score, not whole WPT",
-  "working_commit_role": "Active development branch; public source checkpoint 1902 is undergoing reviewed publication. Broad measured baseline remains immutable candidate 1808.",
+  "score_basis": "759/1248 selected HTTP/default-timeout test URLs from1247 source files; historical candidate1808 baseline while1906 full replay runs.",
+  "working_commit_role": "Separate unbuilt diagnostic phase instrumentation snapshot, durably saved as a WORK checkpoint. The running functional replay uses immutable1906 built fromf454cf2097ab4742064664643c3b0447c71137eb.",
   "public_source_commit": "28cdeb590fafa03b04363755245638f2d673290d",
   "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
   "source_archive_external_hash_verified": true,
@@ -478,18 +479,17 @@
     "documentation_sealed_utc": "2026-11-03T13:10:09.155650+00:00"
   },
   "focused_current": {
-    "candidate": 1902,
-    "source_commit": "565fd239d34dbdaade8b232483fa8aeffba8d767",
-    "passed_urls": 64,
-    "total_urls": 136,
-    "baseline1808_passed_urls": 62,
-    "chromium150_passed_urls": 105,
-    "passed_assertions": 1652,
-    "total_assertions": 2455,
-    "baseline1808_passed_assertions": 1608,
+    "candidate": 1904,
+    "cohort": "reviewed targeted union",
+    "passed_urls": 106,
+    "total_urls": 198,
+    "baseline1808_passed_urls": 95,
+    "passed_assertions": 2058,
+    "total_assertions": 2829,
+    "baseline1808_passed_assertions": 1880,
     "lost_passes": 0,
-    "harness_regressions": 0,
-    "known_timeouts": 3,
+    "new_passing_urls": 11,
+    "new_assertion_passes": 178,
     "full1248_replay_performed": false
   },
   "mutation_current": {
@@ -499,5 +499,28 @@
     "new_passing_urls": 3,
     "new_assertion_passes": 5,
     "overall_candidate_on_hold": true
+  },
+  "full_replay_status": "running",
+  "full_replay_started_utc": "2026-11-04T08:03:20.999Z",
+  "work_checkpoint_public_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-work-iteration10-20261104",
+  "work_checkpoint_public_commit": "8dd1c47c5d7ea9060bbb6ed8eab817d83888a88e",
+  "work_checkpoint_label": "Iteration10 WORK checkpoint: unbuilt phase instrumentation; full1906 pending; live source download remains qualified1902",
+  "numeric_current": {
+    "candidate": 1906,
+    "passed_urls": 39,
+    "total_urls": 81,
+    "baseline1808_passed_urls": 37,
+    "passed_assertions": 2840,
+    "total_assertions": 3462,
+    "baseline1808_passed_assertions": 2820,
+    "new_passing_urls": 2,
+    "new_assertion_passes": 20,
+    "lost_passes": 0,
+    "all_harnesses_ok": true
+  },
+  "focused_pre_full_gains": {
+    "new_passing_urls": 13,
+    "new_assertion_passes": 198,
+    "scope": "reviewed focused changes across separate cohorts; not a full1248 rate"
   }
 }

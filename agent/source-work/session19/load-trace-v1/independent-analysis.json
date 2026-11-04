@@ -1,0 +1,186 @@
+{
+  "created_utc": "2026-11-04T08:00:44.276866+00:00",
+  "analyst": "source_steward",
+  "candidate": 1905,
+  "source_head": "225329889a0e3d8d77d12c13bedc3e631c13886c",
+  "trace_report_sha256": "a573d4ca0d127977f4d9c2041f7cc4bfbc4364606a48584ee21bd038c689f02d",
+  "runs": [
+    {
+      "run": "run02-on",
+      "raw_log": "agent/validation/linux-wpt-20261104-session19/namespace-trace-v1/run02-on/shard0/00-000/browser.log",
+      "raw_log_sha256": "7df8a75b7a44a4c82b01f370c0a0e2d30af7544238ca5eec147abb8e8ab16b38",
+      "record_count": 889,
+      "events": {
+        "blocked": 82,
+        "realm-create-begin": 80,
+        "realm-ready": 80,
+        "host-sync-end": 81,
+        "unblocked": 82,
+        "ready-complete": 81,
+        "window-load-begin": 81,
+        "window-load-end": 81,
+        "complete": 41,
+        "response": 40,
+        "retire": 80,
+        "owner-load-begin": 40,
+        "inactive-owner-load": 40
+      },
+      "realm_count": 80,
+      "realm_wall_ms": 5322.215999662876,
+      "realm_cpu_ms": 4818.864999999997,
+      "total_trace_wall_ms": 5584.566999971867,
+      "total_trace_cpu_ms": 5055.91,
+      "final_owner_marker": "inactive-owner-load",
+      "final_owner_to_parent_complete_wall_ms": 4.291000008583069,
+      "final_owner_to_parent_complete_cpu_ms": 4.018000000000029,
+      "parent_final_state": {
+        "ready": "2",
+        "phase": "2",
+        "kids": "0",
+        "fetches": "0",
+        "active_fetches": "0"
+      },
+      "realm_slowest": [
+        {
+          "context": 36,
+          "wall_ms": 122.11799997091293,
+          "cpu_ms": 94.56500000000005
+        },
+        {
+          "context": 29,
+          "wall_ms": 115.51099997758865,
+          "cpu_ms": 95.26199999999972
+        },
+        {
+          "context": 31,
+          "wall_ms": 112.5890000462532,
+          "cpu_ms": 100.21399999999994
+        },
+        {
+          "context": 13,
+          "wall_ms": 108.0019999742508,
+          "cpu_ms": 85.82300000000009
+        },
+        {
+          "context": 25,
+          "wall_ms": 95.48900002241135,
+          "cpu_ms": 84.01999999999998
+        },
+        {
+          "context": 32,
+          "wall_ms": 94.591000020504,
+          "cpu_ms": 84.36799999999994
+        },
+        {
+          "context": 44,
+          "wall_ms": 90.36500000953674,
+          "cpu_ms": 76.11500000000024
+        },
+        {
+          "context": 66,
+          "wall_ms": 90.10499995946884,
+          "cpu_ms": 75.6260000000002
+        },
+        {
+          "context": 35,
+          "wall_ms": 88.17999994754791,
+          "cpu_ms": 73.79799999999977
+        },
+        {
+          "context": 7,
+          "wall_ms": 87.70800000429153,
+          "cpu_ms": 67.25700000000006
+        }
+      ]
+    },
+    {
+      "run": "run04-on",
+      "raw_log": "agent/validation/linux-wpt-20261104-session19/namespace-trace-v1/run04-on/shard0/00-000/browser.log",
+      "raw_log_sha256": "0b8576aaa1d1cd0d6fc8fd376fc6f5822ec83a88cdb1011b2c54d617394c91bd",
+      "record_count": 889,
+      "events": {
+        "blocked": 82,
+        "realm-create-begin": 80,
+        "realm-ready": 80,
+        "host-sync-end": 81,
+        "unblocked": 82,
+        "ready-complete": 81,
+        "window-load-begin": 81,
+        "window-load-end": 81,
+        "complete": 41,
+        "response": 40,
+        "retire": 80,
+        "owner-load-begin": 40,
+        "inactive-owner-load": 40
+      },
+      "realm_count": 80,
+      "realm_wall_ms": 5463.077000081539,
+      "realm_cpu_ms": 4893.969999999999,
+      "total_trace_wall_ms": 5739.305999994278,
+      "total_trace_cpu_ms": 5131.803999999999,
+      "final_owner_marker": "inactive-owner-load",
+      "final_owner_to_parent_complete_wall_ms": 4.47299998998642,
+      "final_owner_to_parent_complete_cpu_ms": 4.418999999999869,
+      "parent_final_state": {
+        "ready": "2",
+        "phase": "2",
+        "kids": "0",
+        "fetches": "0",
+        "active_fetches": "0"
+      },
+      "realm_slowest": [
+        {
+          "context": 66,
+          "wall_ms": 137.51699995994568,
+          "cpu_ms": 98.41100000000006
+        },
+        {
+          "context": 35,
+          "wall_ms": 118.91400003433228,
+          "cpu_ms": 104.68200000000024
+        },
+        {
+          "context": 13,
+          "wall_ms": 105.52000004053116,
+          "cpu_ms": 97.78499999999985
+        },
+        {
+          "context": 37,
+          "wall_ms": 103.2829999923706,
+          "cpu_ms": 77.91600000000017
+        },
+        {
+          "context": 32,
+          "wall_ms": 91.10500001907349,
+          "cpu_ms": 79.41199999999981
+        },
+        {
+          "context": 21,
+          "wall_ms": 88.18399995565414,
+          "cpu_ms": 73.93799999999987
+        },
+        {
+          "context": 9,
+          "wall_ms": 86.7960000038147,
+          "cpu_ms": 74.41999999999996
+        },
+        {
+          "context": 38,
+          "wall_ms": 85.87000000476837,
+          "cpu_ms": 77.27399999999989
+        },
+        {
+          "context": 50,
+          "wall_ms": 85.58000004291534,
+          "cpu_ms": 70.03900000000021
+        },
+        {
+          "context": 29,
+          "wall_ms": 83.53099995851517,
+          "cpu_ms": 69.77800000000025
+        }
+      ]
+    }
+  ],
+  "conclusion": "Successful fixed runs show realm initialization dominates measured CPU and wall time, with prompt final parent completion. They do not reproduce the earlier timeout, prove version causality, or justify a load-notification behavior change. Separate phase instrumentation is needed before a bounded optimization."
+}
