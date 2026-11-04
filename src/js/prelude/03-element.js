@@ -115,7 +115,7 @@ function parseDecls(s, fontFace = false, keyframe = false, supportedNames = true
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) { v = cssScalarSpecified(lk, v); const previous = m.get(lk); if (previous && previous[1] && !imp) continue; } m.set(lk, [v, imp]); }
     return m;
 }
 /* The native enum parser owns acceptance; authored pending tokens remain opaque. */
@@ -528,6 +528,152 @@ const SHORTHAND_OF = { 'align-items': 'place-items', 'justify-items': 'place-ite
     'inset-inline-start': 'inset-inline', 'inset-inline-end': 'inset-inline', 'inset-block-start': 'inset-block', 'inset-block-end': 'inset-block',
     'animation-range-start': 'animation-range', 'animation-range-end': 'animation-range' };
 /* one animation-range item: start [end]; an omitted end takes the start's range name at 100%, else normal */
+/* Specified range offsets retain calc() and typed zero percentages. This
+ * bounded serializer runs only after native grammar validation. Functions
+ * needing a value context remain opaque; unsupported trees keep their text. */
+const cssRangeMathApply = Reflect.apply, cssRangeMathSort = Array.prototype.sort;
+const cssRangeMathExec = RegExp.prototype.exec, cssRangeMathSlice = String.prototype.slice;
+const cssRangeMathLower = String.prototype.toLowerCase, cssRangeMathMapGet = OMap.prototype.get;
+const cssRangeMathOwn = Object.prototype.hasOwnProperty, cssRangeMathNumber = Number;
+const cssRangeMathString = String, cssRangeMathFinite = Number.isFinite;
+const cssRangeMathSafe = Number.isSafeInteger, cssRangeMathIs = Object.is;
+function cssAnimationRangeSpecifiedMath(value) {
+    const match = (re, text) => cssRangeMathApply(cssRangeMathExec, re, [text]);
+    const slice = (start, end) => cssRangeMathApply(cssRangeMathSlice, value, [start, end]);
+    const lower = text => cssRangeMathApply(cssRangeMathLower, text, []);
+    if (!match(/^calc\(/i, value) || value.length > 4096 || match(/[\\'\"]|\/\*/, value) || cssBorderPending(value)) return value;
+    let index = 0, depth = 0;
+    const fail = () => { throw null; };
+    const ws = () => { const before = index; while (index < value.length && match(/\s/, value[index])) index++; return index !== before; };
+    const numeric = (number, unit) => {
+        // Do not simplify away a signed-zero or nonfinite intermediate.
+        if (!cssRangeMathFinite(number) || cssRangeMathIs(number, -0)) fail();
+        return {kind: 'number', number, unit};
+    };
+    // Fold only exactly representable safe-integer arithmetic; other finite
+    // decimal calculations retain their existing representation.
+    const exact = number => { if (!cssRangeMathSafe(number)) fail(); return number; };
+    const rank = node => node.kind !== 'number' ? 3 : !node.unit ? 0 : node.unit === '%' ? 1 : 2;
+    const ordered = nodes => cssRangeMathApply(cssRangeMathSort, nodes, [(a, b) => {
+        const ar = rank(a), br = rank(b);
+        return ar !== br ? ar - br : ar === 2 ? (a.unit < b.unit ? -1 : a.unit > b.unit ? 1 : 0) : 0;
+    }]);
+    const sumOf = nodes => {
+        const children = [];
+        for (let n = 0; n < nodes.length; n++) {
+            const node = nodes[n], terms = node.kind === 'sum' ? node.children : [node];
+            for (let t = 0; t < terms.length; t++) {
+                const term = terms[t]; let previous = -1;
+                if (term.kind === 'number') for (let c = 0; c < children.length; c++)
+                    if (children[c].kind === 'number' && children[c].unit === term.unit) { previous = c; break; }
+                if (previous < 0) apush(children, term);
+                else children[previous] = numeric(exact(exact(children[previous].number) + exact(term.number)), term.unit);
+            }
+        }
+        // Keep zero-valued units:0% still carries a percentage dependency.
+        ordered(children);
+        return children.length === 1 ? children[0] : {kind: 'sum', children};
+    };
+    const productOf = nodes => {
+        let combined = null; const rest = [];
+        for (let n = 0; n < nodes.length; n++) {
+            const node = nodes[n], terms = node.kind === 'product' ? node.children : [node];
+            for (let t = 0; t < terms.length; t++) {
+                const term = terms[t];
+                if (term.kind === 'sum') fail(); // Distribution is outside this bounded path.
+                if (term.kind !== 'number') { apush(rest, term); continue; }
+                if (combined && combined.unit && term.unit) fail();
+                combined = combined ? numeric(exact(exact(combined.number) * exact(term.number)), combined.unit || term.unit) : term;
+            }
+        }
+        const children = [];
+        if (combined) apush(children, combined);
+        for (let n = 0; n < rest.length; n++) apush(children, rest[n]);
+        ordered(children);
+        return children.length === 1 ? children[0] : {kind: 'product', children};
+    };
+    function atom() {
+        ws(); if (++depth > 32) fail();
+        let result;
+        if (value[index] === '(') {
+            index++; result = sum(); ws(); if (value[index++] !== ')') fail();
+        } else {
+            const token = match(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(%|[a-z]+)?/i, slice(index));
+            if (token) {
+                index += token[0].length;
+                let number = cssRangeMathNumber(token[1]), unit = lower(token[2] || '');
+                if (unit && unit !== '%' && cssRangeMathApply(cssRangeMathMapGet, MATH_UNITS, [unit]) !== 'length') fail();
+                if (unit && unit !== '%' && cssRangeMathApply(cssRangeMathOwn, MATH_UNIT, [unit])) {
+                    if (MATH_UNIT[unit][0] !== 'px') fail();
+                    number = exact(exact(number) * exact(MATH_UNIT[unit][1])); unit = 'px';
+                }
+                result = numeric(number, unit);
+            } else {
+                const fn = match(/^([a-z-][a-z0-9-]*)\(/i, slice(index)); if (!fn) fail();
+                const start = index; index += fn[0].length;
+                if (lower(fn[1]) === 'calc') {
+                    result = sum(); ws(); if (value[index++] !== ')') fail();
+                } else {
+                    let nesting = 1;
+                    while (index < value.length && nesting) {
+                        if (value[index] === '(') nesting++;
+                        else if (value[index] === ')') nesting--;
+                        index++;
+                    }
+                    if (nesting) fail();
+                    result = {kind: 'opaque', text: slice(start, index)};
+                }
+            }
+        }
+        depth--; return result;
+    }
+    function product() {
+        const terms = [atom()];
+        for (;;) {
+            const before = index; ws(); const operation = value[index];
+            if (operation !== '*' && operation !== '/') { index = before; break; }
+            index++; let term = atom();
+            if (operation === '/') {
+                if (term.kind !== 'number' || term.unit || term.number === 0) fail();
+                term = numeric(exact(1 / exact(term.number)), '');
+            }
+            apush(terms, term);
+        }
+        return productOf(terms);
+    }
+    function sum() {
+        const terms = [product()];
+        for (;;) {
+            const before = index, spaced = ws(), operation = value[index];
+            if ((operation !== '+' && operation !== '-') || !spaced || !match(/\s/, value[index + 1] || '')) { index = before; break; }
+            index++; let term = product();
+            if (operation === '-') {
+                if (term.kind !== 'number') fail();
+                term = numeric(-term.number, term.unit);
+            }
+            apush(terms, term);
+        }
+        return sumOf(terms);
+    }
+    function text(node, parent = 0) {
+        if (node.kind === 'number') return cssRangeMathString(node.number) + node.unit;
+        if (node.kind === 'opaque') return node.text;
+        const precedence = node.kind === 'sum' ? 1 : 2;
+        let result = '';
+        for (let i = 0; i < node.children.length; i++) {
+            const child = node.children[i];
+            if (i && node.kind === 'sum' && child.kind === 'number' && child.number < 0)
+                result += ' - ' + text(numeric(-child.number, child.unit), precedence);
+            else result += (i ? node.kind === 'sum' ? ' + ' : ' * ' : '') + text(child, precedence);
+        }
+        return precedence < parent ? '(' + result + ')' : result;
+    }
+    try {
+        const root = atom(); ws(); if (index !== value.length) return value;
+        return 'calc(' + text(root) + ')';
+    } catch (_) { return value; }
+}
+
 /* Scroll-driven Animations: shorthand endpoint defaults are asymmetric.
  * Storage retains both endpoints, including an explicit unnamed 100% end.
  * Shorthand reads may omit that end, while longhand reads must keep it.
@@ -567,7 +713,7 @@ function cssAnimationRangeParse(value, preserveEndpoints = false) {
             if (parsed === null) return null;
         }
         const math = CSS_MATH_VALUE.test(parsed) ? cssMathValueText(parsed) : parsed;
-        return math === null ? null : specNormalize('animation-range-start', math);
+        return math === null ? null : cssAnimationRangeSpecifiedMath(specNormalize('animation-range-start', math));
     };
     const serialize = (part, end) => {
         if (part.normal) return 'normal';
@@ -614,7 +760,7 @@ function cssAnimationRangeLonghandParse(property, value) {
         const tokens = tomSplitTop(layer, ' ').filter(Boolean);
         const named = /^(cover|contain|entry|exit|entry-crossing|exit-crossing)$/.test(tokens[0]);
         if (tokens[0] === 'normal' || named && tokens.length === 1) return tokens[0];
-        const offset = specNormalize(property, named ? tokens[1] : tokens[0]);
+        const offset = cssAnimationRangeSpecifiedMath(specNormalize(property, named ? tokens[1] : tokens[0]));
         return named ? tokens[0] + (offset === (end ? '100%' : '0%') ? '' : ' ' + offset) : offset;
     }).join(', ');
 }
@@ -1402,7 +1548,7 @@ function fontParts(v) {
 /* computed font shorthand from the computed longhands; '' when a longhand can't be written in the shorthand */
 const FONT_STRETCH_PCT = { 50: 'ultra-condensed', 62.5: 'extra-condensed', 75: 'condensed', 87.5: 'semi-condensed', 100: 'normal', 112.5: 'semi-expanded', 125: 'expanded', 150: 'extra-expanded', 200: 'ultra-expanded' };
 function computedFont(cs) {
-    const g = k => cs.getPropertyValue(k);
+    const g = k => cssDeclarationInvoke(cssDeclarationLocalState(cs), 'getPropertyValue', [k]);
     const size = g('font-size'), family = g('font-family');
     if (!size || !family) return '';
     let st = g('font-stretch') || 'normal';
@@ -1654,8 +1800,142 @@ function cssOverflowSet(m, value, priority) {
     return true;
 }
 
+/* CSS declaration receivers and their original operations stay private. Foreign
+ * borrowing uses the existing same-origin REALM bridge, never a public marker. */
+const cssDeclarationStates = new WeakMap();
+const cssDeclarationWeakGet = Function.prototype.call.bind(WeakMap.prototype.get);
+const cssDeclarationWeakSet = Function.prototype.call.bind(WeakMap.prototype.set);
+const cssDeclarationApply = Reflect.apply, cssDeclarationString = String;
+const cssDeclarationTypeError = TypeError, cssDeclarationProxy = Proxy;
+const cssDeclarationFreeze = Object.freeze;
+const cssDeclarationGet = Reflect.get, cssDeclarationSet = Reflect.set;
+const cssDeclarationHas = Reflect.has, cssDeclarationOwnKeys = Reflect.ownKeys;
+const cssDeclarationDescriptor = Reflect.getOwnPropertyDescriptor;
+const cssDeclarationDefine = Reflect.defineProperty, cssDeclarationDelete = Reflect.deleteProperty;
+const cssDeclarationArrayValues = Array.prototype.values;
+let cssDeclarationInlineOperations, cssDeclarationComputedOperations;
+function cssDeclarationLocalState(receiver) { return cssDeclarationWeakGet(cssDeclarationStates, receiver); }
+function cssDeclarationState(receiver) {
+    let state = cssDeclarationLocalState(receiver);
+    if (state) return state;
+    if (receiver !== null && (typeof receiver === 'object' || typeof receiver === 'function')) {
+        const realm = N.realmOf(receiver);
+        if (realm && realm !== REALM && typeof realm.cssStyleDeclarationState === 'function') {
+            state = realm.cssStyleDeclarationState(receiver);
+            if (state) return state;
+        }
+    }
+    throw new cssDeclarationTypeError('Illegal invocation');
+}
+function cssDeclarationWrap(target, handler) {
+    const state = cssDeclarationLocalState(target);
+    if (!cssDeclarationDescriptor(state, 'receiver').writable) return state.receiver;
+    const proxy = new cssDeclarationProxy(target, handler);
+    state.receiver = proxy; cssDeclarationFreeze(state);
+    cssDeclarationWeakSet(cssDeclarationStates, proxy, state);
+    return proxy;
+}
+function cssDeclarationText(value, nullToEmpty = false) {
+    if (typeof value === 'symbol') throw new cssDeclarationTypeError('Cannot convert a Symbol value to a string');
+    return value === null && nullToEmpty ? '' : cssDeclarationString(value);
+}
+function cssDeclarationReadonly() {
+    throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError');
+}
+function cssDeclarationInvoke(state, operation, args) {
+    return cssDeclarationApply(state.operations[operation], state.receiver, args);
+}
+function cssDeclarationIndex(key) {
+    if (typeof key !== 'string' || key === '') return -1;
+    const index = +key;
+    return index >= 0 && index < 4294967295 && index % 1 === 0 && '' + index === key ? index : -1;
+}
+function cssDeclarationIndexedValue(target, index) {
+    const state = cssDeclarationLocalState(target);
+    return index < cssDeclarationInvoke(state, 'length', []) ? cssDeclarationInvoke(state, 'item', [index]) : undefined;
+}
+function cssDeclarationIndexedKeys(target) {
+    const state = cssDeclarationLocalState(target), keys = [];
+    const length = cssDeclarationInvoke(state, 'length', []);
+    for (let i = 0; i < length; i++) apush(keys, '' + i);
+    const own = cssDeclarationOwnKeys(target);
+    for (let i = 0; i < own.length; i++) if (cssDeclarationIndex(own[i]) < 0) apush(keys, own[i]);
+    return keys;
+}
+const cssDeclarationAPI = {
+    item(index) {
+        const state = cssDeclarationState(this);
+        if (!arguments.length) throw new cssDeclarationTypeError('1 argument required');
+        index = index >>> 0;
+        return cssDeclarationInvoke(state, 'item', [index]);
+    },
+    getPropertyValue(property) {
+        const state = cssDeclarationState(this);
+        if (!arguments.length) throw new cssDeclarationTypeError('1 argument required');
+        property = cssDeclarationText(property);
+        return cssDeclarationInvoke(state, 'getPropertyValue', [property]);
+    },
+    getPropertyPriority(property) {
+        const state = cssDeclarationState(this);
+        if (!arguments.length) throw new cssDeclarationTypeError('1 argument required');
+        property = cssDeclarationText(property);
+        return state.readonly ? '' : cssDeclarationInvoke(state, 'getPropertyPriority', [property]);
+    },
+    setProperty(property, value, priority = '') {
+        const state = cssDeclarationState(this);
+        if (arguments.length < 2) throw new cssDeclarationTypeError('2 arguments required');
+        property = cssDeclarationText(property);
+        value = cssDeclarationText(value, true);
+        priority = cssDeclarationText(priority, true);
+        if (state.readonly) cssDeclarationReadonly();
+        return cssDeclarationInvoke(state, 'setProperty', [property, value, priority]);
+    },
+    removeProperty(property) {
+        const state = cssDeclarationState(this);
+        if (!arguments.length) throw new cssDeclarationTypeError('1 argument required');
+        property = cssDeclarationText(property);
+        if (state.readonly) cssDeclarationReadonly();
+        return cssDeclarationInvoke(state, 'removeProperty', [property]);
+    }
+};
+function cssDeclarationCssTextGet() { return cssDeclarationInvoke(cssDeclarationState(this), 'cssTextGet', []); }
+function cssDeclarationCssTextSet(value) {
+    const state = cssDeclarationState(this);
+    value = cssDeclarationText(value);
+    if (state.readonly) cssDeclarationReadonly();
+    cssDeclarationInvoke(state, 'cssTextSet', [value]);
+}
+function cssDeclarationLength() { return cssDeclarationInvoke(cssDeclarationState(this), 'length', []); }
+Object.defineProperty(cssDeclarationCssTextGet, 'name', {value: 'get cssText', configurable: true});
+Object.defineProperty(cssDeclarationCssTextSet, 'name', {value: 'set cssText', configurable: true});
+Object.defineProperty(cssDeclarationLength, 'name', {value: 'get length', configurable: true});
+function cssDeclarationCaptureOperations(proto, parent) {
+    const operations = Object.assign({}, parent);
+    for (const name of Object.keys(cssDeclarationAPI)) {
+        const descriptor = Object.getOwnPropertyDescriptor(proto, name);
+        if (descriptor) operations[name] = descriptor.value;
+    }
+    const text = Object.getOwnPropertyDescriptor(proto, 'cssText');
+    if (text && text.get) operations.cssTextGet = text.get;
+    if (text && text.set) operations.cssTextSet = text.set;
+    const length = Object.getOwnPropertyDescriptor(proto, 'length');
+    if (length) operations.length = length.get;
+    return operations;
+}
+function cssDeclarationInstall(proto) {
+    for (const name of Object.keys(cssDeclarationAPI)) {
+        if (proto === CSSStyleDeclaration.prototype || Object.getOwnPropertyDescriptor(proto, name))
+            Object.defineProperty(proto, name, {value: cssDeclarationAPI[name], writable: true, configurable: true});
+    }
+    if (Object.getOwnPropertyDescriptor(proto, 'cssText'))
+        Object.defineProperty(proto, 'cssText', {get: cssDeclarationCssTextGet, set: cssDeclarationCssTextSet, configurable: true});
+    if (Object.getOwnPropertyDescriptor(proto, 'length'))
+        Object.defineProperty(proto, 'length', {get: cssDeclarationLength, configurable: true});
+}
+
 class CSSStyleDeclaration {
-    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); }
+    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); cssDeclarationWeakSet(cssDeclarationStates, this, {receiver: this, parent: null, ruleType: null, readonly: !!ro, operations: ro ? cssDeclarationComputedOperations : cssDeclarationInlineOperations}); }
+    get parentRule() { return cssDeclarationState(this).parent; }
     /* parsed declarations of the current style attribute; callers that modify take a copy */
     _m() {
         const s = this._el ? N.attr(this._el, 'style') : '';
@@ -1763,20 +2043,50 @@ class CSSStyleDeclaration {
         if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
     removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
+cssDeclarationInlineOperations = cssDeclarationCaptureOperations(CSSStyleDeclaration.prototype);
+cssDeclarationInstall(CSSStyleDeclaration.prototype);
+Object.defineProperty(CSSStyleDeclaration.prototype, Symbol.iterator,
+    {value: cssDeclarationArrayValues, writable: true, configurable: true});
+function cssDeclarationProperty(target, key) {
+    if (typeof key !== 'string') return false;
+    if (cssPropKnown(key) || key.startsWith('--') || cssDescriptorStyleHas(target)) return true;
+    /* @page exposes this descriptor separately from ordinary CSS properties.
+     * Use the private rule kind; do not broaden parsing or alias handling. */
+    const state = cssDeclarationLocalState(target);
+    return !!state && state.ruleType === 6 && (key === 'page-orientation' || key === 'pageOrientation');
+}
 const styleHandler = {
-    get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },
-    set(t, p, v) { if (typeof p !== 'string' || p in t) Reflect.set(t, p, v, t); else t.setProperty(p, v); return true; },
-    has(t, p) { return p in t || cssPropKnown(p); },
+    get(t, p, receiver) {
+        const index = cssDeclarationIndex(p);
+        if (index >= 0) { const value = cssDeclarationIndexedValue(t, index); return value === undefined ? cssDeclarationGet(t, p, receiver) : value; }
+        if (typeof p !== 'string' || cssDeclarationHas(t, p) || !cssDeclarationProperty(t, p)) return cssDeclarationGet(t, p, receiver);
+        return cssDeclarationApply(cssDeclarationAPI.getPropertyValue, t, [p]);
+    },
+    set(t, p, v, receiver) {
+        if (cssDeclarationIndex(p) >= 0) return false;
+        if (typeof p !== 'string' || cssDeclarationHas(t, p) || !cssDeclarationProperty(t, p)) return cssDeclarationSet(t, p, v, receiver);
+        cssDeclarationApply(cssDeclarationAPI.setProperty, t, [p, v]); return true;
+    },
+    has(t, p) { const index = cssDeclarationIndex(p); return index >= 0 ? cssDeclarationIndexedValue(t, index) !== undefined || cssDeclarationHas(t, p) : cssDeclarationHas(t, p) || cssPropKnown(p); },
+    ownKeys(t) { return cssDeclarationIndexedKeys(t); },
+    getOwnPropertyDescriptor(t, p) {
+        const index = cssDeclarationIndex(p), value = index < 0 ? undefined : cssDeclarationIndexedValue(t, index);
+        return value === undefined ? cssDeclarationDescriptor(t, p) : {value, writable: false, enumerable: true, configurable: true};
+    },
+    defineProperty(t, p, d) { return cssDeclarationIndex(p) >= 0 ? false : cssDeclarationDefine(t, p, d); },
+    deleteProperty(t, p) { const index = cssDeclarationIndex(p); return index >= 0 ? cssDeclarationIndexedValue(t, index) === undefined : cssDeclarationDelete(t, p); },
+    preventExtensions() { return false; }
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = cssStylePropertyName(this, String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [this.getPropertyValue(p), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if (k === 'transition' && v) v = cssTransitionParse(v) ?? v; if (k === 'animation-range' && v) v = cssAnimationRangeParse(v) ?? v; if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
+    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = cssStylePropertyName(this, String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [cssDeclarationInvoke(cssDeclarationLocalState(this), 'getPropertyValue', [p]), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if (k === 'transition' && v) v = cssTransitionParse(v) ?? v; if (k === 'animation-range' && v) v = cssAnimationRangeParse(v) ?? v; if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return this._names().length; }
     /* an invalid pseudo-element or an element outside the document has an empty style */
     _names() { return this._none || !this._el.isConnected || !N.computed(this._el, 'display') || mediaChild(this._el) ? [] : computedNames(); }   /* no style: outside the flat tree */
     item(i) { if (!arguments.length) throw new TypeError("Failed to execute 'item' on 'CSSStyleDeclaration': 1 argument required, but only 0 present."); return this._names()[i >>> 0] ?? ''; }
-    *[Symbol.iterator]() { yield* this._names(); }
     setProperty() { throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError'); }
 }
+cssDeclarationComputedOperations = cssDeclarationCaptureOperations(ComputedStyleDeclaration.prototype, cssDeclarationInlineOperations);
+cssDeclarationInstall(ComputedStyleDeclaration.prototype);
 /* inside <video>/<audio>, whose shadow trees have no slots */
 const mediaChild = el => { for (let p = el.parentNode; p && p.nodeType === 1; p = p.parentNode) if (p.namespaceURI === 'http://www.w3.org/1999/xhtml' && (p.localName === 'video' || p.localName === 'audio')) return true; return false; };
 /* the longhands a computed style lists (length / item / iteration), sorted like Chrome's */
@@ -1790,8 +2100,16 @@ for (const name of ["size", "min-size", "max-size"]) CSS_PROP_NAMES.add(name);
 const cssPropName = p => typeof p !== 'string' ? null : p.includes('-') ? p : p.replace(/^webkit(?=[A-Z])/, '-webkit').replace(/[A-Z]/g, c => '-' + c.toLowerCase());
 /* one notion of a supported property for `in style`, `in getComputedStyle()` and CSS.supports(): dashed, camelCase, webkitCase */
 const cssPropKnown = p => typeof p === 'string' && (p.startsWith('--') ? false : p === 'cssFloat' || (p.includes('-') ? p === p.toLowerCase() && CSS_PROP_NAMES.has(p) : !/^-/.test(cssPropName(p)) || /^-webkit-/.test(cssPropName(p)) ? CSS_PROP_NAMES.has(cssPropName(p)) : false));
-const computedHandler = { get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t._names()[+p]; return t.getPropertyValue(p); }, set() { return true; },
-    has(t, p) { return p in t || (/^\d+$/.test(p) ? +p < t._names().length : cssPropKnown(p)); } };
+const computedHandler = {
+    ...styleHandler,
+    set(t, p, v, receiver) {
+        if (cssDeclarationIndex(p) >= 0) return false;
+        if (typeof p === 'string' && !cssDeclarationHas(t, p) && cssPropKnown(p)) {
+            cssDeclarationApply(cssDeclarationAPI.setProperty, t, [p, v]); return true;
+        }
+        return cssDeclarationSet(t, p, v, receiver);
+    }
+};
 
 class Element extends Node {}
 methods(Element.prototype, ParentNode); methods(Element.prototype, ChildNode);
@@ -2186,7 +2504,7 @@ unscopable(Element, ['after', 'append', 'before', 'prepend', 'remove', 'replaceC
 unscopable(CharacterData, ['after', 'before', 'remove', 'replaceWith']);
 unscopable(DocumentType, ['after', 'before', 'remove', 'replaceWith']);
 unscopable(DocumentFragment, ['append', 'prepend', 'replaceChildren']);
-const makeStyle = (el) => new Proxy(new CSSStyleDeclaration(el), styleHandler);
+const makeStyle = (el) => cssDeclarationWrap(new CSSStyleDeclaration(el), styleHandler);
 class HTMLElement extends Element { constructor() { return ceConstruct(new.target, HTMLElement); } }
 reflectStr(HTMLElement.prototype, 'title', 'lang', 'accessKey', 'nonce', 'dir');
 reflectBool(HTMLElement.prototype, 'hidden', 'inert', 'autofocus');

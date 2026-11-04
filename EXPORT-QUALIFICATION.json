@@ -1,36 +1,40 @@
 {
-  "candidate": 1908,
+  "candidate": 1915,
   "status": "INDEPENDENTLY REVIEWED COMPLETE SELECTED1248 DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
-  "tested_source_commit": "d995e1a5eb8daebd07ec7b67f0572f40b70fc6e6",
-  "tested_binary_sha256": "cf2692999572a09524c11697d76de073ccbba7e3c6fe496b89bb241ccfc9bdc9",
-  "source_manifest_digest": "7e634b7bf310025c52f2bee186ea0ec5094d1dbea01f6c7fa3b86511395d9fef",
-  "public_parent": "0d76bf0aeefb3c975b94b550f831681c41e3beda",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1908-20261104",
+  "tested_source_commit": "b63df22ad8b67399a416ac0bc16c6d21613d23aa",
+  "tested_binary_sha256": "71478e23bcfffeead3cbe0edc694a02bfae2b8ce78321f27212a5a656ef9c908",
+  "source_manifest_digest": "21617bb5f93a800f0835b767d092e12a00557284f9a88c6cd8fcf5aeebcdf3be",
+  "public_parent": "9d3882d753faa45fc5c52f9e9748b9f7cdaaf7e4",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1915-20261104",
   "all_recorded_inputs_exact": true,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
   "private_history_included": false,
   "publication_performed": false,
   "validation_summary": {
-    "qualification": "Qualified complete unchanged selected1248-URL development checkpoint; not all upstream WPT or a device delivery claim",
+    "qualification": "Qualified complete unchanged selected1248-URL development checkpoint, sealed before prospective12:24UTC release cutoff; not all upstream WPT or a device delivery claim",
     "selected_urls": {
-      "lumen_passed": 781,
+      "lumen_passed": 796,
       "total": 1248,
       "baseline1808_passed": 759,
-      "pass_percent": 62.580128205128204
+      "previous1908_passed": 781,
+      "pass_percent": 63.78205128205128
     },
     "selected_assertions": {
-      "lumen_passed": 23103,
+      "lumen_passed": 23158,
       "total": 26245,
       "baseline1808_passed": 22826,
-      "pass_percent": 88.02819584682797
+      "previous1908_passed": 23103,
+      "pass_percent": 88.23775957325205
     },
-    "new_passing_urls": 22,
-    "new_assertion_passes": 277,
+    "new_passing_urls": 37,
+    "new_assertion_passes": 332,
+    "new_passing_urls_vs1908": 15,
+    "new_assertion_passes_vs1908": 55,
     "lost_preregistered_pass_identities": 0,
     "lost_required_fully_passing_urls": 0,
     "harness_regressions": 0,
-    "required_and_retained_passing_assertions": 23103,
+    "required_and_retained_passing_assertions": 23158,
     "harness_statuses": {
       "OK": 1238,
       "ERROR": 1,
@@ -38,46 +42,100 @@
     },
     "all_case_process_exits_zero": true,
     "cleanup_complete": true,
-    "full_wrapper_seconds": 1039.0666904789978,
+    "full_wrapper_seconds": 1038.2596521700034,
+    "full_cohort_seconds": 1036.7155272910022,
+    "full_started_utc": "2026-11-04T12:06:39.724949+00:00",
+    "full_finished_utc": "2026-11-04T12:23:56.498634+00:00",
+    "acceptance_sealed_utc": "2026-11-04T12:23:57.325150+00:00",
+    "release_selected_utc": "2026-11-04T12:23:57.845724+00:00",
     "full1248_replay_performed": true,
     "source_and_binary_identity_valid": true,
-    "raw_results_sha256": "f72ea86207eaa207802d86d9ad17d821687a860dbd150dcc1fb77fcf9075bb28",
-    "runtime_receipt_sha256": "d60e5763165c103fedcc2df2b0c7feef34b12998899a06b5060e9f9c62e5a17b",
-    "prior_union_acceptance_sha256": "c6c1341edd3feb1171651cebf943bbd65fbac91438f203aa6f94366a31d7c058",
-    "comparison_audit_sha256": "bb27d846c705d2eda7231e24bd3f9452da327c30372c86e32bf2451d2cac02c8",
-    "full_plan_sha256": "1074a58c56e736b03e056616b6f107433027810408392d36c56c5a5925619302",
-    "prior_union_registry_sha256": "c813fbdd7ecda4a9f45422d819519821d1a8ebd1e241579d82c0ec07fef3e8f9",
+    "raw_results_sha256": "cade2135be49d4852bbf4737a223c3e9f22e8d3814c0fa4eb419a23abcda53b6",
+    "runtime_receipt_sha256": "0adc30ec268702474d99a6f8928d5b62c90c864b8cf7bb53d8ec0d7dea1d76c1",
+    "prior_union_acceptance_sha256": "70d3d7b134696c128292ba7a6e9571c7a3d507e2ddd28b442f082f38a6fcb204",
+    "comparison_audit_sha256": "922c7b195d3de997d8fd39878a988c1adb43ff2a757c000f2a0f04401e6c3438",
+    "full_plan_sha256": "66fad801012f576567ca6218392ad7170f629c0070e66e49525de29b2abc81fd",
+    "prior_union_registry_sha256": "43f42cd8c39fb30cf7ac9a6b6f685607303bed935670c69c575a4ef68a66b9a0",
     "historical_pinned_reference": {
       "version": "150.0.7871.114",
       "passed_urls": 1062,
       "total_urls": 1248,
       "passed_assertions": 24541,
       "total_assertions": 26064,
-      "source": "previous retained full reference; no fresh full Chromium run claimed"
+      "source": "Retained exact-manifest full reference; no fresh full Chromium run claimed"
+    },
+    "paired_common_assertions": {
+      "common_exact_identities": 26004,
+      "both_pass": 22368,
+      "reference_only_pass": 2113,
+      "native_only_pass": 587,
+      "neither_pass": 936,
+      "native_only_registered_identities": 241,
+      "reference_only_registered_identities": 60
     },
     "build_and_startup_passed": true,
-    "namespace_reliability": "This full run completed the namespace harness; intermittent earlier failure remains retained and no source-level reliability fix is claimed",
+    "native_coverage": {
+      "fresh1915_native_run": false,
+      "actual_candidate": 1913,
+      "accepted_native_contracts": 218,
+      "native_sources_unchanged_through1915": true,
+      "changed_source_paths_since1913": [
+        "src/js/prelude/03-element.js",
+        "src/js/prelude/06b-activate.js"
+      ],
+      "report_path": "agent/validation/linux-wpt-20261101-session15/session19-candidate1913-native-actual/report.json",
+      "report_sha256": "1b4f358018800f43142c0b7f090eac0e715cdf521244d116874e35d9923d863a",
+      "omission_approved_before_outcomes": true
+    },
+    "one_second_resource_samples": {
+      "cpu_pct": {
+        "samples": 1037,
+        "median": 100.025,
+        "sampled_max": 229.001,
+        "unit": "percent;100 equals oneCPU core"
+      },
+      "rss_mb": {
+        "samples": 1038,
+        "median": 339.81050000000005,
+        "sampled_max": 633.528,
+        "unit": "decimalMB; monitored RSS bytes divided by1e6"
+      },
+      "host_cpu_pct": {
+        "samples": 1037,
+        "median": 90.372,
+        "sampled_max": 99.554,
+        "unit": "percent of whole host"
+      }
+    },
+    "namespace_reliability": "Original full namespace outcomeOK51/51 in10.0426s. Earlier intermittent failures and HOLDs retained; no source-level reliability fix claimed.",
+    "independent73": {
+      "passed": 73,
+      "total": 73,
+      "prior_pass_losses": 0,
+      "reference_passed": 70,
+      "reference_disagreements_preserved": true
+    },
     "known_independent_control_limitations": [
-      "Range24 has23passes; parsed important shorthand/normal longhand ordering remains a native cascade gap.",
-      "A separate root-pseudo rem control observes the pseudo font instead of the originating root font.",
-      "Range shorthand specified serialization is132/133; start-valid24/26 and end-valid23/24. Follow-up fixes are excluded from this exact checkpoint."
-    ]
+      "Static important repair preserves the old animated declaration path; retained all-opacity-reset and hidden-input UA-priority controls remain.",
+      "Current-draft/pinned-WPT literal-zero and explicitly disputed authored/reference cases remain documented.",
+      "Real X/Google authenticated return error and authenticated scrolling performance were not resolved by account-free messaging diagnostics."
+    ],
+    "resource_monitor_source_sha256": "57c216199f5a685f4d6a730bb0c53c92f004bb04b8f1f2d437505281e84e5a8c"
   },
   "limitations": [
-    "The complete measured scope is the frozen selected1248 HTTP/default-timeout DOM/CSS testharness URLs from1247 source files, not all upstream WPT.",
-    "781/1248=62.58% is a selected-test pass rate, not overall product quality, Chromium parity, rendering coverage or a95-quality claim.",
-    "One harnessERROR and nineTIMEOUT outcomes remain; all original failures and earlier held runs are retained.",
-    "The Chromium150 full reference is historical and has a different assertion-registration denominator.",
-    "This exact source includes tested capped lifecycle/phase diagnostics, normally disabled; later prelude sampling/optimization, StyleSheetList and range priority/root-pseudo follow-ups are excluded.",
-    "Known independent range-control limitations remain, as listed in the validation summary.",
-    "No new1908 Linux display0 or Android installation is claimed by this source publication.",
-    "The export includes approved public ancestry and exact recorded inputs, not private task history, profiles, credentials, messages or guarded validation machinery.",
-    "Source archive restoration is not an independent browser rebuild; external dependencies remain external."
+    "Exactly1248 selected default-timeout HTTP testharness URLs in10 DOM/CSS families from1247 files; not all upstream WPT.",
+    "796/1248=63.78% is selected-test coverage, not95 product quality, rendering coverage, Android WPT parity or Chromium parity.",
+    "One harnessERROR and nineTIMEOUTs remain; original1911/1912/1913/1914 HOLDs are preserved without rescue or erasure.",
+    "PinnedChromium150 full reference is historical and has a different assertion registration denominator; use exact common identities for paired assertion comparison.",
+    "Diagnostic lifecycle/phase/sampling code is default-off; rejected shape batching was reverted.",
+    "No real authenticated X/Google login fix or scrolling optimization is claimed.",
+    "Device installation/start and media delivery require separate environment receipts.",
+    "Public export excludes private task history, profiles, credentials, messages and guarded validation machinery; source restoration is not an independent rebuild."
   ],
   "independent_review": {
-    "agent": "source_steward",
-    "review_receipt_sha256": "2810e4d8c7f304ee7235ed4826fe5d91ad30693c8d9e03e9c79598c00d1be9f0",
-    "preparation_receipt_sha256": "361a75d270ea41b79b7f60e995632f48d5520b5986146b2f3c8dbb7a96e0823b",
+    "agent": "test_baseline",
+    "review_receipt_sha256": "0acc30085f6c4152d7b4ae282a667a9c5c71e5061981f468cdb285cb4e66bf52",
+    "preparation_receipt_sha256": "12a21b59d8bec4218ba05c5146fe9458dc5475a7698f1d72086b1c03e3a492f3",
     "all843_public_inventory_hashes_verified": true,
     "all743_recorded_inputs_verified_against_tested_source": true,
     "private_history_excluded": true
