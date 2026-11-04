@@ -1,124 +1,65 @@
 {
-  "candidate": 1808,
-  "status": "DEVELOPMENT DEVICE CHECKPOINT: one preregistered unchanged reliability replay and two namespace repetitions passed; earlier intermittent timeout remains documented; not production or whole-WPT certification",
-  "tested_source_commit": "fcf2d2d83686a554f492fbaf992173b12d924b64",
-  "tested_binary_sha256": "79af7023284551d597ce61ff4a5e3954a7edd2a43b4b8ee2af5d63a1658ff46d",
-  "source_manifest_digest": "5c73f1b303089995b99e281ae20025600ea0c5345848eaf09705ca9d7d7ca2eb",
-  "public_parent": "2ec6af183597791985b48c6a9c2689c4a8ef3cf2",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103",
+  "candidate": 1902,
+  "status": "INDEPENDENTLY REVIEWED FOCUSED DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
+  "tested_source_commit": "565fd239d34dbdaade8b232483fa8aeffba8d767",
+  "tested_binary_sha256": "1c93f3537eec3c9db6f159aec4205843c1a1633c3aa2544e46071d2ad92c765d",
+  "source_manifest_digest": "6564591a09785bec9018d6254f1963ca421b3315e94493da3809ce55e8e944df",
+  "public_parent": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
   "all_recorded_inputs_exact": true,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
   "private_history_included": false,
+  "publication_performed": false,
   "validation_summary": {
-    "qualification_scope": "All33 scoped jobs passed. The first full run remains HOLD for a namespace harness timeout with all51 assertions passing. Exactly one preregistered unchanged reliability replay then passed all22826 prior assertions and no new harness regressions, followed by two unchanged namespace checks. Development-device delivery is verified; no source fix for the intermittent timeout is claimed.",
-    "product_accepted": false,
-    "full1248_replayed": true,
-    "full1248_status": "First full HOLD preserved; preregistered reliability replay PASS; intermittent timeout cause unknown",
-    "last_regression_free_full_sample": {
-      "candidate": 1705,
-      "files_pass": 714,
-      "files_total": 1248,
-      "file_percent": 57.21153846153846,
-      "assertions_pass": 22637,
-      "assertions_total": 26245
+    "qualification": "Focused development checkpoint, not whole-platform acceptance",
+    "focused_selected_urls": {
+      "lumen_passed": 64,
+      "total": 136,
+      "baseline1808_passed": 62,
+      "chromium150_passed": 105
     },
-    "prior_pass_union_required": 22826,
-    "required_union_sha256": "858f17a241c0b0b43459b749beddd5f52aa6155e57b1106354c43874176e4d11",
-    "held1807": "Intentionally partial replay with15 semantic duration/size losses and40 namespace timeout losses; timeout cause unconfirmed. No final full rate assigned. Completed new PASS identities are retained in the22824 union. Namespace647 passed on corrected1808, without claiming historical timeout cause resolved.",
-    "source_engine_commit": "d93c9769c750dacbfd4bf415aa0523fbc0de7d6f",
-    "reviewed_repairs": [
-      "animation-duration auto resolved according to the actual single-auto vs other computed timeline",
-      "finite size/min-size/max-size declaration grammar with token-safe comments/escapes and descriptor isolation"
-    ],
-    "provenance_incident": "A copied candidate CLI argument overwrote the historical1807 binary after its intentional partial replay. Raw results and expectations remain preserved, but the original historical executable is unavailable. The wrongly labeled replacement is quarantined; this export binds the separately recorded corrected1808 build and fresh742-input independent audit.",
-    "corrected_build_state_sha256": "19d2950b7f2ff7c2990bf8212f54aaecf19993329a4a4db03228ea906b5a0376",
-    "incremental_acceptance_receipt_sha256": "a9174729a57cf4759f3a6699182d03dd8bd0e43cbe3da56a5dd1a6a7ef33e5a2",
-    "scoped_qualification": {
-      "jobs": 33,
-      "completed_utc": "2026-11-03T11:32:15.497Z",
-      "native": "218/218",
-      "retained": "45 fixtures /1318 assertions",
-      "independent_retained_audit": "334/334 checks",
-      "required_focused_controls": "passed;23 pre-existing unsupported tree-context expectations remain visible"
+    "focused_assertions": {
+      "lumen_passed": 1652,
+      "total": 2455,
+      "baseline1808_passed": 1608,
+      "chromium150_passed": 1970
     },
-    "benchmark_coverage": {
-      "selected_test_cases_urls": 1248,
-      "unique_source_files": 1247,
-      "dom_css_families": 10,
-      "http_default_timeout_only": true,
-      "preexisting_selection_exclusions": {
-        "long_timeout": 44,
-        "https_only": 1
-      },
-      "selection_predates_results": true,
-      "no_reftest_manual_visual_whole_platform_claim": true
+    "new_passing_urls": 2,
+    "new_assertion_passes": 44,
+    "lost_baseline_passes": 0,
+    "harness_regressions": 0,
+    "unchanged_known_harness_timeouts": 3,
+    "all_case_process_exits_zero": true,
+    "focused_wrapper_seconds": 157.108,
+    "focused_audit_sha256": "78dab21540db2907dde935c4c02bcc31775783c03a7c151562881bee629ee943",
+    "historical_full_selected_baseline": {
+      "candidate": 1808,
+      "passed_urls": 759,
+      "total_urls": 1248,
+      "passed_assertions": 22826,
+      "total_assertions": 26245
     },
-    "development_device_delivery_accepted": true,
-    "first_full_hold": {
-      "selected_cases_pass": 758,
-      "selected_cases_total": 1248,
-      "passing_assertions": 22826,
-      "registered_assertions": 26245,
-      "namespace_harness_status": "TIMEOUT",
-      "namespace_passing_assertions": 51,
-      "cause": "Unknown; host-load observations do not establish causality",
-      "raw_sha256": "9f7a903bb8925772c9cead0cf9d79b320fead0cc46d7efe4fbb5d5614800be8c",
-      "independent_recount_sha256": "ed1897fec1a78fbb1d0062fc21adc2937fbb47014de0eb66074189449f6e4f66"
-    },
-    "single_preregistered_reliability_replay": {
-      "selected_cases_pass": 759,
-      "selected_cases_total": 1248,
-      "case_percent": 60.81730769230769,
-      "passing_assertions": 22826,
-      "registered_assertions": 26245,
-      "prior_pass_union_retained": 22826,
-      "prior_pass_losses": 0,
-      "new_harness_regressions": 0,
-      "independent_recount_sha256": "da3d7db0be6f9289184955739a1bc8b7c80d622809290e195cd46940fd824be4",
-      "raw_sha256": "575fe8194c446119defbf79f9d1b10973ff0a78216dba1b5f883c37dd7501ff2",
-      "source_and_binary_unchanged": true,
-      "further_full_retry_performed": false
-    },
-    "namespace_repetitions": [
-      {
-        "repeat": 1,
-        "passed_assertions": 51,
-        "harness_status": "OK",
-        "receipt_sha256": "c8699a3fcc4ff614845f34d2a1f575c5fd79bee117b7dfd7942a4ab0edffebfe"
-      },
-      {
-        "repeat": 2,
-        "passed_assertions": 51,
-        "harness_status": "OK",
-        "receipt_sha256": "cc03d65d6628b48fd70c8e67d43e941f6028276052ddaad460edfbfc49402d61"
-      }
-    ],
-    "development_device_verification": {
-      "linux_display": ":0",
-      "linux_binary_sha256": "79af7023284551d597ce61ff4a5e3954a7edd2a43b4b8ee2af5d63a1658ff46d",
-      "linux_final_restart_receipt_sha256": "846747c9ac1dd03d7f8d58fc930cb29909d5f868d7df1fd3c3a556c9b2e14cdb",
-      "android_apk_sha256": "900e38488462b364076db09c574c21405e26e5b5a474b850537b953675cf4a02",
-      "android_final_restart_receipt_sha256": "ce2c885faf24dc7e5bf07c90c3fd318321a58860974bf192f8d6abb8f81481cd",
-      "android_data_cleared": false,
-      "android_wpt_parity_claimed": false
-    }
+    "new_full1248_replay_performed": false,
+    "chromium_reference_version": "150.0.7871.114",
+    "build_and_startup_passed": true
   },
   "limitations": [
-    "The first full1808 run had one namespace harness timeout despite51/51 passing assertions. A single preregistered unchanged replay and two repetitions passed; the intermittent cause remains unknown. This is a development checkpoint, not production reliability certification.",
-    "The fixed1248 subset is not full official WPT. Chromium parity and overall95/100 quality are not claimed.",
-    "Random syntax/type validation does not implement runtime random sampling or cache computation.",
-    "Tree-count context is bounded to exact literal inline scalar/integer ownership;23 authored context cases remain unsupported.",
-    "Sizing shorthand declaration storage/grammar does not implement complete native width/height shorthand expansion or layout.",
-    "Existing animation-duration initial0s metadata and broader timeline/animation runtime remain separate limitations.",
-    "Broader native sheet.media applicability, stylesheet sets, @import loading and external source reflection remain incomplete.",
-    "Only approved public ancestry and exact compiled source inputs are exported; private working history, validation machinery, profiles, inbox and credentials are excluded.",
-    "External dependencies are not bundled. Offline Git recovery is not an independent rebuild.",
-    "Historical1807 raw evidence cannot currently be rebound to its original unavailable binary; no historical restoration is claimed. Final1808 requires its own complete qualification and replay.",
-    "Linux display0 and connected Android foreground/render/liveness are verified smoke coverage. Android install-r retained package UID/data; these checks do not establish Android WPT parity."
+    "The current1902 result is a136-URL focused comparison; the full1248-URL rate remains historical1808 evidence.",
+    "The selected DOM/CSS testharness sample is not all WPT, visual coverage, Chromium parity or an overall95 quality claim.",
+    "Three known focused timeouts remain, and the historical1808 namespace completion timeout remains unexplained.",
+    "No new candidate1902 Linux display0 or Android installation is claimed by this source checkpoint.",
+    "Random syntax/type acceptance has no sampling/cache runtime; broader styling, layout, platform and browser coverage remain incomplete.",
+    "The export contains approved public Git ancestry and exact tested engine inputs only; private task Git history, profiles, credentials, message queues and validation machinery are excluded.",
+    "Source archive recovery is not an independent browser rebuild; external dependencies remain external."
   ],
-  "product_accepted": false,
-  "metadata_prepared_utc": "2026-11-03T13:00:32.456057+00:00",
-  "public_checkpoint_predecessor": "ec40e1f4a60c4e23921ee66cf74f7c09218a0344",
-  "development_device_delivery_accepted": true
+  "independent_review": {
+    "agent": "source_steward",
+    "reviewed_utc": "2026-11-04T07:21:43.782324+00:00",
+    "all843_public_inventory_hashes_verified": true,
+    "all743_recorded_inputs_verified_against_tested_source": true,
+    "private_history_excluded": true,
+    "focused_only_results": true,
+    "preparation_receipt_sha256": "064f31d3420092be6534f2fa60463952a73a7ccc59159695146cc15e57a3c5c2"
+  }
 }

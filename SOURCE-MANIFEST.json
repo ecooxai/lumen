@@ -1,12 +1,12 @@
 {
-  "candidate": 1808,
-  "tested_source_commit": "fcf2d2d83686a554f492fbaf992173b12d924b64",
-  "tested_binary_sha256": "79af7023284551d597ce61ff4a5e3954a7edd2a43b4b8ee2af5d63a1658ff46d",
-  "recorded_input_digest": "5c73f1b303089995b99e281ae20025600ea0c5345848eaf09705ca9d7d7ca2eb",
-  "recorded_input_count": 742,
-  "source_manifest_file_sha256": "86f4c85f5f9b1028d736bf440a02c0e71b6c0062c0daa24a5ad2fb04eeb11cf2",
-  "public_parent": "2ec6af183597791985b48c6a9c2689c4a8ef3cf2",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1808-20261103",
+  "candidate": 1902,
+  "tested_source_commit": "565fd239d34dbdaade8b232483fa8aeffba8d767",
+  "tested_binary_sha256": "1c93f3537eec3c9db6f159aec4205843c1a1633c3aa2544e46071d2ad92c765d",
+  "recorded_input_digest": "6564591a09785bec9018d6254f1963ca421b3315e94493da3809ce55e8e944df",
+  "recorded_input_count": 743,
+  "source_manifest_file_sha256": "a3e00fd5ec9f333d7a82d78b3a18505cfdb0190a3a2c2f719fab31ced9c2bb5f",
+  "public_parent": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
   "recorded_inputs": {
     "CMakeLists.txt": {
       "sha256": "39135ade2090484ca003089b98004a8e28ed3aad5bc244c0921df7cc8798190b",
@@ -205,7 +205,7 @@
       "mode": "100644"
     },
     "src/css/css.h": {
-      "sha256": "dd9ab883a3b4af965eda80f5b72e7878633e5b96328e9e518db4541101f53e64",
+      "sha256": "e3b5cb22ad23cbc866924927bfb062d1c7a9626d04e2fda48e4a62aa446f18cc",
       "mode": "100644"
     },
     "src/css/easing.h": {
@@ -217,7 +217,7 @@
       "mode": "100644"
     },
     "src/css/parse.c": {
-      "sha256": "4ef43bd67bb35b24d5cc06e826f211499c4e26f848a5c7572b7ac151654ddd67",
+      "sha256": "b4798f6b070529e7c00fbfa47d28284654709317aebd9064a51ad833f5cc2b86",
       "mode": "100644"
     },
     "src/css/props_generated.inc": {
@@ -226,6 +226,10 @@
     },
     "src/css/select.c": {
       "sha256": "3d95f5fef0635139a34474fba556d7901f1708ed557fbdb0c27bc1c2ae5d6038",
+      "mode": "100644"
+    },
+    "src/css/selector-serialize.h": {
+      "sha256": "608b3a74677f515d98d9cce551e345c1dc247571fd7462ef8f43214ec0715083",
       "mode": "100644"
     },
     "src/css/style.c": {
@@ -345,7 +349,7 @@
       "mode": "100644"
     },
     "src/js/jsnative.cc": {
-      "sha256": "1bccc296fdfc2cea9f34f945be3daa81ca469fc14f0147fcb108b3cd60e24199",
+      "sha256": "3c924aae46a1862ac4a939ae9afcf9529585268314ce0a6ec3dce7cf01e97eaf",
       "mode": "100644"
     },
     "src/js/lazy/editing.js": {
@@ -409,7 +413,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06b-activate.js": {
-      "sha256": "a3eaac1e769435d58d94fcbc81ad2473036eabe7d747271ac8fe5b72d5ed63a0",
+      "sha256": "1de1e46acfa74e6ba32e382f75f64bf374fd6cf2e997c16a51b744811cdea59d",
       "mode": "100644"
     },
     "src/js/prelude/06c-traversal.js": {
