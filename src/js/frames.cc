@@ -876,8 +876,11 @@ void frames_inserted(JsCtx *, Node *root) {
 
 #define FCTX JsCtx *c = jctx(a.GetIsolate()); v8::Isolate *iso = c->iso; (void)iso
 static JsCtx *ensure_frame(Node *f) {
+    if (!f || !(f->flags & NF_CONNECTED)) return nullptr;
+    JsCtx *p = frame_document_ctx(f->doc);
+    if (!p) return nullptr;
     JsCtx *k = js_frame_ctx(f);
-    if (!k && (f->flags & NF_CONNECTED)) if (JsCtx *p = frame_document_ctx(f->doc)) { frame_start(p, f); k = js_frame_ctx(f); }
+    if (!k) { frame_start(p, f); k = js_frame_ctx(f); }
     return k;
 }
 static void n_frameWin(const FCI &a) { FCTX; Node *f = junwrap(a[0]); if (f) a.GetReturnValue().Set(win_for(c, ensure_frame(f))); else a.GetReturnValue().SetNull(); }
