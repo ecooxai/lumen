@@ -71,6 +71,7 @@ static void load_trace(JsCtx *c, const char *event, const char *reason = "none",
     } // Unrelated lifecycle milestones must not invalidate blocker-state deduplication.
     load_trace_emit(c->id, c->parent ? c->parent->id : 0, event, state, elapsed);
 }
+void js_trace_load_phase(JsCtx *c, const char *phase) { load_trace(c, phase); }
 
 
 static std::string origin_of(const char *u) {

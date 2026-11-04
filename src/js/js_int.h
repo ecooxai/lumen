@@ -279,6 +279,7 @@ uint64_t js_fetch_parser_source(JsCtx *c, Node *script, const char *url,
                                std::function<void(JsCtx *, NetResponse *)> done);
 void js_doc_reparse(JsCtx *k, const char *html, size_t n);   /* document.close() of a script-opened document */
 void frames_load_check(JsCtx *c);   /* fires a deferred window load once no frame delays it */
+void js_trace_load_phase(JsCtx *c, const char *phase); /* native-only, default-off bounded diagnostics */
 void frame_kill(JsCtx *k);
 void frame_nav(JsCtx *k, const char *u);
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);

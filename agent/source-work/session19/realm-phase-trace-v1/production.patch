@@ -1,0 +1,30 @@
+diff --git a/src/js/frames.cc b/src/js/frames.cc
+index 4f9c32f..376bb7f 100644
+--- a/src/js/frames.cc
++++ b/src/js/frames.cc
+@@ -73,0 +74 @@ static void load_trace(JsCtx *c, const char *event, const char *reason = "none",
++void js_trace_load_phase(JsCtx *c, const char *phase) { load_trace(c, phase); }
+diff --git a/src/js/js.cc b/src/js/js.cc
+index 3ad509d..064d71a 100644
+--- a/src/js/js.cc
++++ b/src/js/js.cc
+@@ -1331,0 +1332 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
++    js_trace_load_phase(c, "realm-bootstrap-begin");
+@@ -1363,0 +1365 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
++    js_trace_load_phase(c, "realm-context-ready");
+@@ -1376,0 +1379 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
++    js_trace_load_phase(c, "realm-native-ready");
+@@ -1403,0 +1407 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
++    js_trace_load_phase(c, "realm-code-ready");
+@@ -1405,0 +1410 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
++        js_trace_load_phase(c, "realm-prelude-ready");
+@@ -1426,0 +1432 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
++    js_trace_load_phase(c, "realm-api-ready");
+@@ -1434,0 +1441 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
++    js_trace_load_phase(c, "realm-microtasks-ready");
+diff --git a/src/js/js_int.h b/src/js/js_int.h
+index 0b74ee6..a61fae9 100644
+--- a/src/js/js_int.h
++++ b/src/js/js_int.h
+@@ -281,0 +282 @@ void frames_load_check(JsCtx *c);   /* fires a deferred window load once no fram
++void js_trace_load_phase(JsCtx *c, const char *phase); /* native-only, default-off bounded diagnostics */

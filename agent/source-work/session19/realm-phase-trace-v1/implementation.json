@@ -1,0 +1,53 @@
+{
+  "iteration": 10,
+  "started_utc": "2026-11-04T07:59:29.872337+00:00",
+  "ended_utc": "2026-11-04T07:59:29.890215+00:00",
+  "mutation_seconds": 0.017878,
+  "base_commit": "f454cf2097ab4742064664643c3b0447c71137eb",
+  "before_sha256": {
+    "src/js/js_int.h": "792449fc18b19c4f9cc343a6eacfc06630134bb4b40a5a65994c3ddf08f518d1",
+    "src/js/frames.cc": "a1861000ce55bba85afb112f146845167ac8ae7a448811c0a9173b31c5a01e5f",
+    "src/js/js.cc": "e4de5c23067e0dafa1c7855a8a666e6a2c7eaa695f2d8d8f964d4425fc35dfb2"
+  },
+  "after_sha256": {
+    "src/js/js_int.h": "454f33fa201ec6f651adf3e9d185b1d95eca3d1f0a12b908bac1d1debb99d88c",
+    "src/js/frames.cc": "074a40e2e114235e038144c3d51aabc89d8375f1b9b981e990b553aee4ed44d2",
+    "src/js/js.cc": "64fa5bc063a6ffc818ef0a14a1743cd3a215c0738d014fb1f2652b2d86920626"
+  },
+  "scope": "seven native milestones within js_new_ex, reusing default-off capped load logger",
+  "milestones": [
+    "bootstrap begin",
+    "context/security setup ready",
+    "native APIs ready",
+    "cached script binding or compilation ready",
+    "prelude script/factory execution ready",
+    "API extraction and CSP initialization ready",
+    "microtask checkpoint ready"
+  ],
+  "semantic_constraints": [
+    "No extra JS calls or getters",
+    "Existing short-circuit Run/Call expression unchanged",
+    "No new context/global sharing",
+    "Native-only reads; no page strings/URLs",
+    "Same LUMEN_TRACE_LOAD flag and2048 total cap",
+    "Default-off logger returns before scans or clocks"
+  ],
+  "evidence_basis": {
+    "run02_on": {
+      "realm_count": 80,
+      "realm_wall_ms": 5322.216,
+      "realm_thread_cpu_ms": 4818.865,
+      "total_wall_ms": 5584.567
+    },
+    "run04_on": {
+      "realm_count": 80,
+      "realm_wall_ms": 5463.077,
+      "realm_thread_cpu_ms": 4893.97,
+      "total_wall_ms": 5739.306
+    },
+    "conclusion": "realm initialization dominates these successful runs; no missing load notification or timeout cause is proven"
+  },
+  "status": "diagnostic-only source; build deferred until full1248 heavy lane releases",
+  "score": 60.81730769230769,
+  "score_basis": "last qualified selected1248 full baseline"
+}
