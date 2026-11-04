@@ -1468,12 +1468,13 @@ function cssObjectPositionParse(value) {
     return pair.join(' ');
 }
 function cssObjectPositionSet(map, value, priority, cascading = false) {
-    if (priority && !/^important$/i.test(priority)) return false;
     if (value === '') { if (cascading) return false; map.delete('object-position'); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
     const parsed = cssObjectPositionParse(value);
     if (parsed === null) return false;
     if (cascading && map.get('object-position')?.[1] && !priority) return true;
-    map.delete('object-position'); map.set('object-position', [parsed, priority ? 'important' : '']); return true;
+    if (cascading) map.delete('object-position');
+    map.set('object-position', [parsed, priority ? 'important' : '']); return true;
 }
 
 function cssPositionLength(text) {
