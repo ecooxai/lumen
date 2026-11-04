@@ -41,5 +41,30 @@
     "https://developers.google.com/identity/siwg/integrate",
     "https://developers.google.com/identity/oauth2/web/guides/error"
   ],
-  "next": "Obtain original sanitized error/message-delivery evidence and stable scroll CPU observations; preserve current user flow."
+  "next": "Obtain original sanitized error/message-delivery evidence and stable scroll CPU observations; preserve current user flow.",
+  "account_free_followup": {
+    "recorded_utc": "2026-11-04T11:20:38.609032+00:00",
+    "candidate": "1913",
+    "reference": "pinned Chromium150",
+    "channel_controls": "3/3 each: current-source identity, exact origin, transferred MessagePort, ACK and bidirectional PING/PONG",
+    "unchanged_upstream": "2/2 each: source/origin cross-origin and cross-document port entanglement",
+    "scope_limit": "No real account or authenticated popup completion was exercised; no login fix is claimed.",
+    "receipts": [
+      {
+        "path": "agent/source-work/session19/test-baseline/gsi-channel3-baseline1913-summary-v1.json",
+        "sha256": "9ad0b29de22432bd84932b3ceb67b0fef8af3ef8e79c52bf9c8ca8d3b49be748"
+      },
+      {
+        "path": "agent/validation/linux-wpt-20261104-session19/gsi-messaging2-outcomes-v1.json",
+        "sha256": "299a934a3b18066662068b563a753182c053d79a4627a688a831caa8a7098793"
+      }
+    ]
+  },
+  "public_client_identity_review": {
+    "sha256": "6d4836e8c162e62c568e854a65c2096ba3a4e3e3be742baf896ffe131ad6d8bf",
+    "contentWindow_occurrences": 6,
+    "source_occurrences": 5,
+    "finding": "No saved pre-navigation iframe window equality was found; RRM compares with current iframe.contentWindow, IDP sends after readiness using the current getter, readyForConnect replies to event.source.",
+    "limit": "Current public client is not proof of exact version loaded in the older user session."
+  }
 }

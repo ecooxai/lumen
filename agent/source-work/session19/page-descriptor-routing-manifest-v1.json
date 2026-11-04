@@ -1,0 +1,44 @@
+{
+  "created_utc": "2026-11-04T11:34:53.613274+00:00",
+  "base_source_commit": "238b68ba84881d3d853bb78fcf53202cdd40900a",
+  "working_head": "ead4aa820003add36e6ca4531a14798c71438519",
+  "status": "unintegrated regression correction; independent review/runtime gates pending",
+  "cause": "Generic declaration API property classification excludes the @page-only page-orientation descriptor and its camel alias; reads fall to ordinary undefined and writes become expandos.",
+  "scope": "Private CSSRuleStyle kind tag plus page-only dashed/camel descriptor routing; no grammar, alias normalization, native source or raw-target dispatch change",
+  "files": {
+    "src/js/prelude/03-element.js": {
+      "base_sha256": "56038ccdf393fabff5054725345ea0725630076ff22b400d50eb4cf7c56ea838",
+      "candidate_sha256": "2a8d5f52f8fd6a2bd6696ce0ada872085958c5dad09162f85d64585d6135ddbb",
+      "patch_sha256": "77a70fbe5070f8b6e49408b1ded362f718fdd9856f5795017419d5ad52998b21",
+      "patch": "src__js__prelude__03-element.js.patch",
+      "candidate": "src__js__prelude__03-element.js.candidate"
+    },
+    "src/js/prelude/06b-activate.js": {
+      "base_sha256": "6638776280ac9b9ec66b02f8144173f45a82477720e30e66669da9e7963c5a1a",
+      "candidate_sha256": "14412d92e1c33dcf4448a53ea45feb0b2a501c067ab50a3578999e9eca6f7279",
+      "patch_sha256": "dbdbef44e9c4b3217860ff3f2e3763be8c85403c25b630ee082c09db46da9140",
+      "patch": "src__js__prelude__06b-activate.js.patch",
+      "candidate": "src__js__prelude__06b-activate.js.candidate"
+    }
+  },
+  "invariants": [
+    "Private state is frozen by cssDeclarationWrap before author access",
+    "Rule kind is read from cssOwnerGet private metadata, not public type/parentRule/_rule getters",
+    "Operations still invoke the immutable canonical public receiver",
+    "Reflect fallback and prototype shadowing remain unchanged",
+    "Ordinary styles, keyframes, computed styles and position-try do not acquire page descriptor classification",
+    "Font-face private descriptor brand remains unchanged",
+    "No claim to fix complete CSSPageDescriptors prototype shape or invalid descriptor value grammar",
+    "Rule kind is an own data field from initial private-state construction, independent of inherited author accessors"
+  ],
+  "required_controls": [
+    "Unchanged page-descriptors.html prior assertion restored",
+    "Parsed pageOrientation and page-orientation agree with getPropertyValue",
+    "Both page aliases route assignments through underlying declaration operations",
+    "Ordinary/keyframe/computed/position-try descriptor-name boundaries unchanged",
+    "Private/public receiver controls and frozen CSSAPI/descriptor neighbors retain prior passes",
+    "Object.prototype.ruleType getter/setter cannot observe private state or classify an inline/computed declaration as a page declaration"
+  ],
+  "updated_utc": "2026-11-04T11:38:23.749080+00:00",
+  "review_correction": "Every private state literal creates own ruleType:null; rule constructors update that existing own data property before freezing, so Object.prototype accessors cannot observe or forge the rule kind."
+}

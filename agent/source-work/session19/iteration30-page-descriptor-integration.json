@@ -1,0 +1,37 @@
+{
+  "iteration": 30,
+  "candidate": 1914,
+  "start_utc": "2026-11-04T11:40:14.707576+00:00",
+  "end_utc": "2026-11-04T11:40:14.897333+00:00",
+  "source_operation_seconds": 0.20330744696548209,
+  "before_head": "ead4aa820003add36e6ca4531a14798c71438519",
+  "production_commit": "346b83da6ca43005a3a9455482ab5db288551192",
+  "source_tree": "dd449fb29639d8c09ff77f9a4815dd41d5517d02",
+  "manifest_sha256": "6cb72bf283e60633be50f06a04d9cd5a4fac9608e074ec4bf7ff8d71c6057aa7",
+  "review_sha256": "884879675f13371de1086dac888271770da2411b82811d8a1e80fe0d03d963a0",
+  "files": {
+    "src/js/prelude/03-element.js": {
+      "base_sha256": "56038ccdf393fabff5054725345ea0725630076ff22b400d50eb4cf7c56ea838",
+      "candidate_sha256": "2a8d5f52f8fd6a2bd6696ce0ada872085958c5dad09162f85d64585d6135ddbb",
+      "patch_sha256": "77a70fbe5070f8b6e49408b1ded362f718fdd9856f5795017419d5ad52998b21",
+      "patch": "src__js__prelude__03-element.js.patch",
+      "candidate": "src__js__prelude__03-element.js.candidate"
+    },
+    "src/js/prelude/06b-activate.js": {
+      "base_sha256": "6638776280ac9b9ec66b02f8144173f45a82477720e30e66669da9e7963c5a1a",
+      "candidate_sha256": "14412d92e1c33dcf4448a53ea45feb0b2a501c067ab50a3578999e9eca6f7279",
+      "patch_sha256": "dbdbef44e9c4b3217860ff3f2e3763be8c85403c25b630ee082c09db46da9140",
+      "patch": "src__js__prelude__06b-activate.js.patch",
+      "candidate": "src__js__prelude__06b-activate.js.candidate"
+    }
+  },
+  "status": "source integrated; build and unchanged qualification pending",
+  "score": 62.580128205128204,
+  "score_basis": "latest accepted1908 selected-manifest URL pass percentage; no repair score inferred",
+  "native_provenance": "No native files changed; exact native218 pass remains1913 at238b68ba, not an exact1914 native run",
+  "iteration_start_utc": "2026-11-04T11:34:53.613274+00:00",
+  "iteration_end_utc": "2026-11-04T11:40:14.897333+00:00",
+  "iteration_elapsed_seconds": 321.284059,
+  "session_elapsed_seconds": 18379.897333,
+  "timing_note": "Iteration elapsed is wall time from retained draft creation through integration; source operation is a subset. Parallel agent/task timings are not summed as user elapsed."
+}

@@ -1,0 +1,40 @@
+{
+  "started_utc": "2026-11-04T11:39:41.733527+00:00",
+  "finished_utc": "2026-11-04T11:39:42.015350+00:00",
+  "elapsed_seconds": 0.2818179529858753,
+  "reviewed_manifest_sha256": "6cb72bf283e60633be50f06a04d9cd5a4fac9608e074ec4bf7ff8d71c6057aa7",
+  "status": "ACCEPTED FOR INTEGRATION; runtime qualification remains pending",
+  "checks": [
+    {
+      "path": "src/js/prelude/03-element.js",
+      "base_hash_exact": true,
+      "candidate_hash_exact": true,
+      "patch_hash_exact": true,
+      "patch_reconstructed_exactly_without_fuzz": true,
+      "syntax_exit_code": 0
+    },
+    {
+      "path": "src/js/prelude/06b-activate.js",
+      "base_hash_exact": true,
+      "candidate_hash_exact": true,
+      "patch_hash_exact": true,
+      "patch_reconstructed_exactly_without_fuzz": true,
+      "syntax_exit_code": 0
+    }
+  ],
+  "static_findings": [
+    "Every private declaration state initializes own ruleType:null via object literal before author access; inherited Object.prototype getters/setters cannot intercept this newly added field.",
+    "CSSRuleStyle updates its existing own private ruleType from cssOwnerGet metadata before cssDeclarationWrap freezes the state.",
+    "Only genuine page kind6 gains page-orientation/pageOrientation routing; font-face descriptor brand, property parsing, aliases, animation-range handling, has/descriptor and numeric/symbol fallbacks remain unchanged.",
+    "Existing canonical public receiver is retained for captured operation invocation; no raw private target is exposed through the new routing.",
+    "Ordinary own/prototype shadowing still uses the preserved Reflect receiver path."
+  ],
+  "runtime_controls_required": [
+    "Unchanged page-descriptors priorPASS restored.",
+    "Both aliases read/write the same declaration.",
+    "Object.prototype.ruleType getter/setter pollution does not run or expose state.",
+    "Ordinary/rule/computed/position-try boundaries and previous public-receiver controls retained."
+  ],
+  "native_build_or_browser_runtime_test_performed": false,
+  "canonical_source_mutated": false
+}

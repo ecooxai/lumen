@@ -866,3 +866,12 @@ The original authenticated10:52:35UTC message is preserved verbatim in agent/tas
 > current lumen can not login x.com via google.com ,after return from google acc auth it show error , find whats wrong and fix, also optimize x.com peformance like scroll,ensure not high cpu usage
 
 Candidate1913 native218 accepted218/218 at11:04:55.811UTC,190.109s, exactHEAD238b68ba84881d3d853bb78fcf53202cdd40900a, all guard/pin/cleanup gates valid. ReportSHA2561b4f358018800f43142c0b7f090eac0e715cdf521244d116874e35d9923d863a. Browser218/382/full acceptance is pending. Read-only X inspection identifies no proven OAuth cause; the tool-induced malformed javascript-address navigation is explicitly excluded. Source/public runtime accepted1908 remains unchanged. Elapsed session wall 16329.169s; iteration29, no new production iteration.
+
+
+### Iteration30 — page-descriptor prior-pass repair, candidate1914 pending
+
+Start 2026-11-04T11:34:53.613274+00:00; end 2026-11-04T11:40:14.897333+00:00; elapsed 321.284059s. Measured source-operation subset 0.203307s; session wall 18379.897333s since06:33:55UTC. Score62.580128/100 is the accepted1908 selected-manifest URL percentage, not a new candidate or overall browser quality claim.
+
+Production commit 346b83da6ca43005a3a9455482ab5db288551192; source tree dd449fb29639d8c09ff77f9a4815dd41d5517d02. Two JavaScript files restore pageOrientation/page-orientation routing for private rule kind6. Every private declaration state creates own ruleType:null before its frozen public-receiver dispatch; inherited author accessors cannot observe or forge the field. No descriptor grammar/alias normalization/native change. Independent review884879675f13371de1086dac888271770da2411b82811d8a1e80fe0d03d963a0 accepted exact draft6cb72bf283e60633be50f06a04d9cd5a4fac9608e074ec4bf7ff8d71c6057aa7. Build/descriptor59/subtype controls/full replay are pending. Native218 provenance remains exact1913, not an exact1914 native run.
+
+Original full1913 completed HOLD795/1248 and23156/26245: prior page-orientation assertion loss plus namespace51PASS/harnessTIMEOUT. Neither is erased or promoted. Accepted1908 remains781/1248 and23103/26245. Iteration30 requires a clearly labeled WORK/HOLD durable checkpoint; it is not a release.
