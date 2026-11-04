@@ -234,6 +234,7 @@ let curEvent;
 /* this realm's hooks for other realms: an Event is dispatched by its own realm (its state is in private fields) */
 const REALM = Object.freeze({
     isEvent: e => evIs(e),
+    styleSheetListGetter: receiver => cssStyleSheetListLocalGetter(receiver),
     compileEventHandler: (el, name, source) => compileHandler(el, name, source),
     resetOpenedHandlers: target => resetOpenedHandlers(target),
     dispatch(t, ev) {

@@ -1096,7 +1096,139 @@ function adoptSheets(scope, v) {
 }
 function readopt(scope) { if (scope.__ass.some(s => { const n = s._mirrors && s._mirrors.get(scope); return !n || !n.parentNode; })) adoptSheets(scope, scope.__ass); }
 function adoptedGet(scope) { return new Proxy((scope.__ass || []).slice(), { set(t, k, val) { t[k] = val; adoptSheets(scope, t); return true; } }); }
-function scopeSheets(scope) { return N.query(scope, 'style,link[rel~=stylesheet]', true).filter(el => !el.__mirror).map(sheetFor); }
+/* A live, indexed-only stylesheet collection. Do not use HTMLCollection's
+ * named-property handler: these entries are CSSStyleSheet objects, not Nodes. */
+const cssStyleSheetLists = new WeakMap(), cssStyleSheetListItems = new WeakMap();
+const cssStyleSheetListCacheGet = Function.prototype.call.bind(WeakMap.prototype.get, cssStyleSheetLists);
+const cssStyleSheetListCacheSet = Function.prototype.call.bind(WeakMap.prototype.set, cssStyleSheetLists);
+const cssStyleSheetListItemsSet = Function.prototype.call.bind(WeakMap.prototype.set, cssStyleSheetListItems);
+const cssStyleSheetListCreate = Object.create, CssStyleSheetListProxy = Proxy;
+const cssStyleSheetListReflect = {
+    get: Reflect.get, has: Reflect.has, ownKeys: Reflect.ownKeys,
+    getOwnPropertyDescriptor: Reflect.getOwnPropertyDescriptor,
+    set: Reflect.set, defineProperty: Reflect.defineProperty, deleteProperty: Reflect.deleteProperty
+};
+const cssStyleSheetListBrand = new WeakSet();
+const cssStyleSheetListHas = Function.prototype.call.bind(WeakSet.prototype.has, cssStyleSheetListBrand);
+const cssStyleSheetListAdd = Function.prototype.call.bind(WeakSet.prototype.add, cssStyleSheetListBrand);
+const cssStyleSheetListItemsGet = Function.prototype.call.bind(WeakMap.prototype.get, cssStyleSheetListItems);
+function cssStyleSheetListLocalGetter(receiver) {
+    return cssStyleSheetListHas(receiver) ? cssStyleSheetListItemsGet(receiver) : undefined;
+}
+function cssStyleSheetListCheck(receiver, operation) {
+    let current = cssStyleSheetListLocalGetter(receiver);
+    if (!current && receiver !== null && typeof receiver === 'object') {
+        // Only the native same-origin creation-context bridge can supply this
+        // frozen private hook. The owning realm still validates its own brand.
+        const realm = N.realmOf(receiver);
+        if (realm && realm !== REALM && typeof realm.styleSheetListGetter === 'function')
+            current = realm.styleSheetListGetter(receiver);
+    }
+    if (!current)
+        throw new TypeError('Failed to execute ' + operation + ' on StyleSheetList: Illegal invocation');
+    return current;
+}
+class StyleSheetList {
+    constructor() { illegal(); }
+    get length() {
+        return cssStyleSheetListCheck(this, 'length')().length;
+    }
+    item(index) {
+        const current = cssStyleSheetListCheck(this, 'item');
+        listNeed(arguments.length, 'item', 'StyleSheetList');
+        // WebIDL conversion can run author code that changes membership.
+        // Read the current collection only after that conversion completes.
+        index = index >>> 0;
+        const items = current();
+        return index < items.length ? items[index] : null;
+    }
+}
+for (const name of ['length', 'item']) {
+    const descriptor = Object.getOwnPropertyDescriptor(StyleSheetList.prototype, name);
+    descriptor.enumerable = true;
+    Object.defineProperty(StyleSheetList.prototype, name, descriptor);
+}
+Object.defineProperty(StyleSheetList.prototype, Symbol.iterator, {
+    value: Array.prototype.values, writable: true, configurable: true
+});
+// Only canonical array indices below 2^32-1 participate in indexed access.
+const cssStyleSheetListIndex = key => {
+    if (typeof key !== 'string') return -1;
+    const index = +key;
+    return index >= 0 && index < 4294967295 && index % 1 === 0 && '' + index === key ? index : -1;
+};
+const cssStyleSheetListHandler = {
+    get(target, key, receiver) {
+        const index = cssStyleSheetListIndex(key);
+        if (index >= 0) {
+            const items = cssStyleSheetListItemsGet(target)();
+            if (index < items.length) return items[index];
+        }
+        // Includes the actual readonly length getter and its receiver brand.
+        return cssStyleSheetListReflect.get(target, key, receiver);
+    },
+    has(target, key) {
+        const index = cssStyleSheetListIndex(key);
+        return index >= 0 && index < cssStyleSheetListItemsGet(target)().length || cssStyleSheetListReflect.has(target, key);
+    },
+    ownKeys(target) {
+        const items = cssStyleSheetListItemsGet(target)(), keys = [];
+        for (let i = 0; i < items.length; i++) apush(keys, '' + i);
+        const own = cssStyleSheetListReflect.ownKeys(target);
+        for (let i = 0; i < own.length; i++) apush(keys, own[i]);
+        return keys;
+    },
+    getOwnPropertyDescriptor(target, key) {
+        const index = cssStyleSheetListIndex(key);
+        if (index >= 0) {
+            const items = cssStyleSheetListItemsGet(target)();
+            if (index < items.length)
+                return { value: items[index], enumerable: true, configurable: true, writable: false };
+        }
+        return cssStyleSheetListReflect.getOwnPropertyDescriptor(target, key);
+    },
+    set(target, key, value, receiver) {
+        const index = cssStyleSheetListIndex(key);
+        if (index >= 0 && index < cssStyleSheetListItemsGet(target)().length) return false;
+        return cssStyleSheetListReflect.set(target, key, value, receiver);
+    },
+    defineProperty(target, key, descriptor) {
+        return cssStyleSheetListIndex(key) >= 0 ? false : cssStyleSheetListReflect.defineProperty(target, key, descriptor);
+    },
+    deleteProperty(target, key) {
+        const index = cssStyleSheetListIndex(key);
+        return index >= 0 ? index >= cssStyleSheetListItemsGet(target)().length : cssStyleSheetListReflect.deleteProperty(target, key);
+    },
+    // A live indexed object must remain extensible as membership changes.
+    preventExtensions() { return false; }
+};
+function cssCreateStyleSheetList(scope) {
+    const target = cssStyleSheetListCreate(StyleSheetList.prototype);
+    let version = -1, items = [];
+    const current = () => {
+        const next = N.version(scope);
+        if (next !== version) {
+            const matches = N.query(scope, 'style,link[rel~=stylesheet]', true), updated = [];
+            for (let i = 0; i < matches.length; i++)
+                if (!matches[i].__mirror) apush(updated, sheetFor(matches[i]));
+            items = updated; version = next;
+        }
+        return items;
+    };
+    const list = new CssStyleSheetListProxy(target, cssStyleSheetListHandler);
+    cssStyleSheetListItemsSet(target, current);
+    cssStyleSheetListItemsSet(list, current);
+    cssStyleSheetListAdd(list);
+    return list;
+}
+function scopeSheets(scope) {
+    let list = cssStyleSheetListCacheGet(scope);
+    if (!list) {
+        list = cssCreateStyleSheetList(scope);
+        cssStyleSheetListCacheSet(scope, list);
+    }
+    return list;
+}
 function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); cssSheetState(s).constructed = false; def(s, '_owner', el); def(s, '_media', cssCreateMediaList(N.attrNS(el, null, 'media') || '', null, el)); def(el, '__sheet', s); } return el.__sheet; }
 /* CSS.registerProperty: validates the definition (name, syntax, a computationally independent initial value) */
 const registeredProps = new SMap();
