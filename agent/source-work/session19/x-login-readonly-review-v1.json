@@ -1,0 +1,45 @@
+{
+  "created_utc": "2026-11-04T11:06:04.168873+00:00",
+  "scope": "read-only engine review; no fix or causal claim",
+  "source_head": "238b68ba84881d3d853bb78fcf53202cdd40900a",
+  "runtime_observed_by_environment": "immutable1808, logged-out X landing",
+  "evidence": [
+    "Historical sanitized path reaches accounts.google.com/gsi/transform; popup callback can return without X navigation.",
+    "No original authentication runtime error reproduced.",
+    "Malformed javascript-address diagnostic is tool-induced and excluded."
+  ],
+  "source_findings": [
+    {
+      "file": "src/app/main.c",
+      "finding": "Main loop ticks background tabs; popup close returns to opener tab."
+    },
+    {
+      "file": "src/js/frames.cc",
+      "finding": "Remote popup handles use stable window IDs and queue serialized postMessage payloads for the target context; queued messages wake the scheduler."
+    },
+    {
+      "file": "src/js/prelude/08-window.js",
+      "finding": "Remote handles support postMessage/closed/close, but indexed/named remote frames and arbitrary same-origin popup globals remain incomplete architecture."
+    },
+    {
+      "file": "src/js/prelude/08-window.js",
+      "finding": "Global postMessage ignores targetOrigin; an independently visible correctness issue, not linked to the reported GSI failure and not modified."
+    }
+  ],
+  "live_diagnostics": [
+    "Existing stderr console/runtime errors",
+    "1-second process CPU/RSS counters"
+  ],
+  "excluded_actions": [
+    "No new diagnostic bridge",
+    "No credential/token/cookie logging",
+    "No origin or security bypass",
+    "No speculative login patch"
+  ],
+  "official_docs": [
+    "https://developers.google.com/identity/gsi/web/reference/js-reference",
+    "https://developers.google.com/identity/siwg/integrate",
+    "https://developers.google.com/identity/oauth2/web/guides/error"
+  ],
+  "next": "Obtain original sanitized error/message-delivery evidence and stable scroll CPU observations; preserve current user flow."
+}

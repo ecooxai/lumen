@@ -857,3 +857,12 @@ Production f9c432d4172142f5e95869926e4f56d087f4779e, source tree313e8671497c770f
 1912 build/startup87.179s, native unchanged from1911 (no1912 exact native gate claimed). Focused313 gained9URLs/25assertions but retained namespace TIMEOUT after51PASS, so HOLD/no rescue full run. Independent170:168/170 versus122/170 prior, zero lost PASS; all new API/range controls pass. Matched four diagnostic namespace runs all timed out with51PASS on both1908 and1912; the596-assertion sentinel always passed. Paired ON traces show80 child preludes10,016.252/10,019.867ms wall and7,950.273/7,835.521ms CPU, with parent completion1.743/1.151ms after unblocking. No missing-load evidence or added-API CPU regression is established by that pair. These diagnostic runs do not qualify either HOLD.
 
 Latest authenticated preview steering received10:52:35UTC requests X/Google return-error diagnosis and scrolling CPU optimization; exact text is in continue and will be appended to task after the freeze. Environment owns sanitized UI/resource evidence, source owns engine diagnosis. Root authorized the important-bug extension with absolute deadline12:33:55UTC, targeting final Linux acceptance by12:00 for delivery. User wall time and overlapping task sums remain distinct.
+
+
+### Exact preview steering and native release — 2026-11-04T11:06:04.168873+00:00
+
+The original authenticated10:52:35UTC message is preserved verbatim in agent/task.md and continue.md. Earlier normalized punctuation/spelling in the freeze handoff was corrected after release; the archived handoff remains unchanged. Exact text:
+
+> current lumen can not login x.com via google.com ,after return from google acc auth it show error , find whats wrong and fix, also optimize x.com peformance like scroll,ensure not high cpu usage
+
+Candidate1913 native218 accepted218/218 at11:04:55.811UTC,190.109s, exactHEAD238b68ba84881d3d853bb78fcf53202cdd40900a, all guard/pin/cleanup gates valid. ReportSHA2561b4f358018800f43142c0b7f090eac0e715cdf521244d116874e35d9923d863a. Browser218/382/full acceptance is pending. Read-only X inspection identifies no proven OAuth cause; the tool-induced malformed javascript-address navigation is explicitly excluded. Source/public runtime accepted1908 remains unchanged. Elapsed session wall 16329.169s; iteration29, no new production iteration.

@@ -16,7 +16,7 @@
   "work_session_number": 19,
   "session_active": true,
   "session_status": "active",
-  "session_deadline_utc": "2026-11-04T11:33:55Z",
+  "session_deadline_utc": "2026-11-04T12:33:55Z",
   "session_response_availability": "An active built-in agent polls session messages during this work session. Replies require this active session.",
   "goal_achieved": false,
   "goal_score": 95,

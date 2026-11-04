@@ -24,7 +24,7 @@ and static-only importance assembly. Sampled animation/transition assembly stays
 the larger private transition-tier proposal is explicitly deferred and unintegrated.
 The latest authenticated preview request is X/Google authentication-return failure diagnosis
 and X scrolling CPU optimization. Exact text, ownership and security boundaries are recorded
-in agent/continue.md; preserve it in agent/task.md after the current freeze releases.
+verbatim in agent/task.md and agent/continue.md. Candidate1913 exact-source native218 has passed; browser/full qualification remains pending.
 Coordinate exact tracked source/Git/status freezes before builds and native gates; immutable
 sealed binaries may be tested while subsequent source is prepared. Use never-reused IDs
 and one heavy job under the existing480% shared quota. Preserve all old HOLDs and private

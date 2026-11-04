@@ -88,12 +88,12 @@ its failed CPU/wall thresholds and unused reflection plan remain retained.
 
 Received through the session preview at2026-11-04T10:52:35Z, exact text:
 
-> current lumen can not login x.com via google.com, after return from google acc auth it show error, find whats wrong and fix, also optimize x.com performance like scroll, ensure not high cpu usage
+> current lumen can not login x.com via google.com ,after return from google acc auth it show error , find whats wrong and fix, also optimize x.com peformance like scroll,ensure not high cpu usage
 
-Seal1913 first. Environment owns relevant UI, sanitized authentication-return evidence and
+Candidate1913 is immutable and its fresh exact-source native218 passed. Environment owns relevant UI, sanitized authentication-return evidence and
 one-second scroll CPU measurements; source owns engine diagnosis from those observations.
 Do not bypass cookie/origin/security checks, invent causes or expose credentials/tokens.
-Append this exact steering to agent/task.md after the build/native freeze releases.
+The original wording is appended verbatim to agent/task.md; the earlier normalized quote is retained only in the archived handoff.
 The earlier unused initial-about:blank realm opportunity is read-only: frame_create invokes
 full initialization for both the initial document and later navigation, but observable window,
 document, load and ID entrypoints currently lack a shared lazy-initialization barrier. Skipping
@@ -132,3 +132,10 @@ publish the exact reviewed source, and restart on display:0 and the authorized c
 MI8 with install-r/data preservation. Source publication, desktop execution and Android
 installation have separate identities and receipts. Linux results do not imply Android
 conformance. Root/environment own final delivery.
+
+
+### Candidate1913 native release and live X diagnosis
+
+Native218 passed all218 contracts at2026-11-04T11:04:55.811Z in190.109s on exactHEAD238b68ba84881d3d853bb78fcf53202cdd40900a; report SHA2561b4f358018800f43142c0b7f090eac0e715cdf521244d116874e35d9923d863a. Source/Git/status freeze is released; immutable browser218 and382 remain pending. The full accepted runtime remains1908.
+
+Current display:0 is immutable1808 on an X logged-out landing. Sanitized historical navigation reached Google GSI transform, which can complete through popup messaging rather than navigation. No original authentication error has yet been reproduced. A later UI javascript-address diagnostic was misdelivered and caused a separate malformed-page error; it is excluded from OAuth evidence. The source read confirms inactive-tab message pumping and stable popup IDs exist; no causal fix has been selected. Existing live diagnostics are stderr and1s process counters. Do not add a bridge, bypass origin/cookie policy, guess at credentials, or claim the reported login/scroll problem fixed without observed evidence.

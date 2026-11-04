@@ -92,3 +92,7 @@ you need not ended the working session to report progress instead of continuing 
 
 if goal not finish write a prompt tolet next agent to continue in a editor writting including task and dev env and rules in this prompt  .   use subagents to do all works, you main agent only for project manager, like cto, plan and evaluate , give all tasks to new subagents, do not coding ,debuging, testing in main agent as much as possible, only do thiese task if necessary, even for evaluatte and plan or analyze, you can start subagents for these task too,you only get most imprtant result info. keep main agent context clearn including only most important info.
 and for each iteration, main agent can start new subagent to do this iteration, do not push all context to subagent, only give necessary context to start a fresh new subagent.
+
+## Authenticated session-preview steering — 2026-11-04 10:52:35 UTC
+
+current lumen can not login x.com via google.com ,after return from google acc auth it show error , find whats wrong and fix, also optimize x.com peformance like scroll,ensure not high cpu usage
