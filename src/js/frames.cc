@@ -71,6 +71,7 @@ static void load_trace(JsCtx *c, const char *event, const char *reason = "none",
     } // Unrelated lifecycle milestones must not invalidate blocker-state deduplication.
     load_trace_emit(c->id, c->parent ? c->parent->id : 0, event, state, elapsed);
 }
+void js_trace_load_phase(JsCtx *c, const char *phase) { load_trace(c, phase); }
 
 
 static std::string origin_of(const char *u) {
@@ -121,8 +122,14 @@ static v8::Local<v8::Value> win_for(JsCtx *v, JsCtx *t) {
 static JsCtx *root_of(JsCtx *c) { while (c->parent) c = c->parent; return c; }
 static JsCtx *by_id(JsCtx *any, uint32_t id) { (void)any; return js_ctx_by_id(id); }
 
+/* Realm ownership also covers inert documents; only the current context document
+   has a browsing context in which a frame may exist. */
+static JsCtx *frame_document_ctx(Document *d) {
+    JsCtx *p = owner_ctx(d);
+    return p && !p->dead && p->doc == d ? p : nullptr;
+}
 JsCtx *js_frame_ctx(Node *f) {
-    JsCtx *p = f && f->doc ? owner_ctx(f->doc) : nullptr;
+    JsCtx *p = f ? frame_document_ctx(f->doc) : nullptr;
     if (!p) return nullptr;
     for (JsCtx *k : p->kids) if (!k->dead && k->frame_el == f) return k;
     return nullptr;
@@ -715,7 +722,7 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
     g_loads.erase(std::remove(g_loads.begin(), g_loads.end(), l), g_loads.end());
     JsCtx *p = l->p, *blank = nullptr;
     if (p && !p->dead) for (JsCtx *k : p->kids) if (!k->dead && !k->frame_reload_pending && k->id == l->kid && k->frame_el == l->f) blank = k;
-    if (blank) {
+    if (blank && l->f->doc == p->doc) {
         load_trace(blank, "response");
         std::string key = blank->frame_src;
         bool ok = r && r->status > 0;
@@ -760,6 +767,7 @@ static std::string blob_as_data(JsCtx *p, const char *u) {
 }
 static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key,
                        const char *body = nullptr, size_t blen = 0, const char *ctype = nullptr) {
+    if (!p || p->dead || !f || f->doc != p->doc) return;
     bool remote = u && *u && strncmp(u, "about:", 6) && strncmp(u, "javascript:", 11);
     JsCtx *k = frame_create(p, f, key, "about:blank", "", 0, !remote);
     if (!remote) return;
@@ -777,7 +785,7 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key,
 }
 
 static void frame_start(JsCtx *p, Node *f) {
-    if (p->dead) return;
+    if (!p || p->dead || !f || f->doc != p->doc) return;
     std::string key = src_key(p, f);
     if (const char *sd = node_attr(f, "srcdoc")) { frame_create(p, f, key, "about:srcdoc", sd, strlen(sd), true); return; }
     frame_load(p, f, key.c_str(), key);
@@ -857,10 +865,10 @@ void frames_scan(JsCtx *c) {
     for (Node *n : todo) if (!js_frame_ctx(n)) frame_start(c, n);
 }
 
-void frames_inserted(JsCtx *c, Node *root) {
+void frames_inserted(JsCtx *, Node *root) {
     if (!(root->flags & NF_CONNECTED)) return;
-    JsCtx *p = owner_ctx(root->doc);
-    if (!p) p = c;
+    JsCtx *p = frame_document_ctx(root->doc);
+    if (!p) return;
     std::vector<Node *> todo;
     collect_iframes(root, todo);
     for (Node *x : todo) if (!js_frame_ctx(x)) frame_start(p, x);
@@ -868,8 +876,11 @@ void frames_inserted(JsCtx *c, Node *root) {
 
 #define FCTX JsCtx *c = jctx(a.GetIsolate()); v8::Isolate *iso = c->iso; (void)iso
 static JsCtx *ensure_frame(Node *f) {
+    if (!f || !(f->flags & NF_CONNECTED)) return nullptr;
+    JsCtx *p = frame_document_ctx(f->doc);
+    if (!p) return nullptr;
     JsCtx *k = js_frame_ctx(f);
-    if (!k && (f->flags & NF_CONNECTED)) if (JsCtx *p = owner_ctx(f->doc)) { frame_start(p, f); k = js_frame_ctx(f); }
+    if (!k) { frame_start(p, f); k = js_frame_ctx(f); }
     return k;
 }
 static void n_frameWin(const FCI &a) { FCTX; Node *f = junwrap(a[0]); if (f) a.GetReturnValue().Set(win_for(c, ensure_frame(f))); else a.GetReturnValue().SetNull(); }

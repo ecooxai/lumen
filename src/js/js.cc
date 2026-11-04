@@ -1329,6 +1329,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->t0 = now_ms();
     c->thread = std::this_thread::get_id();
     g_ctxs.push_back(c);
+    js_trace_load_phase(c, "realm-bootstrap-begin");
     jsg_install_hooks();
     if (parent) c->iso = parent->iso;
     else {
@@ -1361,6 +1362,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     if (!parent) jsprof_start(c);
     ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, ctx_origin_key(c).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
     v8::Context::Scope cs(ctx);
+    js_trace_load_phase(c, "realm-context-ready");
     v8::Local<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(iso);
     tmpl->SetInternalFieldCount(2);
     c->node_tmpl.Reset(iso, tmpl);
@@ -1374,6 +1376,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
                                       [c] { return js_context_fully_active(c); });
     js_url_install(ctx, N);
     js_crypto_install(ctx, N); js_encoding_install(ctx, N); js_compress_install(ctx, N);
+    js_trace_load_phase(c, "realm-native-ready");
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, "lumen:prelude"));
     v8::Local<v8::Script> s;
@@ -1401,8 +1404,10 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
             refresh_code = !code || psrc.GetCachedData()->rejected;
         }
     }
+    js_trace_load_phase(c, "realm-code-ready");
     if (compiled && s->Run(ctx).ToLocal(&fv) && fv->IsFunction() &&
         fv.As<v8::Function>()->Call(ctx, v8::Undefined(iso), 2, argv).ToLocal(&api) && api->IsObject()) {
+        js_trace_load_phase(c, "realm-prelude-ready");
         if (refresh_code) {
             std::unique_ptr<v8::ScriptCompiler::CachedData> cd(v8::ScriptCompiler::CreateCodeCache(s->GetUnboundScript()));
             if (cd) { std::lock_guard<std::mutex> lk(prelude_mu); prelude_code = std::make_shared<std::string>((const char *)cd->data, (size_t)cd->length); }
@@ -1424,6 +1429,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
         v8::Local<v8::Value> ti;
         if (ao->Get(ctx, jstr(iso, "ttInit")).ToLocal(&ti) && ti->IsFunction()) (void)ti.As<v8::Function>()->Call(ctx, v8::Undefined(iso), 0, nullptr);
     }
+    js_trace_load_phase(c, "realm-api-ready");
     if (tc.HasCaught()) {
         std::string m = jcstr(iso, tc.Exception());
         v8::Local<v8::Value> st;
@@ -1432,6 +1438,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
         fprintf(stderr, "lumen: JS prelude failed (line %d): %s\n", line, m.c_str());
     }
     iso->PerformMicrotaskCheckpoint();
+    js_trace_load_phase(c, "realm-microtasks-ready");
     if (const char *to = getenv("LUMEN_JS_TIMEOUT_MS")) g_js_timeout_ms = atof(to);
     if (g_js_timeout_ms > 0 && !parent) c->watchdog = std::thread(watchdog_run, c);
     return c;

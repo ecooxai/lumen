@@ -566,8 +566,20 @@ const ChildNode = {
 };
 class CharacterData extends Node {}
 methods(CharacterData.prototype, ChildNode);
+const characterDataReceiver = node => {
+    if (!N.isNode(node)) throw new TypeError('Illegal invocation');
+    const type = N.type(node);
+    if (type !== 3 && type !== 4 && type !== 7 && type !== 8) throw new TypeError('Illegal invocation');
+    return node;
+};
 methods(CharacterData.prototype, {
-    get data() { return N.text(this); }, set data(v) { replaceData(this, 0, N.text(this).length, v == null ? '' : String(v)); },
+    get data() { return N.text(characterDataReceiver(this)); },
+    set data(v) {
+        characterDataReceiver(this);
+        if (typeof v === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
+        const data = v === null ? '' : String(v);
+        replaceData(this, 0, N.text(this).length, data);
+    },
     get length() { return N.text(this).length; },
     appendData(s) { replaceData(this, N.text(this).length, 0, String(s)); },
     substringData(o, c) { o = toU32(o); c = toU32(c); const d = N.text(this); if (o > d.length) throw new DOMException(`The offset ${o} is greater than the node's length (${d.length}).`, 'IndexSizeError'); return d.substring(o, o + c); },
@@ -608,7 +620,13 @@ methods(DocumentType.prototype, ChildNode);
 methods(DocumentType.prototype, { get name() { return N.name(this); }, get publicId() { return N.attr(this, 'publicId') || ''; }, get systemId() { return N.attr(this, 'systemId') || ''; } });
 class DocumentFragment extends Node { constructor() { return N.frag(); } }
 methods(DocumentFragment.prototype, ParentNode);
-methods(DocumentFragment.prototype, { getElementById(id) { return N.query(this, '#' + CSS.escape(String(id)), false); } });
+methods(DocumentFragment.prototype, { getElementById(id) {
+    if (!N.isNode(this) || N.type(this) !== 11) throw new TypeError('Illegal invocation');
+    if (!arguments.length) throw new TypeError('1 argument required');
+    if (typeof id === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
+    id = String(id);
+    return id === '' ? null : N.query(this, '#' + CSS.escape(id), false);
+} });
 class ShadowRoot extends DocumentFragment { constructor() { illegal(); } }
 methods(ShadowRoot.prototype, {
     getAnimations() { return []; },

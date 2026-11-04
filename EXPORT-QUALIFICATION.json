@@ -1,11 +1,11 @@
 {
-  "candidate": 1906,
+  "candidate": 1908,
   "status": "INDEPENDENTLY REVIEWED COMPLETE SELECTED1248 DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
-  "tested_source_commit": "f454cf2097ab4742064664643c3b0447c71137eb",
-  "tested_binary_sha256": "cba377366b0992b81a27c5a3108c0d1ec24053f6750459c2ebda051d707b6cb4",
-  "source_manifest_digest": "897f43e0d475d3104410b7b088d54ff18e7cfcbc1a500cc9415bc611a1cdeaa1",
-  "public_parent": "28cdeb590fafa03b04363755245638f2d673290d",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1906-20261104",
+  "tested_source_commit": "d995e1a5eb8daebd07ec7b67f0572f40b70fc6e6",
+  "tested_binary_sha256": "cf2692999572a09524c11697d76de073ccbba7e3c6fe496b89bb241ccfc9bdc9",
+  "source_manifest_digest": "7e634b7bf310025c52f2bee186ea0ec5094d1dbea01f6c7fa3b86511395d9fef",
+  "public_parent": "0d76bf0aeefb3c975b94b550f831681c41e3beda",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1908-20261104",
   "all_recorded_inputs_exact": true,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
@@ -14,23 +14,23 @@
   "validation_summary": {
     "qualification": "Qualified complete unchanged selected1248-URL development checkpoint; not all upstream WPT or a device delivery claim",
     "selected_urls": {
-      "lumen_passed": 772,
+      "lumen_passed": 781,
       "total": 1248,
       "baseline1808_passed": 759,
-      "pass_percent": 61.85897435897436
+      "pass_percent": 62.580128205128204
     },
     "selected_assertions": {
-      "lumen_passed": 23024,
+      "lumen_passed": 23103,
       "total": 26245,
       "baseline1808_passed": 22826,
-      "pass_percent": 87.72718613069156
+      "pass_percent": 88.02819584682797
     },
-    "new_passing_urls": 13,
-    "new_assertion_passes": 198,
+    "new_passing_urls": 22,
+    "new_assertion_passes": 277,
     "lost_preregistered_pass_identities": 0,
     "lost_required_fully_passing_urls": 0,
     "harness_regressions": 0,
-    "required_and_retained_passing_assertions": 23024,
+    "required_and_retained_passing_assertions": 23103,
     "harness_statuses": {
       "OK": 1238,
       "ERROR": 1,
@@ -38,15 +38,15 @@
     },
     "all_case_process_exits_zero": true,
     "cleanup_complete": true,
-    "full_wrapper_seconds": 1257.4533593539963,
+    "full_wrapper_seconds": 1039.0666904789978,
     "full1248_replay_performed": true,
     "source_and_binary_identity_valid": true,
-    "raw_results_sha256": "07bb4641b35db759ea57773c267e12aba897fc38f5838a2e3da9fe9ef41810e2",
-    "runtime_receipt_sha256": "cbe0551deb6c61dd3de245b70304eae7fa5d054ee729d1001c95f6dcd325ad42",
-    "prior_union_acceptance_sha256": "751ac274605e766cca7e1b3dca56e476a3fcdec3e86b50100484c5d02f3c503d",
-    "comparison_audit_sha256": "e34b87d111288049bb7ed954bf9886cd70a48c43f4a3bcd80aa5eeae382749ff",
-    "full_plan_sha256": "fa196cc57292ee2b8c863fb92819fd416914de821259235718d8302ff209f6c1",
-    "prior_union_registry_sha256": "3f95e3b1f1fd0bb1c73ef52ca65d439beba096aafacb2cd20c5cc83d262ce610",
+    "raw_results_sha256": "f72ea86207eaa207802d86d9ad17d821687a860dbd150dcc1fb77fcf9075bb28",
+    "runtime_receipt_sha256": "d60e5763165c103fedcc2df2b0c7feef34b12998899a06b5060e9f9c62e5a17b",
+    "prior_union_acceptance_sha256": "c6c1341edd3feb1171651cebf943bbd65fbac91438f203aa6f94366a31d7c058",
+    "comparison_audit_sha256": "bb27d846c705d2eda7231e24bd3f9452da327c30372c86e32bf2451d2cac02c8",
+    "full_plan_sha256": "1074a58c56e736b03e056616b6f107433027810408392d36c56c5a5925619302",
+    "prior_union_registry_sha256": "c813fbdd7ecda4a9f45422d819519821d1a8ebd1e241579d82c0ec07fef3e8f9",
     "historical_pinned_reference": {
       "version": "150.0.7871.114",
       "passed_urls": 1062,
@@ -56,22 +56,28 @@
       "source": "previous retained full reference; no fresh full Chromium run claimed"
     },
     "build_and_startup_passed": true,
-    "namespace_reliability": "This full run completed the namespace harness; intermittent earlier failure remains retained and no source-level reliability fix is claimed"
+    "namespace_reliability": "This full run completed the namespace harness; intermittent earlier failure remains retained and no source-level reliability fix is claimed",
+    "known_independent_control_limitations": [
+      "Range24 has23passes; parsed important shorthand/normal longhand ordering remains a native cascade gap.",
+      "A separate root-pseudo rem control observes the pseudo font instead of the originating root font.",
+      "Range shorthand specified serialization is132/133; start-valid24/26 and end-valid23/24. Follow-up fixes are excluded from this exact checkpoint."
+    ]
   },
   "limitations": [
     "The complete measured scope is the frozen selected1248 HTTP/default-timeout DOM/CSS testharness URLs from1247 source files, not all upstream WPT.",
-    "772/1248=61.86% is a selected-test pass rate, not overall product quality, full Chromium parity, visual/rendering coverage or a95-quality claim.",
+    "781/1248=62.58% is a selected-test pass rate, not overall product quality, Chromium parity, rendering coverage or a95-quality claim.",
     "One harnessERROR and nineTIMEOUT outcomes remain; all original failures and earlier held runs are retained.",
-    "The Chromium150 full reference is historical and has a different assertion registration denominator; no unsupported aggregate assertion parity is claimed.",
-    "This exact source includes already-tested capped diagnostic tracing, normally disabled; later phase instrumentation and pending range/DOM drafts are excluded.",
-    "No new1906 Linux display0 or Android installation is claimed by this source publication.",
-    "The export includes approved public ancestry and exact recorded source inputs, not private task history, profiles, credentials, message queues or guarded validation machinery.",
-    "Source archive recovery is not an independent browser rebuild; external dependencies remain external."
+    "The Chromium150 full reference is historical and has a different assertion-registration denominator.",
+    "This exact source includes tested capped lifecycle/phase diagnostics, normally disabled; later prelude sampling/optimization, StyleSheetList and range priority/root-pseudo follow-ups are excluded.",
+    "Known independent range-control limitations remain, as listed in the validation summary.",
+    "No new1908 Linux display0 or Android installation is claimed by this source publication.",
+    "The export includes approved public ancestry and exact recorded inputs, not private task history, profiles, credentials, messages or guarded validation machinery.",
+    "Source archive restoration is not an independent browser rebuild; external dependencies remain external."
   ],
   "independent_review": {
     "agent": "source_steward",
-    "review_receipt_sha256": "42f54dbfa2b0067782f65e2aad9696409c23151edc8d93c5b5bed91dd3f27d6d",
-    "preparation_receipt_sha256": "bb72d602eb7526d7290a5d120938351c799cc25c504e6b6482c564f1c5b48158",
+    "review_receipt_sha256": "2810e4d8c7f304ee7235ed4826fe5d91ad30693c8d9e03e9c79598c00d1be9f0",
+    "preparation_receipt_sha256": "361a75d270ea41b79b7f60e995632f48d5520b5986146b2f3c8dbb7a96e0823b",
     "all843_public_inventory_hashes_verified": true,
     "all743_recorded_inputs_verified_against_tested_source": true,
     "private_history_excluded": true

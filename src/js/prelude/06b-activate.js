@@ -622,9 +622,9 @@ class CSSRuleStyle extends CSSStyleDeclaration {
         } else if (p === 'transition' && type !== 5) {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (!cssTransitionSet(m, value, priority)) return;
-        } else if (p === 'animation-range' && type !== 5) {
+        } else if (cssAnimationRangeRelevant(p) && type !== 5) {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
-            if (!cssAnimationRangeSet(m, value, priority)) return;
+            if (!cssAnimationRangeSet(m, p, value, priority)) return;
         } else if (p === 'transition-property') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (value === '') m.delete(p);
@@ -654,7 +654,7 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             m.set(p, [specNormalize(p, value), priority ? 'important' : '']);
         } else m.set(p, [/^(?:fill-|stroke-|stop-|flood-)?opacity$/.test(p) ? cssScalarSpecified(p, String(v)) : String(v), pri ? 'important' : '']); this._w(m);
     }
-    removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
+    removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
 }
 class CSSRule {
     constructor() { illegal(); }
