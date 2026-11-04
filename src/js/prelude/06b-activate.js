@@ -549,7 +549,7 @@ function cssRuleDeclarations(rule, text) {
     return parseDecls(text, type === 5, type === 8, type === 1 || type === 8);
 }
 class CSSRuleStyle extends CSSStyleDeclaration {
-    constructor(rule, text) { super(null); if (cssOwnerGet(rule).type === 5) cssDescriptorStyleAdd(this); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
+    constructor(rule, text) { super(null); const state = cssDeclarationLocalState(this), type = cssOwnerGet(rule).type; state.parent = rule; state.ruleType = type; state.operations = cssRuleDeclarationOperations; if (type === 5) cssDescriptorStyleAdd(this); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
     _m() { return new SMap(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(cssRuleDeclarations(this._rule, String(v))); }
@@ -557,6 +557,7 @@ class CSSRuleStyle extends CSSStyleDeclaration {
         v = v == null ? '' : String(v);
         pri = pri == null ? '' : String(pri);
         const type = cssOwnerGet(this._rule).type;
+        if (type !== 5 && v !== '' && !p.startsWith('--') && SPEC_COLOR_PROPS.has(p)) { v = specColor(v, p); if (v === null) return; }
         if ((type === 1 || type === 8) && !p.startsWith('--') && !cssPropKnown(p)) return;
         if (type === 8) {
             if (!cssKeyframePropertyAllowed(p)) return;
@@ -656,6 +657,8 @@ class CSSRuleStyle extends CSSStyleDeclaration {
     }
     removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
 }
+const cssRuleDeclarationOperations = cssDeclarationCaptureOperations(CSSRuleStyle.prototype, cssDeclarationInlineOperations);
+cssDeclarationInstall(CSSRuleStyle.prototype);
 class CSSRule {
     constructor() { illegal(); }
     get parentRule() { return cssOwnerGet(this).parent; } get parentStyleSheet() { return cssRuleSheet(this); }
@@ -666,7 +669,7 @@ class CSSRule {
 for (const [k, v] of Object.entries({ STYLE_RULE: 1, CHARSET_RULE: 2, IMPORT_RULE: 3, MEDIA_RULE: 4, FONT_FACE_RULE: 5, PAGE_RULE: 6, KEYFRAMES_RULE: 7, KEYFRAME_RULE: 8, MARGIN_RULE: 9, NAMESPACE_RULE: 10, COUNTER_STYLE_RULE: 11, SUPPORTS_RULE: 12, FONT_FEATURE_VALUES_RULE: 14 })) { Object.defineProperty(CSSRule, k, { value: v, enumerable: true }); Object.defineProperty(CSSRule.prototype, k, { value: v, enumerable: true }); }
 const ruleStyle = r => {
     if (r._style) return r._style;
-    const target = new CSSRuleStyle(r, r._body), style = new Proxy(target, styleHandler);
+    const target = new CSSRuleStyle(r, r._body), style = cssDeclarationWrap(target, styleHandler);
     if (cssDescriptorStyleHas(target)) cssDescriptorStyleAdd(style);
     return r._style = style;
 };
@@ -751,14 +754,16 @@ class CSSFontFaceRule extends CSSRule { get type() { return 5; } get style() { r
 /* @position-try: only insets, margins, sizes, self-alignment, position-anchor and position-area */
 const PT_ALLOWED = /^(top|right|bottom|left|inset(-block|-inline)?(-start|-end)?|margin(-top|-right|-bottom|-left|-block|-inline)?(-start|-end)?|(min-|max-)?(width|height|block-size|inline-size)|align-self|justify-self|place-self|position-anchor|position-area)$/;
 class CSSPositionTryDescriptors extends CSSRuleStyle {
-    constructor(rule, text) { super(rule, text); for (const k of [...this._map.keys()]) if (!PT_ALLOWED.test(k)) this._map.delete(k); }
+    constructor(rule, text) { super(rule, text); cssDeclarationLocalState(this).operations = cssPositionTryDeclarationOperations; for (const k of [...this._map.keys()]) if (!PT_ALLOWED.test(k)) this._map.delete(k); }
     set cssText(v) { const m = parseDecls(String(v), false, false, false); for (const k of [...m.keys()]) if (!PT_ALLOWED.test(k)) m.delete(k); this._w(m); }
-    get cssText() { return super.cssText; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (PT_ALLOWED.test(p)) super.setProperty(p, v, pri); }
+    get cssText() { return cssDeclarationApply(cssRuleDeclarationOperations.cssTextGet, this, []); }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (PT_ALLOWED.test(p)) cssDeclarationApply(cssRuleDeclarationOperations.setProperty, this, [p, v, pri]); }
 }
+const cssPositionTryDeclarationOperations = cssDeclarationCaptureOperations(CSSPositionTryDescriptors.prototype, cssRuleDeclarationOperations);
+cssDeclarationInstall(CSSPositionTryDescriptors.prototype);
 class CSSPositionTryRule extends CSSRule {
     get type() { return 0; } get name() { return this._name; }
-    get style() { return this._style || (this._style = new Proxy(new CSSPositionTryDescriptors(this, this._body), styleHandler)); }
+    get style() { return this._style || (this._style = cssDeclarationWrap(new CSSPositionTryDescriptors(this, this._body), styleHandler)); }
     get cssText() { const d = this.style.cssText; return `@position-try ${this._name} ${d ? `{ ${d} }` : '{ }'}`; }
 }
 /* CSS Paged Media3 page-selector-list. This is deliberately separate from
@@ -1096,7 +1101,139 @@ function adoptSheets(scope, v) {
 }
 function readopt(scope) { if (scope.__ass.some(s => { const n = s._mirrors && s._mirrors.get(scope); return !n || !n.parentNode; })) adoptSheets(scope, scope.__ass); }
 function adoptedGet(scope) { return new Proxy((scope.__ass || []).slice(), { set(t, k, val) { t[k] = val; adoptSheets(scope, t); return true; } }); }
-function scopeSheets(scope) { return N.query(scope, 'style,link[rel~=stylesheet]', true).filter(el => !el.__mirror).map(sheetFor); }
+/* A live, indexed-only stylesheet collection. Do not use HTMLCollection's
+ * named-property handler: these entries are CSSStyleSheet objects, not Nodes. */
+const cssStyleSheetLists = new WeakMap(), cssStyleSheetListItems = new WeakMap();
+const cssStyleSheetListCacheGet = Function.prototype.call.bind(WeakMap.prototype.get, cssStyleSheetLists);
+const cssStyleSheetListCacheSet = Function.prototype.call.bind(WeakMap.prototype.set, cssStyleSheetLists);
+const cssStyleSheetListItemsSet = Function.prototype.call.bind(WeakMap.prototype.set, cssStyleSheetListItems);
+const cssStyleSheetListCreate = Object.create, CssStyleSheetListProxy = Proxy;
+const cssStyleSheetListReflect = {
+    get: Reflect.get, has: Reflect.has, ownKeys: Reflect.ownKeys,
+    getOwnPropertyDescriptor: Reflect.getOwnPropertyDescriptor,
+    set: Reflect.set, defineProperty: Reflect.defineProperty, deleteProperty: Reflect.deleteProperty
+};
+const cssStyleSheetListBrand = new WeakSet();
+const cssStyleSheetListHas = Function.prototype.call.bind(WeakSet.prototype.has, cssStyleSheetListBrand);
+const cssStyleSheetListAdd = Function.prototype.call.bind(WeakSet.prototype.add, cssStyleSheetListBrand);
+const cssStyleSheetListItemsGet = Function.prototype.call.bind(WeakMap.prototype.get, cssStyleSheetListItems);
+function cssStyleSheetListLocalGetter(receiver) {
+    return cssStyleSheetListHas(receiver) ? cssStyleSheetListItemsGet(receiver) : undefined;
+}
+function cssStyleSheetListCheck(receiver, operation) {
+    let current = cssStyleSheetListLocalGetter(receiver);
+    if (!current && receiver !== null && typeof receiver === 'object') {
+        // Only the native same-origin creation-context bridge can supply this
+        // frozen private hook. The owning realm still validates its own brand.
+        const realm = N.realmOf(receiver);
+        if (realm && realm !== REALM && typeof realm.styleSheetListGetter === 'function')
+            current = realm.styleSheetListGetter(receiver);
+    }
+    if (!current)
+        throw new TypeError('Failed to execute ' + operation + ' on StyleSheetList: Illegal invocation');
+    return current;
+}
+class StyleSheetList {
+    constructor() { illegal(); }
+    get length() {
+        return cssStyleSheetListCheck(this, 'length')().length;
+    }
+    item(index) {
+        const current = cssStyleSheetListCheck(this, 'item');
+        listNeed(arguments.length, 'item', 'StyleSheetList');
+        // WebIDL conversion can run author code that changes membership.
+        // Read the current collection only after that conversion completes.
+        index = index >>> 0;
+        const items = current();
+        return index < items.length ? items[index] : null;
+    }
+}
+for (const name of ['length', 'item']) {
+    const descriptor = Object.getOwnPropertyDescriptor(StyleSheetList.prototype, name);
+    descriptor.enumerable = true;
+    Object.defineProperty(StyleSheetList.prototype, name, descriptor);
+}
+Object.defineProperty(StyleSheetList.prototype, Symbol.iterator, {
+    value: Array.prototype.values, writable: true, configurable: true
+});
+// Only canonical array indices below 2^32-1 participate in indexed access.
+const cssStyleSheetListIndex = key => {
+    if (typeof key !== 'string') return -1;
+    const index = +key;
+    return index >= 0 && index < 4294967295 && index % 1 === 0 && '' + index === key ? index : -1;
+};
+const cssStyleSheetListHandler = {
+    get(target, key, receiver) {
+        const index = cssStyleSheetListIndex(key);
+        if (index >= 0) {
+            const items = cssStyleSheetListItemsGet(target)();
+            if (index < items.length) return items[index];
+        }
+        // Includes the actual readonly length getter and its receiver brand.
+        return cssStyleSheetListReflect.get(target, key, receiver);
+    },
+    has(target, key) {
+        const index = cssStyleSheetListIndex(key);
+        return index >= 0 && index < cssStyleSheetListItemsGet(target)().length || cssStyleSheetListReflect.has(target, key);
+    },
+    ownKeys(target) {
+        const items = cssStyleSheetListItemsGet(target)(), keys = [];
+        for (let i = 0; i < items.length; i++) apush(keys, '' + i);
+        const own = cssStyleSheetListReflect.ownKeys(target);
+        for (let i = 0; i < own.length; i++) apush(keys, own[i]);
+        return keys;
+    },
+    getOwnPropertyDescriptor(target, key) {
+        const index = cssStyleSheetListIndex(key);
+        if (index >= 0) {
+            const items = cssStyleSheetListItemsGet(target)();
+            if (index < items.length)
+                return { value: items[index], enumerable: true, configurable: true, writable: false };
+        }
+        return cssStyleSheetListReflect.getOwnPropertyDescriptor(target, key);
+    },
+    set(target, key, value, receiver) {
+        const index = cssStyleSheetListIndex(key);
+        if (index >= 0 && index < cssStyleSheetListItemsGet(target)().length) return false;
+        return cssStyleSheetListReflect.set(target, key, value, receiver);
+    },
+    defineProperty(target, key, descriptor) {
+        return cssStyleSheetListIndex(key) >= 0 ? false : cssStyleSheetListReflect.defineProperty(target, key, descriptor);
+    },
+    deleteProperty(target, key) {
+        const index = cssStyleSheetListIndex(key);
+        return index >= 0 ? index >= cssStyleSheetListItemsGet(target)().length : cssStyleSheetListReflect.deleteProperty(target, key);
+    },
+    // A live indexed object must remain extensible as membership changes.
+    preventExtensions() { return false; }
+};
+function cssCreateStyleSheetList(scope) {
+    const target = cssStyleSheetListCreate(StyleSheetList.prototype);
+    let version = -1, items = [];
+    const current = () => {
+        const next = N.version(scope);
+        if (next !== version) {
+            const matches = N.query(scope, 'style,link[rel~=stylesheet]', true), updated = [];
+            for (let i = 0; i < matches.length; i++)
+                if (!matches[i].__mirror) apush(updated, sheetFor(matches[i]));
+            items = updated; version = next;
+        }
+        return items;
+    };
+    const list = new CssStyleSheetListProxy(target, cssStyleSheetListHandler);
+    cssStyleSheetListItemsSet(target, current);
+    cssStyleSheetListItemsSet(list, current);
+    cssStyleSheetListAdd(list);
+    return list;
+}
+function scopeSheets(scope) {
+    let list = cssStyleSheetListCacheGet(scope);
+    if (!list) {
+        list = cssCreateStyleSheetList(scope);
+        cssStyleSheetListCacheSet(scope, list);
+    }
+    return list;
+}
 function sheetFor(el) { if (!el.__sheet) { const s = new CSSStyleSheet(); cssSheetState(s).constructed = false; def(s, '_owner', el); def(s, '_media', cssCreateMediaList(N.attrNS(el, null, 'media') || '', null, el)); def(el, '__sheet', s); } return el.__sheet; }
 /* CSS.registerProperty: validates the definition (name, syntax, a computationally independent initial value) */
 const registeredProps = new SMap();

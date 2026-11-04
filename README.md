@@ -1,3 +1,11 @@
+# Lumen Linux work checkpoint iteration30
+
+**Not a qualified release.** Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json).
+
+## Historical repository documentation
+
+The following text describes earlier snapshots and historical measurements.
+
 # Lumen Linux checkpoint 1908
 
 Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.

@@ -1,17 +1,14 @@
 {
-  "candidate": 1908,
-  "status": "INDEPENDENTLY REVIEWED COMPLETE SELECTED1248 DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
-  "tested_source_commit": "d995e1a5eb8daebd07ec7b67f0572f40b70fc6e6",
-  "tested_binary_sha256": "cf2692999572a09524c11697d76de073ccbba7e3c6fe496b89bb241ccfc9bdc9",
-  "source_manifest_digest": "7e634b7bf310025c52f2bee186ea0ec5094d1dbea01f6c7fa3b86511395d9fef",
-  "public_parent": "0d76bf0aeefb3c975b94b550f831681c41e3beda",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1908-20261104",
-  "all_recorded_inputs_exact": true,
-  "full_wpt_conformance_claimed": false,
-  "chromium_parity_claimed": false,
-  "private_history_included": false,
-  "publication_performed": false,
-  "validation_summary": {
+  "status": "WORK CHECKPOINT — NOT A QUALIFIED RELEASE",
+  "iteration": 30,
+  "source_snapshot_commit": "b5aae63d294223dc9ba61599cc459b91b9a1187c",
+  "pending_candidate": 1914,
+  "source_snapshot_qualification_claimed": false,
+  "snapshot_scope": "Reviewed declaration API, specified range serialization, stylesheet collection, static importance and narrow page-descriptor regression repair; diagnostic profiling code remains outside performance claims.",
+  "qualified_functional_candidate": 1908,
+  "qualified_functional_source_commit": "d995e1a5eb8daebd07ec7b67f0572f40b70fc6e6",
+  "qualified_functional_binary_sha256": "cf2692999572a09524c11697d76de073ccbba7e3c6fe496b89bb241ccfc9bdc9",
+  "qualified1908_full_selected_result": {
     "qualification": "Qualified complete unchanged selected1248-URL development checkpoint; not all upstream WPT or a device delivery claim",
     "selected_urls": {
       "lumen_passed": 781,
@@ -63,23 +60,31 @@
       "Range shorthand specified serialization is132/133; start-valid24/26 and end-valid23/24. Follow-up fixes are excluded from this exact checkpoint."
     ]
   },
+  "held_candidate1913": {
+    "raw_fully_passing_urls": 795,
+    "total_urls": 1248,
+    "raw_passing_assertions": 23156,
+    "total_assertions": 26245,
+    "status": "HOLD",
+    "reasons": [
+      "page-orientation prior-PASS assertion regression",
+      "namespace51/51 assertionsPASS but required harnessOK lost toTIMEOUT"
+    ]
+  },
+  "candidate1914_status": "Exact repaired source snapshot; build/runtime/full qualification pending and not asserted by this work checkpoint",
+  "public_parent": "9d3882d753faa45fc5c52f9e9748b9f7cdaaf7e4",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-work-iteration30-20261104",
+  "private_history_included": false,
+  "independent_rebuild_performed": false,
+  "external_dependencies_included": false,
+  "full_wpt_conformance_claimed": false,
+  "chromium_parity_claimed": false,
+  "live_source_download_remains": "Qualified1908; this separate work branch does not replace it",
   "limitations": [
-    "The complete measured scope is the frozen selected1248 HTTP/default-timeout DOM/CSS testharness URLs from1247 source files, not all upstream WPT.",
-    "781/1248=62.58% is a selected-test pass rate, not overall product quality, Chromium parity, rendering coverage or a95-quality claim.",
-    "One harnessERROR and nineTIMEOUT outcomes remain; all original failures and earlier held runs are retained.",
-    "The Chromium150 full reference is historical and has a different assertion-registration denominator.",
-    "This exact source includes tested capped lifecycle/phase diagnostics, normally disabled; later prelude sampling/optimization, StyleSheetList and range priority/root-pseudo follow-ups are excluded.",
-    "Known independent range-control limitations remain, as listed in the validation summary.",
-    "No new1908 Linux display0 or Android installation is claimed by this source publication.",
-    "The export includes approved public ancestry and exact recorded inputs, not private task history, profiles, credentials, messages or guarded validation machinery.",
-    "Source archive restoration is not an independent browser rebuild; external dependencies remain external."
-  ],
-  "independent_review": {
-    "agent": "source_steward",
-    "review_receipt_sha256": "2810e4d8c7f304ee7235ed4826fe5d91ad30693c8d9e03e9c79598c00d1be9f0",
-    "preparation_receipt_sha256": "361a75d270ea41b79b7f60e995632f48d5520b5986146b2f3c8dbb7a96e0823b",
-    "all843_public_inventory_hashes_verified": true,
-    "all743_recorded_inputs_verified_against_tested_source": true,
-    "private_history_excluded": true
-  }
+    "The accepted1908 selected suite is781/1248 URLs and23103/26245 assertions, with all required prior passes retained.",
+    "Candidate1911/1912/1913 HOLD results are retained; no rescue or unqualified promotion is implied.",
+    "The full transition-origin/ownership proposal is UNINTEGRATED research, excluded from production source changes.",
+    "No real Google-login fix, authenticated X scrolling optimization, new device installation or Android WPT parity is claimed.",
+    "Only approved public ancestry and source paths are exported; private profiles, credentials, messages, X evidence and guarded validation machinery are excluded."
+  ]
 }
