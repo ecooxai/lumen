@@ -704,3 +704,7 @@ Sample score remains last-qualified60.82/100; candidate1903 originalHOLD remains
 ### Iteration 07 review revision — diagnostic observability
 
 Independent test review identified a logging-cap risk before candidate reservation. Removed noisy fire-entry logging, preserved blocker deduplication, and added guarded native thread CPU timestamps. Production behavior and all test inputs remain unchanged. Diagnostic source remains unqualified; sample compatibility score remains 60.8173/100 from the last qualified 1248-URL full baseline. Mutation interval: 2026-11-04T07:47:17.582077+00:00 to 2026-11-04T07:47:17.592515+00:00 (0.010438 seconds); independent build/tests pending.
+
+### Iteration 8 — fix(cssom): fold resolved abs sign and hypot calculations
+
+Start: 2026-11-04T07:52:42.889815+00:00. End: 2026-11-04T07:52:42.910736+00:00. Mutation interval: 0.020921 seconds (not model compute time). Independently reviewed draft applied with exact source-base verification. Numeric81 and independent controls are delegated to the test lane; no gain claim before results. Score remains60.8173/100 from the last qualified selected1248 full baseline. Receipt: `agent/source-work/session19/math-folding-v1/implementation.json`.

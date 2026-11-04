@@ -1,0 +1,21 @@
+diff --git a/src/js/prelude/03-element.js b/src/js/prelude/03-element.js
+index 6630317..6b05408 100644
+--- a/src/js/prelude/03-element.js
++++ b/src/js/prelude/03-element.js
+@@ -670,0 +671,4 @@ function mathEval(src) {
++            // Percentages remain unresolved until their destination basis is known.
++            abs: () => { if (args[0].u === '%') fail(); return { v: Math.abs(args[0].v), u: args[0].u }; },
++            sign: () => { if (args[0].u === '%') fail(); return { v: Math.sign(args[0].v), u: '' }; },
++            hypot: () => { for (const a of args) { same(args[0], a); if (a.u === '%') fail(); } return { v: Math.hypot(...args.map(a => a.v)), u: args[0].u }; },
+@@ -716 +720 @@ function mathEval(src) {
+-        if (!F[name] || !['min', 'max', 'clamp', 'atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
++        if (!F[name] || !['min', 'max', 'hypot', 'clamp', 'atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
+@@ -739 +743 @@ function specFoldMath(t) {
+-    const re = /\b(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/gi;
++    const re = /\b(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|abs|sign|hypot|round|mod|rem|progress)\(/gi;
+@@ -1432 +1436 @@ function specNormalize(p, v) {
+-    const preserveMathZero = /\b(?:min|max|clamp|calc|round|mod|rem|progress)\(/i.test(v);
++    const preserveMathZero = /\b(?:min|max|clamp|calc|abs|sign|hypot|round|mod|rem|progress)\(/i.test(v);
+@@ -1441 +1445 @@ function specNormalize(p, v) {
+-    if (/\b(min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
++    if (/\b(min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|abs|sign|hypot|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);

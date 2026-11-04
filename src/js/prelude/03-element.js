@@ -668,6 +668,10 @@ function mathEval(src) {
         if (name === 'progress') progressDepth--;
         const n = a => { if (a.u) fail(); return a.v; }, ang = a => a.u === 'deg' ? a.v * Math.PI / 180 : n(a), D = r => ({ v: r * 180 / Math.PI, u: 'deg' });
         const F = {
+            // Percentages remain unresolved until their destination basis is known.
+            abs: () => { if (args[0].u === '%') fail(); return { v: Math.abs(args[0].v), u: args[0].u }; },
+            sign: () => { if (args[0].u === '%') fail(); return { v: Math.sign(args[0].v), u: '' }; },
+            hypot: () => { for (const a of args) { same(args[0], a); if (a.u === '%') fail(); } return { v: Math.hypot(...args.map(a => a.v)), u: args[0].u }; },
             min: () => { for (const a of args) same(args[0], a); return { v: Math.min(...args.map(a => a.v)), u: args[0].u }; },
             max: () => { for (const a of args) same(args[0], a); return { v: Math.max(...args.map(a => a.v)), u: args[0].u }; },
             clamp: () => { if (args.length !== 3) fail(); same(args[0], args[1]); same(args[1], args[2]); return { v: Math.max(args[0].v, Math.min(args[1].v, args[2].v)), u: args[0].u }; },
@@ -713,7 +717,7 @@ function mathEval(src) {
                 return { v, u: '' };
             },
         };
-        if (!F[name] || !['min', 'max', 'clamp', 'atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
+        if (!F[name] || !['min', 'max', 'hypot', 'clamp', 'atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
         const r = F[name](); if (args.some(a => Number.isNaN(a.v))) r.v = NaN; r.v *= neg; return r;
     }
     function prod() {
@@ -736,7 +740,7 @@ const mathSer = r => {
 function specFoldMath(t) {
     /* Evaluate an outer calculation before its children so a nested signed
        zero or NaN is not clamped before division/multiplication consumes it. */
-    const re = /\b(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/gi;
+    const re = /\b(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|abs|sign|hypot|round|mod|rem|progress)\(/gi;
     let out = '', previous = 0, match;
     while ((match = re.exec(t))) {
         let end = re.lastIndex, depth = 1;
@@ -1429,7 +1433,7 @@ function specNormalize(p, v) {
         });
     if (p === 'position-area') { const n = posArea(v); if (n !== null) return n; }
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
-    const preserveMathZero = /\b(?:min|max|clamp|calc|round|mod|rem|progress)\(/i.test(v);
+    const preserveMathZero = /\b(?:min|max|clamp|calc|abs|sign|hypot|round|mod|rem|progress)\(/i.test(v);
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
         const n = Number(num + (exp || ''));
         if (!isFinite(n)) return m;
@@ -1438,7 +1442,7 @@ function specNormalize(p, v) {
     }).replace(/\s+/g, ' ');
     if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return CSS_POSITION.test(p) ? t.toLowerCase() : t;
     if (CSS_POSITION.test(p)) return cssPositionSpecified(t, cssPositionAxis(p)) || t;
-    if (/\b(min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
+    if (/\b(min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|abs|sign|hypot|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
     if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
     if (p === 'display') { const w = t.toLowerCase().split(' '); if (w.length === 2 && w.includes('list-item') && w.includes('flow')) t = 'list-item'; else if (w.length === 2 && w[1] === 'flow' && /^(block|inline|run-in)$/.test(w[0])) t = w[0]; else if (w.length === 2 && w[0] === 'block' && /^(flex|grid|table|flow-root|math)$/.test(w[1])) t = w[1]; else if (w.length === 2 && w[0] === 'inline' && w[1] === 'flow-root') t = 'inline-block'; else if (w.length === 2 && w[0] === 'inline' && /^(flex|grid|table)$/.test(w[1])) t = 'inline-' + w[1]; }
