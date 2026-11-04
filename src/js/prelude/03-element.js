@@ -738,6 +738,8 @@ const mathSer = r => {
     return `calc(${String(+r.v.toPrecision(6)).replace(/^-0$/, '0')}${u})`;
 };
 function specFoldMath(t) {
+    // Pending substitution keeps an unparsed token stream, including nested math.
+    if (cssBorderPending(t)) return t;
     /* Evaluate an outer calculation before its children so a nested signed
        zero or NaN is not clamped before division/multiplication consumes it. */
     const re = /\b(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|abs|sign|hypot|round|mod|rem|progress)\(/gi;

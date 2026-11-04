@@ -1,0 +1,7 @@
+diff --git a/src/js/prelude/03-element.js b/src/js/prelude/03-element.js
+index 6b05408..dc2ac8c 100644
+--- a/src/js/prelude/03-element.js
++++ b/src/js/prelude/03-element.js
+@@ -740,0 +741,2 @@ function specFoldMath(t) {
++    // Pending substitution keeps an unparsed token stream, including nested math.
++    if (cssBorderPending(t)) return t;

@@ -708,3 +708,7 @@ Independent test review identified a logging-cap risk before candidate reservati
 ### Iteration 8 — fix(cssom): fold resolved abs sign and hypot calculations
 
 Start: 2026-11-04T07:52:42.889815+00:00. End: 2026-11-04T07:52:42.910736+00:00. Mutation interval: 0.020921 seconds (not model compute time). Independently reviewed draft applied with exact source-base verification. Numeric81 and independent controls are delegated to the test lane; no gain claim before results. Score remains60.8173/100 from the last qualified selected1248 full baseline. Receipt: `agent/source-work/session19/math-folding-v1/implementation.json`.
+
+### Iteration 9 — fix(cssom): preserve pending substitutions before numeric folding
+
+Start: 2026-11-04T07:52:42.968801+00:00. End: 2026-11-04T07:52:42.987411+00:00. Mutation interval: 0.01861 seconds (not model compute time). Independently reviewed draft applied with exact source-base verification. Numeric81 and independent controls are delegated to the test lane; no gain claim before results. Score remains60.8173/100 from the last qualified selected1248 full baseline. Receipt: `agent/source-work/session19/math-pending-guard-v1/implementation.json`.

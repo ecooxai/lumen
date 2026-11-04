@@ -1,0 +1,28 @@
+{
+  "iteration": 9,
+  "started_utc": "2026-11-04T07:52:42.968801+00:00",
+  "ended_utc": "2026-11-04T07:52:42.987411+00:00",
+  "mutation_seconds": 0.01861,
+  "source_base_commit": "3397a288e881e1519223962e7f0cfa42969176d8",
+  "source_before_sha256": "38755a91931ac6aee400bc26f68fef8cdb3e6982fa2ffa5c5368462a7ca2a691",
+  "source_after_sha256": "afbd7e93740b364c8f5556052d5d7d1ec1f5931bed82abfa210b188a8c3bce43",
+  "draft": "agent/ops/session19/math-folding-draft/03-element-pending-guard.patch",
+  "draft_sha256": "2ec08c0d2e03142787c9569b66697e3cb1960d3eee8111d46f83a4f2d2d1b6fe",
+  "independent_review": "source_steward inspected evaluator, serializer and all relevant call sites; reviewed CSS Values4 sections10.5/10.6; root approved scope",
+  "spec_urls": [
+    "https://drafts.csswg.org/css-values-4/#sign-funcs",
+    "https://drafts.csswg.org/css-values-4/#exponent-funcs",
+    "https://drafts.csswg.org/css-values-4/#calc-serialize"
+  ],
+  "status": "source integrated; no build or WPT qualification claimed",
+  "score_basis": "last qualified selected1248 URL baseline",
+  "score": 60.81730769230769,
+  "boundaries": [
+    "canonical absolute-unit and scalar constants only",
+    "percentages and unresolved relative units are not newly folded",
+    "signed zero preserved for enclosing expressions",
+    "NaN remains infectious including hypot Infinity+NaN",
+    "pending substitutions retain unparsed token stream",
+    "no grammar extension or computed layout change"
+  ]
+}
