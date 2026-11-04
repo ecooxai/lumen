@@ -1,0 +1,18 @@
+{
+  "author": "environment_delivery",
+  "integrator": "source_steward",
+  "started_utc": "2026-11-04T07:23:24.696772+00:00",
+  "ended_utc": "2026-11-04T07:23:24.721721+00:00",
+  "integration_write_seconds": 0.024949,
+  "base_commit": "45f0fa80322cea7381bf5eca7cc2fc39416844af",
+  "source03_sha256": "5cc6e2425e04ae29ba6cf810a13b8b091dc63d0bbb84a9f1039d6f3f310dd5d3",
+  "source06b_sha256": "6138c9bdf5c21398c9e1f8a4bb058372af23536511f36edb5b252792477f3501",
+  "scope": "Only random() expressions in width/height/inline-size/block-size validate through existing native length-percentage grammar",
+  "limits": [
+    "No random sampling/cache runtime or serialization changes",
+    "No global math-function allowlist extension",
+    "Other property grammars unchanged"
+  ],
+  "status": "implemented; independent focus136 runtime gate pending",
+  "sample_compatibility_score": 60.817307692307686
+}

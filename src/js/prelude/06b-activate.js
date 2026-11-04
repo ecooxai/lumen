@@ -566,6 +566,8 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             }
         }
         if (v !== '' && !cssVarSyntax(v)) return;
+        if (type !== 5 && v !== '' && cssRandomSizeRelevant(p, v) &&
+            (pri && !/^important$/i.test(pri) || N.cssMinSize(v) === null)) return;
         if (p === 'z-index' && v !== '') {
             pri = pri == null ? '' : String(pri);
             if (pri && !/^important$/i.test(pri) || !mathValid(p, v)) return;

@@ -641,3 +641,15 @@ reference52/58,267/288. Fresh baseline and candidate runtime qualification are p
 Known imported-child stylesheet getter limitation remains; no full URL gain is promised.
 No author-side build or runtime test. Static diff whitespace check passed.
 Sample compatibility score remains last-qualified60.82/100, not overallquality.
+
+
+## Session19 iteration05 — random size syntax routing pending gates
+
+Author:environment_delivery; integrator:source_steward. Start:2026-11-04T07:23:24.696772+00:00;end:2026-11-04T07:23:24.721721+00:00.
+Exact draft base/result03SHA verified; integration write interval0.025s.
+Only width, height, inline-size and block-size containing random() now enter the existing
+native length-percentage validation grammar. Rule style validates before mutation and
+retains font-face descriptor behavior. Pending substitutions remain deferred by native
+validation. No runtime sampling/cache or global math allowlist/serialization changes.
+Fresh independent focus136 includes20random URLs and valid/invalid neighbors.
+Runtime qualification pending; no new gains claimed. Sample score remains60.82/100.
