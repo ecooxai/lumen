@@ -7743,10 +7743,22 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     if (inl) {
         if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); }
         DeclList *dl = el->inline_decls;
-        for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); }
+        for (int i = 0; i < dl->n; i++) if (el->anim_decls || !dl->v[i].important) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); }
     }
-    if (el->anim_decls) { DeclList *dl = el->anim_decls; for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); } }
-    for (int i = split; i < mn; i++) vec_push(all, md[i]);
+    if (el->anim_decls) {
+        /* Preserve the existing sampled-effect assembly exactly. Separating
+         * transition origin requires further independently qualified work. */
+        DeclList *dl = el->anim_decls;
+        for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); }
+        for (int i = split; i < mn; i++) vec_push(all, md[i]);
+    } else {
+        /* Static declarations retain source order within each existing tier:
+         * author important, then inline important, then UA important. */
+        int ua_important = split; while (ua_important < mn && (md[ua_important].key >> 62) == 2) ua_important++;
+        for (int i = split; i < ua_important; i++) vec_push(all, md[i]);
+        if (inl) { DeclList *dl = el->inline_decls; for (int i = 0; i < dl->n; i++) if (dl->v[i].important) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); } }
+        for (int i = ua_important; i < mn; i++) vec_push(all, md[i]);
+    }
     apply_decl_ordered(st, par, all.v, all.n, e, el, true, false);
     vec_free(all);
     if (owned) free(md);
