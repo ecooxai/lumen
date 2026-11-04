@@ -1,0 +1,13 @@
+--- a/src/css/css.h
++++ b/src/css/css.h
+@@ -490,6 +490,10 @@
+ bool css_columns_valid(const char *prop, const char *value);
+ bool css_min_size_valid(const char *prop, const char *value);
+ char *css_min_size_parse(const char *value); /* caller owns normalized syntax text; NULL if invalid */
++/* Animation range family: normalized specified syntax, separate computed endpoints. */
++bool css_animation_range_valid(const char *property, const char *value);
++char *css_animation_range_parse(const char *property, const char *value); /* caller owns result */
++
+ /* Border/outline width and animation/transition time longhands only. */
+ bool css_numeric_dimension_property(const char *prop);
+ bool css_numeric_dimension_valid(const char *prop, const char *value);

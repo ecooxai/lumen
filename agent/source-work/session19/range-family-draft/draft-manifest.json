@@ -1,0 +1,25 @@
+{
+  "status": "DRAFT ONLY; independent review, compatible native bridge and tests pending",
+  "files": {
+    "src/css/style.c": {
+      "base_sha256": "50c29b9ee5cc18547e3de507e7143adc14cd1744278ae537cc21d248f6ca800e",
+      "result_sha256": "fb5140ddb729387e2ae4bfc4714476a9270f213a86807679b3e975634b7ff641"
+    },
+    "src/css/css.h": {
+      "base_sha256": "e3b5cb22ad23cbc866924927bfb062d1c7a9626d04e2fda48e4a62aa446f18cc",
+      "result_sha256": "7f45a90cd692d7170a4ce23b885840543fb39ae187bafbbb74e528fb647dedeb"
+    },
+    "src/js/prelude/03-element.js": {
+      "base_sha256": "afbd7e93740b364c8f5556052d5d7d1ec1f5931bed82abfa210b188a8c3bce43",
+      "result_sha256": "6cb4f3dbbae48a5f4741a35c57f90463e2c1a828966eba4c149841eee212b756"
+    }
+  },
+  "canonical_files_changed": false,
+  "split_commits": {
+    "core03_sha256": "deb8a8cddbd03ecda6c7023e3c935188308dbdcf40d3b34a9c252f1cf610885e",
+    "complete03_sha256": "6cb4f3dbbae48a5f4741a35c57f90463e2c1a828966eba4c149841eee212b756",
+    "core_rule_sha256": "4f47b39bc656e48a4175424a2dff60e9d442c6110f17949c8673bfd314442d37",
+    "complete_rule_sha256": "4476000dd41fe5399fc9e632ba98577a6d5c16c3a06172b803c17b306abe441a",
+    "direct_longhand_cssom_validation_separate": true
+  }
+}

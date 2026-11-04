@@ -1,0 +1,20 @@
+{
+  "draft_manifest_sha256": "93c6e4eb92fa1a07c2fc4e74d0cce5cf176b0b03f07921253aa461e896c0fab0",
+  "interval_scope": "source mutation and commit scripts only; not model compute or validation",
+  "commits": [
+    {
+      "commit": "b509a847417200f58592f9c8b13ac5d40caafc3f",
+      "kind": "range family core plus compatible scalar native bridge",
+      "start_utc": "2026-11-04T08:39:59.909916+00:00",
+      "end_utc": "2026-11-04T08:40:00.053322+00:00",
+      "script_seconds": 0.143399
+    },
+    {
+      "commit": "9edb8697410f1ce0695b0f33d3987a6a18283901",
+      "kind": "separate direct-longhand CSSOM validation",
+      "start_utc": "2026-11-04T08:40:00.053338+00:00",
+      "end_utc": "2026-11-04T08:40:00.158262+00:00",
+      "script_seconds": 0.104935
+    }
+  ]
+}

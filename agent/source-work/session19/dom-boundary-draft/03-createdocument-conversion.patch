@@ -1,0 +1,24 @@
+--- a/src/js/prelude/06-document.js
++++ b/src/js/prelude/06-document.js
+@@ -411,7 +411,20 @@
+ }
+ class DOMImplementation { constructor(key = undefined) { illegal(); } }
+ methods(DOMImplementation.prototype, { hasFeature() { return true; }, createHTMLDocument(t = undefined) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), this._doc || document); },
+-    createDocument(ns, q, dt = null) { ns = ns == null || ns === '' ? null : String(ns); const d = N.newXmlDoc(ns === NSURI[0] ? 'application/xhtml+xml' : ns === NSURI[1] ? 'image/svg+xml' : 'application/xml'); def(d, '__url', 'about:blank'); q = q == null ? '' : String(q); const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null; if (dt) insertNode(d, dt, null); if (el) insertNode(d, el, null); return d; } });
++    createDocument(ns, q, dt = null) {
++        if (arguments.length < 2) throw new TypeError('2 arguments required');
++        if (typeof ns === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
++        ns = ns == null ? null : String(ns); if (ns === '') ns = null;
++        if (typeof q === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
++        q = q === null ? '' : String(q);
++        if (dt !== null && (!N.isNode(dt) || N.type(dt) !== 10)) throw new TypeError('doctype is not a DocumentType');
++        const d = N.newXmlDoc(ns === NSURI[0] ? 'application/xhtml+xml' : ns === NSURI[1] ? 'image/svg+xml' : 'application/xml');
++        def(d, '__url', 'about:blank');
++        const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null;
++        if (dt !== null) insertNode(d, dt, null);
++        if (el) insertNode(d, el, null);
++        return d;
++    } });
+ const implementation = Object.create(DOMImplementation.prototype, { _doc: { get() { return document; } } });
+ /* a DOMImplementation from another (same-origin) realm makes its nodes and documents in that realm */
+ for (const k of ['createHTMLDocument', 'createDocumentType', 'createDocument']) {

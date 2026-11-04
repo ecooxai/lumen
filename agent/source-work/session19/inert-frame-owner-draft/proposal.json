@@ -1,0 +1,32 @@
+{
+  "status": "DRAFT ONLY; separate fifth DOM change, no namespace-timeout repair claim",
+  "created_utc": "2026-11-04T08:20:32.849705+00:00",
+  "started_utc": "2026-11-04T08:20:32.841469+00:00",
+  "preparation_seconds": 0.008236,
+  "base_commit": "ed1a7624e5aaf9e7661462daac91d5b9d8289f41",
+  "source_before_sha256": "074a40e2e114235e038144c3d51aabc89d8375f1b9b981e990b553aee4ed44d2",
+  "source_after_sha256": "0b835caa5a9792ca72c1853820b374713b5f6ef1cd77e7e6627c0edd89003cea",
+  "patch_sha256": "12653fd30d26eea788fab7c72c45cab38b13d9766b9e94104b729676921e0882",
+  "target": "/dom/nodes/DOMImplementation-createDocument-no-browsing-context.html",
+  "historical_shared_gaps": 1,
+  "root_cause": "owner_ctx intentionally returns a realm owner for c->docs and template owner documents; ensure_frame misuses that as a browsing context even when owner->doc differs",
+  "scope": [
+    "Keep owner_ctx unchanged for DOM wrapper and template ownership",
+    "Frame lookup/creation require a live context whose current document is the frame node document",
+    "Remove caller fallback from frames_inserted",
+    "Reject stale navigation/response creation after the frame is adopted into another/inert document",
+    "Preserve existing connected checks, load/recheck/timer ordering, cleanup, namespace matching and diagnostics"
+  ],
+  "spec_urls": [
+    "https://html.spec.whatwg.org/multipage/iframe-embed-object.html#the-iframe-element"
+  ],
+  "verification_request": [
+    "unchanged no-browsing-context WPT",
+    "active same-origin iframe insertion and contentWindow/contentDocument availability",
+    "inert createHTMLDocument/createDocument/DOMParser document insertion stays without context before/after src changes",
+    "detached fragment insertion stays without context until attached to active document",
+    "adopt inert iframe into active document starts normally with correct owner/realm",
+    "adopt active pending iframe into inert document prevents the old response from creating an inert-context child",
+    "namespace2 and frame-load lifecycle neighbors with no timeout/runner changes"
+  ]
+}

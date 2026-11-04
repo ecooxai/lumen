@@ -1,0 +1,94 @@
+{
+  "status": "DRAFT ONLY; canonical source unchanged",
+  "created_utc": "2026-11-04T08:10:30.959117+00:00",
+  "started_utc": "2026-11-04T08:10:30.946284+00:00",
+  "preparation_seconds": 0.012833,
+  "base_commit": "ed1a7624e5aaf9e7661462daac91d5b9d8289f41",
+  "base_hashes": {
+    "src/js/prelude/02-node.js": "831dbb6fa67c4aff244e06aea956b9dabe9d607375b9503bdfc9ac6770f968d4",
+    "src/js/prelude/06-document.js": "d8c7eb7c3da79d8eee5a16eb7c66a848fb7e2d48c051f1d74eeb259f0244db0b",
+    "src/js/jsnative.cc": "3c924aae46a1862ac4a939ae9afcf9529585268314ce0a6ec3dce7cf01e97eaf"
+  },
+  "candidate_hashes": {
+    "src/js/prelude/02-node.js": "d4ca7145cc89974254cfef048aa03bdfbf5db5d50bd0e6432ab85bcf9d5c083a",
+    "src/js/prelude/06-document.js": "988afe2672201d1f2d0699710c549f5d7c3e74e03fb139c2f3fcb38ba450d6b0",
+    "src/js/jsnative.cc": "f5ad6b553f70d55b409718000ea967e9f853e2131ed491fcaa2ba213f2d9bf97"
+  },
+  "parts": [
+    {
+      "name": "01-characterdata-data",
+      "path": "src/js/prelude/02-node.js",
+      "before_sha256": "831dbb6fa67c4aff244e06aea956b9dabe9d607375b9503bdfc9ac6770f968d4",
+      "after_sha256": "55f6fd2c7891447a27c872af7f3116af734db8912c6f4b04461d976f9b6f8847",
+      "patch_sha256": "2de809d61efca8bc87f11bde60e06f84e8e4002cf9f79af43d35e84889e531d7"
+    },
+    {
+      "name": "02-fragment-empty-id",
+      "path": "src/js/prelude/02-node.js",
+      "before_sha256": "55f6fd2c7891447a27c872af7f3116af734db8912c6f4b04461d976f9b6f8847",
+      "after_sha256": "d4ca7145cc89974254cfef048aa03bdfbf5db5d50bd0e6432ab85bcf9d5c083a",
+      "patch_sha256": "192a2bdc9c0e6375cf51b432fbbcb438d6c1887b3b93dbd9a7b258f1daa5179c"
+    },
+    {
+      "name": "03-createdocument-conversion",
+      "path": "src/js/prelude/06-document.js",
+      "before_sha256": "d8c7eb7c3da79d8eee5a16eb7c66a848fb7e2d48c051f1d74eeb259f0244db0b",
+      "after_sha256": "7513af8fcad7a0aabfd51e47e693413c30d94ebcbac6f8a467275e3660c06e96",
+      "patch_sha256": "2f01dbec4d7717dbede2946c166ac94364a69f54689c9441d898cad105c1111c"
+    },
+    {
+      "name": "04-createhtml-title-conversion",
+      "path": "src/js/prelude/06-document.js",
+      "before_sha256": "7513af8fcad7a0aabfd51e47e693413c30d94ebcbac6f8a467275e3660c06e96",
+      "after_sha256": "988afe2672201d1f2d0699710c549f5d7c3e74e03fb139c2f3fcb38ba450d6b0",
+      "patch_sha256": "633b55a372b55e743f44b540f2e1510bee9f8b389fe7e9eae2e8b1a2291bda44"
+    },
+    {
+      "name": "05-createhtml-title-native",
+      "path": "src/js/jsnative.cc",
+      "before_sha256": "3c924aae46a1862ac4a939ae9afcf9529585268314ce0a6ec3dce7cf01e97eaf",
+      "after_sha256": "f5ad6b553f70d55b409718000ea967e9f853e2131ed491fcaa2ba213f2d9bf97",
+      "patch_sha256": "748000681e5274642bbe3b4efc3269a4aae85a43d59cca6df32e3a15f7ac4874"
+    }
+  ],
+  "targets": {
+    "/dom/nodes/CharacterData-data.html": 2,
+    "/dom/nodes/DocumentFragment-getElementById.html": 2,
+    "/dom/nodes/DOMImplementation-createDocument.html": 4,
+    "/dom/nodes/DOMImplementation-createHTMLDocument.html": 2
+  },
+  "scope": [
+    "CharacterData.data null-to-empty only; explicit undefined stringifies; primitive Symbol rejects; native CharacterData brand required before conversion",
+    "DocumentFragment.getElementById empty ID returns null; required DOMString conversion and fragment/shadow-root receiver validation",
+    "createDocument nullable namespace, LegacyNullToEmptyString qualifiedName, required argument count, and optional nullable DocumentType conversion before document allocation",
+    "createHTMLDocument title DOMString conversion plus direct native title/Text creation after unchanged skeleton parse; retain internal title cache"
+  ],
+  "boundaries": [
+    "No mutation delivery/order or browsing-context lifecycle change",
+    "No global ID lookup or selector rewrite; nonempty fragment lookup retains existing selector path",
+    "No document allocation/realm sharing or DOMImplementation receiver-brand refactor",
+    "No createDocumentType name-validation rewrite",
+    "No change to inert-document iframe issue",
+    "No WPT/oracle/timeout/runner changes"
+  ],
+  "spec_urls": [
+    "https://dom.spec.whatwg.org/#interface-characterdata",
+    "https://dom.spec.whatwg.org/#dom-nonelementparentnode-getelementbyid",
+    "https://dom.spec.whatwg.org/#interface-domimplementation",
+    "https://webidl.spec.whatwg.org/#es-DOMString"
+  ],
+  "verification_request": [
+    "Freeze all selected CharacterData/data/replaceData/Text mutation and DocumentFragment ID lookup neighbors",
+    "Freeze DOMImplementation createDocument/createHTMLDocument/createDocumentType and namespace/adopt/import neighbors",
+    "Preserve full MutationObserver23 gains",
+    "Independent null/undefined/Symbol/receiver/conversion-order cases; cross-realm genuine nodes",
+    "Title empty Text node, CRLF, literal markup, NUL and unpaired-surrogate preservation; no title for omitted/undefined",
+    "Reentrant CharacterData.data toString mutation: conversion side effects occur before replacement length is read"
+  ],
+  "review_revision": {
+    "utc": "2026-11-04T08:14:50.978020+00:00",
+    "finding": "Independent tester identified old-length capture before reentrant DOMString conversion",
+    "correction": "Convert value to local DOMString first, then read current character-data length and replace",
+    "independent_control": "Text abc; toString appends def then returns X; final data must be X, with append and replacement mutation records preserved"
+  }
+}

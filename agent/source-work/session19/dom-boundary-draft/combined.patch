@@ -1,0 +1,91 @@
+--- a/src/js/prelude/02-node.js
++++ b/src/js/prelude/02-node.js
+@@ -566,8 +566,20 @@
+ };
+ class CharacterData extends Node {}
+ methods(CharacterData.prototype, ChildNode);
++const characterDataReceiver = node => {
++    if (!N.isNode(node)) throw new TypeError('Illegal invocation');
++    const type = N.type(node);
++    if (type !== 3 && type !== 4 && type !== 7 && type !== 8) throw new TypeError('Illegal invocation');
++    return node;
++};
+ methods(CharacterData.prototype, {
+-    get data() { return N.text(this); }, set data(v) { replaceData(this, 0, N.text(this).length, v == null ? '' : String(v)); },
++    get data() { return N.text(characterDataReceiver(this)); },
++    set data(v) {
++        characterDataReceiver(this);
++        if (typeof v === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
++        const data = v === null ? '' : String(v);
++        replaceData(this, 0, N.text(this).length, data);
++    },
+     get length() { return N.text(this).length; },
+     appendData(s) { replaceData(this, N.text(this).length, 0, String(s)); },
+     substringData(o, c) { o = toU32(o); c = toU32(c); const d = N.text(this); if (o > d.length) throw new DOMException(`The offset ${o} is greater than the node's length (${d.length}).`, 'IndexSizeError'); return d.substring(o, o + c); },
+@@ -608,7 +620,13 @@
+ methods(DocumentType.prototype, { get name() { return N.name(this); }, get publicId() { return N.attr(this, 'publicId') || ''; }, get systemId() { return N.attr(this, 'systemId') || ''; } });
+ class DocumentFragment extends Node { constructor() { return N.frag(); } }
+ methods(DocumentFragment.prototype, ParentNode);
+-methods(DocumentFragment.prototype, { getElementById(id) { return N.query(this, '#' + CSS.escape(String(id)), false); } });
++methods(DocumentFragment.prototype, { getElementById(id) {
++    if (!N.isNode(this) || N.type(this) !== 11) throw new TypeError('Illegal invocation');
++    if (!arguments.length) throw new TypeError('1 argument required');
++    if (typeof id === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
++    id = String(id);
++    return id === '' ? null : N.query(this, '#' + CSS.escape(id), false);
++} });
+ class ShadowRoot extends DocumentFragment { constructor() { illegal(); } }
+ methods(ShadowRoot.prototype, {
+     getAnimations() { return []; },
+--- a/src/js/prelude/06-document.js
++++ b/src/js/prelude/06-document.js
+@@ -410,8 +410,21 @@
+     N.runWritten();
+ }
+ class DOMImplementation { constructor(key = undefined) { illegal(); } }
+-methods(DOMImplementation.prototype, { hasFeature() { return true; }, createHTMLDocument(t = undefined) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), this._doc || document); },
+-    createDocument(ns, q, dt = null) { ns = ns == null || ns === '' ? null : String(ns); const d = N.newXmlDoc(ns === NSURI[0] ? 'application/xhtml+xml' : ns === NSURI[1] ? 'image/svg+xml' : 'application/xml'); def(d, '__url', 'about:blank'); q = q == null ? '' : String(q); const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null; if (dt) insertNode(d, dt, null); if (el) insertNode(d, el, null); return d; } });
++methods(DOMImplementation.prototype, { hasFeature() { return true; }, createHTMLDocument(t = undefined) { if (typeof t === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string'); const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), this._doc || document); },
++    createDocument(ns, q, dt = null) {
++        if (arguments.length < 2) throw new TypeError('2 arguments required');
++        if (typeof ns === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
++        ns = ns == null ? null : String(ns); if (ns === '') ns = null;
++        if (typeof q === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
++        q = q === null ? '' : String(q);
++        if (dt !== null && (!N.isNode(dt) || N.type(dt) !== 10)) throw new TypeError('doctype is not a DocumentType');
++        const d = N.newXmlDoc(ns === NSURI[0] ? 'application/xhtml+xml' : ns === NSURI[1] ? 'image/svg+xml' : 'application/xml');
++        def(d, '__url', 'about:blank');
++        const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null;
++        if (dt !== null) insertNode(d, dt, null);
++        if (el) insertNode(d, el, null);
++        return d;
++    } });
+ const implementation = Object.create(DOMImplementation.prototype, { _doc: { get() { return document; } } });
+ /* a DOMImplementation from another (same-origin) realm makes its nodes and documents in that realm */
+ for (const k of ['createHTMLDocument', 'createDocumentType', 'createDocument']) {
+--- a/src/js/jsnative.cc
++++ b/src/js/jsnative.cc
+@@ -359,14 +359,16 @@
+ FN(newDoc) {
+     CTX;
+     Document *nd = doc_new("about:blank");
+-    std::string h = "<!doctype html><html><head>";
++    const char h[] = "<!doctype html><html><head></head><body></body></html>";
++    html_parse(nd, h, sizeof h - 1);
+     if (!a[0]->IsNullOrUndefined()) {
+-        h += "<title>";
+-        for (char ch : S(0)) h += ch == '<' ? std::string("&lt;") : ch == '&' ? std::string("&amp;") : std::string(1, ch);
+-        h += "</title>";
+-    }
+-    h += "</head><body></body></html>";
+-    html_parse(nd, h.data(), h.size());
++        Node *title = node_new_element(nd, atom("title"), NS_HTML);
++        node_append(nd->head, title);
++        // DOM construction preserves every code unit, including CR and an empty Text node.
++        std::string text = wtf8(iso, a[0]);
++        node_append(title, node_new_text(nd, text.data(), text.size()));
++        nd->title = node_text_content(title);
++    }
+     c->docs.push_back(nd);
+     RET(jwrap(c, &nd->node));
+ }

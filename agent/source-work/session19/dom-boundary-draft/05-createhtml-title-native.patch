@@ -1,0 +1,26 @@
+--- a/src/js/jsnative.cc
++++ b/src/js/jsnative.cc
+@@ -359,14 +359,16 @@
+ FN(newDoc) {
+     CTX;
+     Document *nd = doc_new("about:blank");
+-    std::string h = "<!doctype html><html><head>";
++    const char h[] = "<!doctype html><html><head></head><body></body></html>";
++    html_parse(nd, h, sizeof h - 1);
+     if (!a[0]->IsNullOrUndefined()) {
+-        h += "<title>";
+-        for (char ch : S(0)) h += ch == '<' ? std::string("&lt;") : ch == '&' ? std::string("&amp;") : std::string(1, ch);
+-        h += "</title>";
+-    }
+-    h += "</head><body></body></html>";
+-    html_parse(nd, h.data(), h.size());
++        Node *title = node_new_element(nd, atom("title"), NS_HTML);
++        node_append(nd->head, title);
++        // DOM construction preserves every code unit, including CR and an empty Text node.
++        std::string text = wtf8(iso, a[0]);
++        node_append(title, node_new_text(nd, text.data(), text.size()));
++        nd->title = node_text_content(title);
++    }
+     c->docs.push_back(nd);
+     RET(jwrap(c, &nd->node));
+ }

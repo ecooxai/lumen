@@ -726,3 +726,44 @@ Start 2026-11-04T07:59:29.872337+00:00, end 2026-11-04T07:59:29.890215+00:00, me
 At 2026-11-04T08:24:51.777438+00:00, canonical production remains diagnostic-only ed1a7624 (source tree1aed1be93fe7d3276ffaa277e643255f5058f1fa). Candidate1906 numeric81 qualified39/81 and2840/3462, +2 URLs/+20 assertions, all81 harnessesOK and no lostPASS. Its full1248 replay is still running; historical full score remains60.8173/100. Candidate1907 will profile seven native bootstrap stages without DOM/range draft changes after the heavy lane clears.
 
 Iteration10 isolated public work checkpoint8dd1c47c5d7ea9060bbb6ed8eab817d83888a88e was independently reviewed and remote-readback verified;843 hashes/modes,810 canonical source inputs and221 public ancestors were checked. It is explicitly unbuilt work-only, while live download stays1902. Independent review took0.478697s plus a separate manifest/mode verification; publication receipt reports3.39s. Private history/diagnostics were not exported. Receipts are retained under source-work/session19.
+
+
+## Session19 qualified full checkpoint1906 and diagnostic1907
+
+Recorded 2026-11-04T08:41:09.867646+00:00; total elapsed session wall time 7634.868s. Independent full unchanged1248 replay qualified772/1248 URLs (61.858974/100 selected-manifest compatibility) and23024/26245 assertions, +13 URLs/+198 assertions versus accepted1808. Exact preregistered prior-pass union retained; no lost URL/assertion/harness passes, all1248 processes exit0, source/binary pins and cleanup valid. Full runtime about20m59s is expected for1248 URLs; it is not an abnormal slow build. This does not establish all-WPT or Chromium parity, product quality95, or Android qualification. Original1903 namespace HOLD remains retained.
+
+Candidate1907 diagnostic build/startup passed in139.22s at4a7449b247e60836dda0b56df8b1841a868e02d1. Four fixed OFF/ON namespace2 runs completed with all647 assertions PASS. Each ON run contained1456 records across81 contexts without truncation;80 child realms spent about96% of measured initialization in code-ready to prelude-ready (factory execution), not native/context setup. Final parent load completed with no blockers. No timeout-cause or speed-fix claim is made.
+
+Qualified1906 source publication independently verified843 hashes/modes,810 canonical tested-source blobs,743 recorded inputs,28 preserved public files,221 approved ancestors and six full-run proof hashes; private history and later drafts excluded. Public commit0d76bf0aeefb3c975b94b550f831681c41e3beda;10,395,999-byte source archive SHAad13919b9b5963c8ecf440f0d3b6d173f8139459073155d7cb9924e69930962c passed offline restore and full HTTPS readback. Source export is not a fresh device delivery or independent rebuild.
+
+### Iteration11 — CharacterData data conversion and receiver semantics
+
+Start 2026-11-04T08:38:26.467770+00:00; end 2026-11-04T08:38:26.533867+00:00; measured source mutation/commit interval 0.068785s. Production commit e002169919da201a2eacf0d677e30e8cfa4186e1. Independently reviewed draft integrated; runtime qualification pending frozen DOM48, MutationObserver23 and relevant frame/IDL controls. Score remains 61.858974/100 from accepted1906 full selected manifest; no new passing result is inferred. The interval is not model compute time.
+
+### Iteration12 — DocumentFragment empty-ID lookup
+
+Start 2026-11-04T08:38:26.536582+00:00; end 2026-11-04T08:38:26.589759+00:00; measured source mutation/commit interval 0.056471s. Production commit 946a887d7b1802d6a695cbdedcdebeab4318cdd1. Independently reviewed draft integrated; runtime qualification pending frozen DOM48, MutationObserver23 and relevant frame/IDL controls. Score remains 61.858974/100 from accepted1906 full selected manifest; no new passing result is inferred. The interval is not model compute time.
+
+### Iteration13 — createDocument argument conversion order
+
+Start 2026-11-04T08:38:26.593069+00:00; end 2026-11-04T08:38:26.654841+00:00; measured source mutation/commit interval 0.065505s. Production commit 8c4653cd286a0d9856d7bfec4ad73acdf582f653. Independently reviewed draft integrated; runtime qualification pending frozen DOM48, MutationObserver23 and relevant frame/IDL controls. Score remains 61.858974/100 from accepted1906 full selected manifest; no new passing result is inferred. The interval is not model compute time.
+
+### Iteration14 — literal createHTMLDocument title construction
+
+Start 2026-11-04T08:38:26.658592+00:00; end 2026-11-04T08:38:26.727303+00:00; measured source mutation/commit interval 0.071511s. Production commit e265278928113537e62f85d7f34f5f273fc24e25. Independently reviewed draft integrated; runtime qualification pending frozen DOM48, MutationObserver23 and relevant frame/IDL controls. Score remains 61.858974/100 from accepted1906 full selected manifest; no new passing result is inferred. The interval is not model compute time.
+
+### Iteration15 — inert-document iframe browsing-context ownership
+
+Start 2026-11-04T08:38:26.730125+00:00; end 2026-11-04T08:38:26.779938+00:00; measured source mutation/commit interval 0.049821s. Production commit 658251d46f57d1d7955abe370bb144b13f71a33a. Independently reviewed draft integrated; runtime qualification pending frozen DOM48, MutationObserver23 and relevant frame/IDL controls. Score remains 61.858974/100 from accepted1906 full selected manifest; no new passing result is inferred. The interval is not model compute time.
+
+### Iteration16 — range family core plus compatible scalar native bridge
+
+Start 2026-11-04T08:39:59.909916+00:00; end 2026-11-04T08:40:00.053322+00:00; measured source mutation/commit interval 0.143399s. Production commit b509a847417200f58592f9c8b13ac5d40caafc3f. Range draft93c6e4eb integrates real endpoint storage, typed native computation, lossless declaration serialization, font-context handling and explicit-inheritance invalidation. Independent review corrected boolean endpoint dispatch, root rem basis, parent endpoint cache invalidation and multilayer whitespace before integration. Native and WPT gates pending; no new passing result is inferred. Score remains 61.858974/100 selected-manifest compatibility.
+
+### Iteration17 — separate direct-longhand CSSOM validation
+
+Start 2026-11-04T08:40:00.053338+00:00; end 2026-11-04T08:40:00.158262+00:00; measured source mutation/commit interval 0.104935s. Production commit 9edb8697410f1ce0695b0f33d3987a6a18283901. Range draft93c6e4eb integrates real endpoint storage, typed native computation, lossless declaration serialization, font-context handling and explicit-inheritance invalidation. Independent review corrected boolean endpoint dispatch, root rem basis, parent endpoint cache invalidation and multilayer whitespace before integration. Native and WPT gates pending; no new passing result is inferred. Score remains 61.858974/100 selected-manifest compatibility.
+
+### Candidate1908 functional freeze
+
+The five DOM changes and two range changes remain independently reviewable commits. Frozen DOM48 fresh baseline36/48 URLs,1984/2009 assertions; MutationObserver23 baseline16/23,163/174. Independent DOM26/inert9 controls exposed pre-existing detached-frame getter behavior that remains outside this batch. Test owner will qualify the cumulative native218 gate under the exact clean HEAD, plus frozen DOM/frame/range neighbors and independent controls. No CPU profiler instrumentation is included in this functional batch. All tracked source/Git/status writes must remain frozen through build and native218 release.

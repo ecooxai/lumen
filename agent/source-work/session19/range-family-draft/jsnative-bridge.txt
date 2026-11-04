@@ -1,0 +1,7 @@
+Add beside the existing cssMinSize/cssNumericDimension bridge, without including css.h:
+
+extern "C" char *css_animation_range_parse(const char *property, const char *value);
+FN(cssAnimationRange) { CTX; std::string p = S(0), q = S(1); char *value = css_animation_range_parse(p.c_str(), q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
+
+Add REG(cssAnimationRange); beside REG(cssMinSize); in the native registration list.
+The C declaration uses only char pointers, matching the existing compatible extern-C API pattern.

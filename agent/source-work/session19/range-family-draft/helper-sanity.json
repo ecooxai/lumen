@@ -1,0 +1,59 @@
+{
+  "scope": "Pure actual-helper sanity only; no native parser/browser/WPT qualification",
+  "candidate03_sha256": "6cb4f3dbbae48a5f4741a35c57f90463e2c1a828966eba4c149841eee212b756",
+  "started_utc": "2026-11-04T08:39:33.211Z",
+  "finished_utc": "2026-11-04T08:39:33.222Z",
+  "elapsed_seconds": 0.007615806999999989,
+  "rows": [
+    {
+      "label": "named start and bare end retain explicit start zero",
+      "actual": "entry 0% 90%",
+      "expected": "entry 0% 90%",
+      "pass": true
+    },
+    {
+      "label": "second named start survives comma whitespace",
+      "actual": "10% normal, entry 0% 90%",
+      "expected": "10% normal, entry 0% 90%",
+      "pass": true
+    },
+    {
+      "label": "named endpoints stay unambiguous",
+      "actual": "entry 20% exit, exit normal",
+      "expected": "entry 20% exit, exit normal",
+      "pass": true
+    },
+    {
+      "label": "math commas and whitespace preserve layers",
+      "actual": "calc(10% + 5px) normal, entry 0% calc(90% - 5px)",
+      "expected": "calc(10% + 5px) normal, entry 0% calc(90% - 5px)",
+      "pass": true
+    },
+    {
+      "label": "different endpoint list counts cannot form shorthand",
+      "actual": "",
+      "expected": "",
+      "pass": true
+    },
+    {
+      "label": "boolean start selector preserves first endpoint",
+      "actual": "entry",
+      "expected": "entry",
+      "pass": true
+    },
+    {
+      "label": "boolean end selector preserves bare second offset",
+      "actual": "90%",
+      "expected": "90%",
+      "pass": true
+    },
+    {
+      "label": "explicit unnamed100 percent remains endpoint storage",
+      "actual": "100%",
+      "expected": "100%",
+      "pass": true
+    }
+  ],
+  "passed": 8,
+  "total": 8
+}

@@ -1,0 +1,17 @@
+--- a/src/js/prelude/02-node.js
++++ b/src/js/prelude/02-node.js
+@@ -620,7 +620,13 @@
+ methods(DocumentType.prototype, { get name() { return N.name(this); }, get publicId() { return N.attr(this, 'publicId') || ''; }, get systemId() { return N.attr(this, 'systemId') || ''; } });
+ class DocumentFragment extends Node { constructor() { return N.frag(); } }
+ methods(DocumentFragment.prototype, ParentNode);
+-methods(DocumentFragment.prototype, { getElementById(id) { return N.query(this, '#' + CSS.escape(String(id)), false); } });
++methods(DocumentFragment.prototype, { getElementById(id) {
++    if (!N.isNode(this) || N.type(this) !== 11) throw new TypeError('Illegal invocation');
++    if (!arguments.length) throw new TypeError('1 argument required');
++    if (typeof id === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
++    id = String(id);
++    return id === '' ? null : N.query(this, '#' + CSS.escape(id), false);
++} });
+ class ShadowRoot extends DocumentFragment { constructor() { illegal(); } }
+ methods(ShadowRoot.prototype, {
+     getAnimations() { return []; },

@@ -1,14 +1,14 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session19",
-  "phase": "Candidate1906 full1248 selected WPT replay is running. Reviewed focused changes have gained13 URLs and198 assertions before that full replay; no new whole-selected-suite rate is claimed yet.",
-  "iteration": 1808,
+  "phase": "Candidate1906 completed the unchanged selected1248-URL WPT replay:772 passed, up13 URLs and198 assertions, with every required prior pass and harness obligation preserved. Phase1907 diagnostic tracing is running separately; range/DOM improvements remain under development.",
+  "iteration": 1906,
   "session_iteration": 10,
-  "score": 60.817307692307686,
-  "selected_case_score": 60.817307692307686,
-  "score_candidate": 1808,
-  "score_note": "60.82/100 is the historical candidate1808 selected1248-URL pass percentage, not whole-platform product quality or a completed1906 result.",
+  "score": 61.85897435897436,
+  "selected_case_score": 61.85897435897436,
+  "score_candidate": 1906,
+  "score_note": "61.86/100 is candidate1906 selected1248-URL pass percentage, not whole-platform product quality or Chromium parity.",
   "score_scope": "1248 selected HTTP/default-timeout testharness URLs from1247 source files; separate assertion denominators.",
-  "checkpoint": "fcf2d2d83686a554f492fbaf992173b12d924b64",
+  "checkpoint": "f454cf2097ab4742064664643c3b0447c71137eb",
   "session_started_utc": "2026-11-04T06:33:55Z",
   "deadline_utc": "2026-11-04T11:33:55Z",
   "session_id": "20261104-session19",
@@ -20,58 +20,62 @@
   "session_response_availability": "An active built-in agent polls session messages during this work session. Replies require this active session.",
   "goal_achieved": false,
   "goal_score": 95,
-  "overall_assessment": "The historical selected1248-URL pass rate remains60.82% for candidate1808. Candidate1904 gained11 URLs and178 assertions in its reviewed198-URL union; candidate1906 separately gained2 URLs and20 assertions in81 numeric URLs. Full1906 qualification is pending; Chromium parity and overall95 quality remain unachieved.",
-  "overall_result_label": "Session19 active;1906 full1248 running, iteration10 work checkpoint saved",
-  "accepted_iteration": 1808,
-  "active_iteration": 1906,
-  "active_candidate": 1906,
-  "accepted_binary_sha256": "79af7023284551d597ce61ff4a5e3954a7edd2a43b4b8ee2af5d63a1658ff46d",
-  "accepted_binary_scope": "Historical session18 measured candidate1808: one unchanged reliability replay plus two namespace checks. First full namespace timeout remains retained.",
-  "coverage": "759/1248 selected cases and22826/26245 assertions; all22826 required passes preserved. Reference Chromium150:1062/1248 and24541/26064. Selected scope, not allWPT.",
+  "overall_assessment": "Candidate1906 passes772/1248 selected URLs and23024/26245 assertions, gaining13 URLs and198 assertions over1808 with no prior-pass or harness losses. OneERROR and nineTIMEOUT harness outcomes remain. Historical pinnedChromium150 passes1062/1248. Whole-platform parity and overall95 quality remain unachieved.",
+  "overall_result_label": "Session19 active;1906 full selected replay qualified at61.86%",
+  "accepted_iteration": 1906,
+  "active_iteration": 1907,
+  "active_candidate": 1907,
+  "accepted_binary_sha256": "cba377366b0992b81a27c5a3108c0d1ec24053f6750459c2ebda051d707b6cb4",
+  "accepted_binary_scope": "Qualified complete unchanged selected1248 replay on1906:772 fully passing URLs,23024/26245 assertions, every23024 preregistered pass retained, zero required URL/harness losses. This is measured development scope; final device delivery is pending.",
+  "coverage": "772/1248 selected cases and23024/26245 assertions; all23024 required passes retained. Historical pinnedChromium150:1062/1248 and24541/26064. Selected scope, not allWPT.",
   "current_evidence": [
-    "Candidate1904 reviewed targeted union:106/198 URLs and2058/2829 assertions versus95/198 and1880/2829 for fresh1808, gain11 URLs and178 assertions, zero prior-pass losses.",
-    "Candidate1906 reviewed numeric81:39/81 URLs and2840/3462 assertions versus37/81 and2820/3462 for1808, gain2 URLs and20 assertions, zero prior-pass losses and all81 harnesses OK.",
-    "Candidate1906 immutable full1248 replay started08:03:20.999 UTC and is running. Historical full baseline remains759/1248 URLs and22826/26245 assertions; no full gain is extrapolated.",
-    "Independent original numeric14 controls:1906 passes13/14; original reference passes12/14. The rejected percentage destination case and pinned signed-zero/spec discrepancy are retained; infectious NaN behavior follows CSS Values4.",
-    "Namespace harness completion remains intermittent; phase instrumentation is unbuilt diagnostic work, not a reliability-fix claim.",
-    "Iteration10 work source checkpoint is published with independently reviewed inventory and exact remote-commit readback. Qualified1902 remains the downloadable source archive."
+    "Qualified complete1906 full replay:772/1248 URLs (61.86%) and23024/26245 assertions (87.73%), versus759/1248 and22826/26245 for1808. Gain13 URLs and198 assertions.",
+    "Exact preregistered prior-pass union retained:23024/23024 required assertions,772/772 required fully passing URLs and1238/1238 required OK harnesses. Zero losses.",
+    "All1248 case processes exited0; cleanup, immutable binary/source identity and pins verified. Wrapper1257.453s.",
+    "Harness outcomes remain1238OK,1ERROR and9TIMEOUT. Earlier held runs, including1903 namespace intermittency, remain historical evidence; no source-level reliability repair is claimed.",
+    "PinnedChromium150.0.7871.114 historical full reference:1062/1248 URLs and24541/26064 assertions. Different assertion-registration totals are retained.",
+    "Native range endpoint storage/computation and separate DOM fixes remain drafts or queued work, outside the1906 result.",
+    "Qualified1906 source is published with independently reviewed public ancestry, exact source inputs, offline Git restoration and complete HTTPS archive hash readback."
   ],
   "findings": [
-    "Namespace selector serialization, transition ordering, observer record handling, constructed-sheet behavior and range/random validation have reviewed focused gains.",
-    "Absolute-value, sign and hypotenuse serialization folding gained20 assertions in the81-URL numeric cohort, preserving prior passes and pending substitutions.",
-    "The full1248 replay uses the same frozen URL set and acceptance rules; complete results are still pending.",
-    "A separate draft is adding real animation-range longhands and computed endpoint values. It is not in the running1906 binary.",
-    "Existing display0 and authorized Android installations remain preserved until final accepted-candidate delivery."
+    "The full selected replay confirms all13 focused URL gains and198 assertion gains without losing earlier passes.",
+    "Improvements cover namespace selector serialization, transition ordering, observer handling, constructed stylesheets, range/random validation and abs/sign/hypot serialization.",
+    "Namespace lifecycle diagnostics are continuing under unchanged timing and scheduling. Passing this full run is not a causal reliability-fix proof.",
+    "Independent review is checking actual range longhand storage, native computed values, root font units and dynamic inherited endpoint changes before integration.",
+    "The existing display0 and authorized Android installations remain preserved until final accepted-candidate delivery."
   ],
   "historical": {
     "label": "Previous Linux311 same frozen1248 sample:686/1248files;21992/26245assertions.",
     "comparison": "Current pinned reference Chromium150. Older234/640-file measurements use different scope."
   },
   "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
-  "source_archive_label": "Candidate 1902 reviewed namespace source checkpoint",
-  "source_archive_note": "Focused development checkpoint: 64/136 selected URLs and 1652/2455 assertions, up 2 URLs and 44 assertions from fresh candidate 1808, with no lost passes or harness regressions. Full 1248-URL rate remains historical candidate 1808 evidence. No new display0/Android installation, whole-WPT parity or overall95 claim.",
+  "source_archive_label": "Candidate1906 qualified complete selected1248 source checkpoint",
+  "source_archive_note": "Qualified complete unchanged selected1248-URL development checkpoint:772/1248 URLs and23024/26245 assertions, gain13 URLs and198 assertions over1808, zero prior-pass or harness losses. OneERROR and nineTIMEOUT outcomes remain. Not allWPT, Chromium parity, overall95 quality or a new display0/Android installation claim.",
   "broad_current": {
-    "iteration": 1808,
+    "iteration": 1906,
     "files": 1248,
     "unique_source_files": 1247,
-    "whole_files_passed": 759,
-    "whole_file_pass_percent": 60.817307692307686,
-    "assertions_passed": 22826,
+    "whole_files_passed": 772,
+    "whole_file_pass_percent": 61.85897435897436,
+    "assertions_passed": 23024,
     "assertions_total": 26245,
+    "assertion_pass_percent": 87.72718613069156,
     "not_full_WPT": true,
-    "first_full_HOLD_preserved": true,
+    "prior_hold_evidence_preserved": true,
     "chromium150": {
+      "version": "150.0.7871.114",
       "whole_files_passed": 1062,
       "files": 1248,
       "assertions_passed": 24541,
-      "assertions_total": 26064
+      "assertions_total": 26064,
+      "historical_reference": true
     }
   },
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104",
-  "working_commit": "ed1a7624e5aaf9e7661462daac91d5b9d8289f41",
-  "updated_utc": "2026-11-04T08:13:46.710995+00:00",
-  "updated_at": "2026-11-04T08:13:46.710995+00:00",
+  "working_commit": "4a7449b247e60836dda0b56df8b1841a868e02d1",
+  "updated_utc": "2026-11-04T08:37:48.793350+00:00",
+  "updated_at": "2026-11-04T08:37:48.793350+00:00",
   "runtime_candidate": 1808,
   "runtime_note": "Existing verified candidate1808 desktop process remains untouched while session19 development proceeds; Android still needs final candidate delivery.",
   "qualified_prior_candidate_scope": {
@@ -189,21 +193,21 @@
     "full_fixed1248_replayed": false,
     "native218_replayed": false
   },
-  "source_archive_candidate": 1902,
-  "source_archive_sha256": "b27d00867acd9ee9933a3494a1feb4dcbed16dab235b33ecf05b85a903fcc27e",
-  "source_archive_bytes": 10365417,
-  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
+  "source_archive_candidate": 1906,
+  "source_archive_sha256": "ad13919b9b5963c8ecf440f0d3b6d173f8139459073155d7cb9924e69930962c",
+  "source_archive_bytes": 10395999,
+  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1906-20261104",
   "latest_broad_observation": {
-    "candidate": 1805,
-    "qualification_status": "HOLD",
-    "files_passed": 753,
+    "candidate": 1906,
+    "qualification_status": "QUALIFIED SELECTED MANIFEST",
+    "files_passed": 772,
     "files": 1248,
-    "assertions_passed": 22785,
+    "assertions_passed": 23024,
     "assertions_total": 26245,
-    "prior_pass_losses": 1,
-    "required_prior_pass_union": 22786,
-    "last_regression_free_candidate": 1705,
-    "scope": "Frozen1248 sample; not full official WPT."
+    "prior_pass_losses": 0,
+    "required_prior_pass_union": 23024,
+    "harness_regressions": 0,
+    "scope": "Complete unchanged selected1248-URL replay, not allWPT or a device-delivery claim"
   },
   "candidate1803_quick_scope": {
     "candidate": 1803,
@@ -295,64 +299,16 @@
     "full1248_replayed": true
   },
   "qualified_candidate_scope": {
-    "candidate": 1805,
-    "source_commit": "0415871ac9ed76e69b85acf8430765c97bcc539f",
-    "binary_sha256": "fcf8016299063b119d48df212e4d262cd4f382aae29ee051e5a64568241360d4",
-    "source_manifest_digest": "7faeddce9d30fde7681ba2e2acff5ca348c31825f3c41438a9f53161f16d9eaa",
-    "accepted_scope": "Focused syntax/timing/no-loss gates, native218 and retained45/1318 passed. Immutable full1248 replay is running; broad score is not promoted.",
-    "acceptance_receipt_sha256": "7055dc1aa3d055b488b48dbf40f0ff68cdbeecfdb9e78ed5c6766c57221fad8f",
-    "native_contracts": {
-      "passed": 218,
-      "total": 218
-    },
-    "retained_authored": {
-      "fixtures": 45,
-      "passed": 1318,
-      "total": 1318,
-      "independent_checks": 334
-    },
-    "timing_controls": {
-      "passed": 102,
-      "total": 106,
-      "required_scope": 102,
-      "remaining": [
-        [
-          "timing-state22-v1",
-          "animation-timing-function: relative sibling initial"
-        ],
-        [
-          "timing-state22-v1",
-          "animation-timing-function: relative sibling mutation"
-        ],
-        [
-          "timing-state22-v1",
-          "transition-timing-function: relative sibling initial"
-        ],
-        [
-          "timing-state22-v1",
-          "transition-timing-function: relative sibling mutation"
-        ]
-      ]
-    },
-    "random_regression": {
-      "passed": 27,
-      "total": 71,
-      "prior_pass_losses": 0
-    },
-    "random_types": {
-      "passed": 36,
-      "total": 36
-    },
-    "timing_wpt5": {
-      "files_passed": 3,
-      "files_total": 5,
-      "assertions_passed": 170,
-      "assertions_total": 204,
-      "existing_gains": 48,
-      "prior_pass_losses": 0
-    },
+    "candidate": 1906,
+    "source_commit": "f454cf2097ab4742064664643c3b0447c71137eb",
+    "source_subtree": "77f543b2305aaf9146b2bb767751115084aab962",
+    "binary_sha256": "cba377366b0992b81a27c5a3108c0d1ec24053f6750459c2ebda051d707b6cb4",
+    "source_manifest_digest": "897f43e0d475d3104410b7b088d54ff18e7cfcbc1a500cc9415bc611a1cdeaa1",
+    "raw_results_sha256": "07bb4641b35db759ea57773c267e12aba897fc38f5838a2e3da9fe9ef41810e2",
+    "acceptance_receipt_sha256": "751ac274605e766cca7e1b3dca56e476a3fcdec3e86b50100484c5d02f3c503d",
     "full1248_replayed": true,
-    "full1248_status": "HOLD:753/1248 files,22785/26245 assertions; one prior-PASS random alias loss. No broad promotion."
+    "full1248_status": "QUALIFIED",
+    "device_delivery_performed": false
   },
   "qualified_candidate1804_scope": {
     "candidate": 1804,
@@ -466,10 +422,10 @@
     "retained1318_ran": false,
     "full1248_ran": false
   },
-  "score_basis": "759/1248 selected HTTP/default-timeout test URLs from1247 source files; historical candidate1808 baseline while1906 full replay runs.",
-  "working_commit_role": "Separate unbuilt diagnostic phase instrumentation snapshot, durably saved as a WORK checkpoint. The running functional replay uses immutable1906 built fromf454cf2097ab4742064664643c3b0447c71137eb.",
-  "public_source_commit": "28cdeb590fafa03b04363755245638f2d673290d",
-  "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
+  "score_basis": "772/1248 selected HTTP/default-timeout test URLs from1247 source files, qualified candidate1906 full replay.",
+  "working_commit_role": "Separate phase1907 diagnostic snapshot; the qualified functional1906 binary was built fromf454cf2097ab4742064664643c3b0447c71137eb. Later range/DOM drafts are excluded from its measured source.",
+  "public_source_commit": "0d76bf0aeefb3c975b94b550f831681c41e3beda",
+  "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1906-20261104",
   "source_archive_external_hash_verified": true,
   "source_archive_offline_restore_verified": true,
   "session18_delivery_history": {
@@ -492,19 +448,11 @@
     "new_assertion_passes": 178,
     "full1248_replay_performed": false
   },
-  "mutation_current": {
-    "candidate": 1903,
-    "passed_urls": 16,
-    "total_urls": 23,
-    "new_passing_urls": 3,
-    "new_assertion_passes": 5,
-    "overall_candidate_on_hold": true
-  },
-  "full_replay_status": "running",
+  "full_replay_status": "qualified",
   "full_replay_started_utc": "2026-11-04T08:03:20.999Z",
   "work_checkpoint_public_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-work-iteration10-20261104",
   "work_checkpoint_public_commit": "8dd1c47c5d7ea9060bbb6ed8eab817d83888a88e",
-  "work_checkpoint_label": "Iteration10 WORK checkpoint: unbuilt phase instrumentation; full1906 pending; live source download remains qualified1902",
+  "work_checkpoint_label": "Iteration10 WORK checkpoint, unbuilt phase instrumentation at publication time; separate from qualified1906 and the current1902 source download.",
   "numeric_current": {
     "candidate": 1906,
     "passed_urls": 39,
@@ -521,6 +469,89 @@
   "focused_pre_full_gains": {
     "new_passing_urls": 13,
     "new_assertion_passes": 198,
-    "scope": "reviewed focused changes across separate cohorts; not a full1248 rate"
-  }
+    "scope": "reviewed focused changes across separate cohorts; not a full1248 rate",
+    "confirmed_by_full1906": true
+  },
+  "historical_candidate1805_broad_observation": {
+    "candidate": 1805,
+    "qualification_status": "HOLD",
+    "files_passed": 753,
+    "files": 1248,
+    "assertions_passed": 22785,
+    "assertions_total": 26245,
+    "prior_pass_losses": 1,
+    "required_prior_pass_union": 22786,
+    "last_regression_free_candidate": 1705,
+    "scope": "Frozen1248 sample; not full official WPT."
+  },
+  "historical_candidate1805_qualified_scope": {
+    "candidate": 1805,
+    "source_commit": "0415871ac9ed76e69b85acf8430765c97bcc539f",
+    "binary_sha256": "fcf8016299063b119d48df212e4d262cd4f382aae29ee051e5a64568241360d4",
+    "source_manifest_digest": "7faeddce9d30fde7681ba2e2acff5ca348c31825f3c41438a9f53161f16d9eaa",
+    "accepted_scope": "Focused syntax/timing/no-loss gates, native218 and retained45/1318 passed. Immutable full1248 replay is running; broad score is not promoted.",
+    "acceptance_receipt_sha256": "7055dc1aa3d055b488b48dbf40f0ff68cdbeecfdb9e78ed5c6766c57221fad8f",
+    "native_contracts": {
+      "passed": 218,
+      "total": 218
+    },
+    "retained_authored": {
+      "fixtures": 45,
+      "passed": 1318,
+      "total": 1318,
+      "independent_checks": 334
+    },
+    "timing_controls": {
+      "passed": 102,
+      "total": 106,
+      "required_scope": 102,
+      "remaining": [
+        [
+          "timing-state22-v1",
+          "animation-timing-function: relative sibling initial"
+        ],
+        [
+          "timing-state22-v1",
+          "animation-timing-function: relative sibling mutation"
+        ],
+        [
+          "timing-state22-v1",
+          "transition-timing-function: relative sibling initial"
+        ],
+        [
+          "timing-state22-v1",
+          "transition-timing-function: relative sibling mutation"
+        ]
+      ]
+    },
+    "random_regression": {
+      "passed": 27,
+      "total": 71,
+      "prior_pass_losses": 0
+    },
+    "random_types": {
+      "passed": 36,
+      "total": 36
+    },
+    "timing_wpt5": {
+      "files_passed": 3,
+      "files_total": 5,
+      "assertions_passed": 170,
+      "assertions_total": 204,
+      "existing_gains": 48,
+      "prior_pass_losses": 0
+    },
+    "full1248_replayed": true,
+    "full1248_status": "HOLD:753/1248 files,22785/26245 assertions; one prior-PASS random alias loss. No broad promotion."
+  },
+  "historical_candidate1903_mutation": {
+    "candidate": 1903,
+    "passed_urls": 16,
+    "total_urls": 23,
+    "new_passing_urls": 3,
+    "new_assertion_passes": 5,
+    "overall_candidate_on_hold": true
+  },
+  "full_replay_finished_utc": "2026-11-04T08:24:19Z",
+  "full_replay_audited_utc": "2026-11-04T08:25:48.622809Z"
 }

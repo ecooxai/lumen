@@ -1,0 +1,11 @@
+--- a/src/js/prelude/06-document.js
++++ b/src/js/prelude/06-document.js
+@@ -410,7 +410,7 @@
+     N.runWritten();
+ }
+ class DOMImplementation { constructor(key = undefined) { illegal(); } }
+-methods(DOMImplementation.prototype, { hasFeature() { return true; }, createHTMLDocument(t = undefined) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), this._doc || document); },
++methods(DOMImplementation.prototype, { hasFeature() { return true; }, createHTMLDocument(t = undefined) { if (typeof t === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string'); const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), this._doc || document); },
+     createDocument(ns, q, dt = null) {
+         if (arguments.length < 2) throw new TypeError('2 arguments required');
+         if (typeof ns === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
