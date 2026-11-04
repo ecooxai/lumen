@@ -615,6 +615,10 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             if (!cssSizeShorthandSet(m, p, v, pri)) return;
             this._w(m); return;
         }
+        if (p === 'object-position' && type !== 5) {
+            if (!cssObjectPositionSet(m, v, pri)) return;
+            this._w(m); return;
+        }
         if (p === 'interpolate-size') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (!cssInterpolateSizeSet(m, value, priority)) return;

@@ -115,7 +115,7 @@ function parseDecls(s, fontFace = false, keyframe = false, supportedNames = true
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (!fontFace && CSS_ANIMATION_LONGHAND.test(lk)) { cssAnimationLonghandSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) { v = cssScalarSpecified(lk, v); const previous = m.get(lk); if (previous && previous[1] && !imp) continue; } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'object-position') { cssObjectPositionSet(m, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (!fontFace && CSS_ANIMATION_LONGHAND.test(lk)) { cssAnimationLonghandSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) { v = cssScalarSpecified(lk, v); const previous = m.get(lk); if (previous && previous[1] && !imp) continue; } m.set(lk, [v, imp]); }
     return m;
 }
 /* The native enum parser owns acceptance; authored pending tokens remain opaque. */
@@ -1426,6 +1426,56 @@ function mathValid(p, v) {
    and optional offset; computed animation values normalize those separately. */
 const CSS_POSITION = /^background-position(?:-[xy])?$/;
 const cssPositionAxis = p => p.endsWith('-x') ? 0 : p.endsWith('-y') ? 1 : -1;
+/* object-position uses the common length tokens, but its <position> grammar
+ * has one, two or four components (never background's three-value form).
+ * Keep logical keywords in specified values; native storage resolves the axes. */
+function cssObjectPositionParse(value) {
+    const text = String(value).trim();
+    if (!N.cssSupports('(object-position:' + text + ')')) return null;
+    if (cssBorderPending(text) && text.includes('(')) return text;
+    const tokens = cssGridTokens(text);
+    if (!tokens || !tokens.length) return null;
+    const words = tokens.map(cssGridDecode);
+    if (words.length === 1 && /^(inherit|initial|unset|revert|revert-layer)$/i.test(words[0])) return words[0].toLowerCase();
+    const key = word => {
+        const k = word.toLowerCase();
+        if (k === 'center') return {family: 0, axis: -1, text: k};
+        if (/^(left|right|[xy]-(start|end)|top|bottom)$/.test(k)) return {family: 1, axis: /^(top|bottom|y-)/.test(k) ? 1 : 0, text: k};
+        if (/^(block|inline)-(start|end)$/.test(k)) return {family: 2, axis: k.startsWith('inline-') ? 1 : 0, text: k};
+        if (/^(start|end)$/.test(k)) return {family: 3, axis: -1, text: k};
+        return null;
+    };
+    const keys = words.map(key), pair = ['center', 'center'];
+    const families = keys.filter(k => k && k.family).map(k => k.family);
+    const family = families[0] || 1;
+    if (families.some(f => f !== family)) return null;
+    if (words.length === 1) {
+        if (family === 3) return null;
+        pair[keys[0] && keys[0].axis >= 0 ? keys[0].axis : 0] = keys[0] ? keys[0].text : cssPositionOffsetText(words[0]);
+    } else if (words.length === 2) {
+        if (family === 3 || keys.some(k => !k)) {
+            pair[0] = keys[0] ? keys[0].text : cssPositionOffsetText(words[0]);
+            pair[1] = keys[1] ? keys[1].text : cssPositionOffsetText(words[1]);
+        } else {
+            const first = keys[0].axis < 0 ? (keys[1].axis < 0 ? 0 : 1 - keys[1].axis) : keys[0].axis;
+            pair[first] = keys[0].text; pair[1 - first] = keys[1].text;
+        }
+    } else if (words.length === 4) {
+        const first = family === 3 ? 0 : keys[0].axis;
+        pair[first] = keys[0].text + ' ' + cssPositionOffsetText(words[1]);
+        pair[1 - first] = keys[2].text + ' ' + cssPositionOffsetText(words[3]);
+    } else return null;
+    return pair.join(' ');
+}
+function cssObjectPositionSet(map, value, priority, cascading = false) {
+    if (priority && !/^important$/i.test(priority)) return false;
+    if (value === '') { if (cascading) return false; map.delete('object-position'); return true; }
+    const parsed = cssObjectPositionParse(value);
+    if (parsed === null) return false;
+    if (cascading && map.get('object-position')?.[1] && !priority) return true;
+    map.delete('object-position'); map.set('object-position', [parsed, priority ? 'important' : '']); return true;
+}
+
 function cssPositionLength(text) {
     const [type, end] = mathType(text);
     return end === text.length && (type === 'length^1' || type === '%^1' || type === '' && /^[+-]?(?:0+(?:\.0*)?|\.0+)$/.test(text));
@@ -1978,6 +2028,11 @@ class CSSStyleDeclaration {
         if (CSS_EASING_LONGHAND.test(p)) {
             const m = new SMap(this._m());
             if (!cssEasingSet(m, p, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (p === 'object-position' && !cssDescriptorStyleHas(this)) {
+            const m = new SMap(this._m());
+            if (!cssObjectPositionSet(m, v, pri)) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
         if (p === 'transition') {

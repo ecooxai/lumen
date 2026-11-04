@@ -4897,6 +4897,90 @@ static bool tree_count_literal_inline(const Node *element, const char *property,
     }
     return false;
 }
+/* Object positions share length evaluation with backgrounds, but not their
+ * three-component or layer-list grammar. The result is computed value storage;
+ * this does not add a replaced-element painting consumer. */
+typedef struct { int family, axis, edge; bool logical; const char *text; } ObjectPositionPart;
+static ObjectPositionPart object_position_keyword(const char *text) {
+    ObjectPositionPart p = { .axis = -1, .edge = -1, .text = text };
+    if (str_ieq(text, "center")) { p.edge = 1; return p; }
+    static const char *const physical[] = { "left", "right", "top", "bottom", "x-start", "x-end", "y-start", "y-end", NULL };
+    int i = kw(text, physical);
+    if (i >= 0) { p.family = 1; p.axis = (i / 2) % 2; p.edge = (i % 2) * 2; p.logical = i >= 4; return p; }
+    static const char *const flow[] = { "block-start", "block-end", "inline-start", "inline-end", "start", "end", NULL };
+    i = kw(text, flow);
+    if (i >= 0) { p.family = i < 4 ? 2 : 3; p.axis = i < 4 ? i / 2 : -1; p.edge = (i % 2) * 2; p.logical = true; }
+    return p;
+}
+static bool object_position_length(ACtx *context, const char *text, Length *out) {
+    /* A zero number token is a length; a number-valued function is not.
+     * alen also enforces complete input and the length/percentage math type. */
+    char *end; float number = strtof(text, &end);
+    if (end != text && !*end && number != 0) return false;
+    Length value;
+    if (!alen(context, text, &value) || value.kind != LK_LEN) return false;
+    *out = value; return true;
+}
+static char *object_position_computed(ACtx *context, const char *text) {
+    char *tokens[5]; int count = split_ws(text, tokens, 5), family = 0; bool valid = count == 1 || count == 2 || count == 4;
+    ObjectPositionPart parts[4] = {0}, pair[2] = { { .axis = 0, .edge = 1 }, { .axis = 1, .edge = 1 } };
+    Length offsets[2] = { bg_percent(0), bg_percent(0) }; bool explicit_offset[2] = {false, false};
+    for (int i = 0; i < count && valid; i++) {
+        parts[i] = object_position_keyword(tokens[i]);
+        if (parts[i].family) { if (family && family != parts[i].family) valid = false; family = parts[i].family; }
+    }
+    if (!family) family = 1;
+    if (valid && count == 1) {
+        if (family == 3) valid = false;
+        else { int axis = parts[0].axis < 0 ? 0 : parts[0].axis; pair[axis] = parts[0];
+            if (parts[0].edge < 0) { valid = object_position_length(context, tokens[0], &offsets[axis]); explicit_offset[axis] = true; pair[axis].edge = 0; } }
+    } else if (valid && count == 2) {
+        if (parts[0].edge >= 0 && parts[1].edge >= 0) {
+            int axis = family == 3 ? 0 : parts[0].axis < 0 ? (parts[1].axis < 0 ? 0 : 1 - parts[1].axis) : parts[0].axis;
+            valid = family == 3 || parts[1].axis < 0 || parts[1].axis != axis;
+            pair[axis] = parts[0]; pair[1 - axis] = parts[1];
+        } else if (family != 1) valid = false;
+        else for (int axis = 0; axis < 2 && valid; axis++) {
+            pair[axis] = parts[axis];
+            if (parts[axis].edge < 0) { valid = object_position_length(context, tokens[axis], &offsets[axis]); explicit_offset[axis] = true; pair[axis].edge = 0; }
+            else valid = parts[axis].axis < 0 || parts[axis].axis == axis;
+        }
+    } else if (valid && count == 4) {
+        valid = parts[0].edge >= 0 && parts[0].edge != 1 && parts[2].edge >= 0 && parts[2].edge != 1 &&
+            parts[1].edge < 0 && parts[3].edge < 0 && (family == 3 || parts[0].axis != parts[2].axis);
+        if (valid) for (int item = 0; item < 2 && valid; item++) {
+            int axis = family == 3 ? item : parts[item * 2].axis;
+            pair[axis] = parts[item * 2]; explicit_offset[axis] = true;
+            valid = object_position_length(context, tokens[item * 2 + 1], &offsets[axis]);
+        }
+    }
+    Length result[2] = {0};
+    if (valid) {
+        const char *mode = gen_value(context->st, gen_prop("writing-mode"));
+        bool vertical = mode && (str_istarts(mode, "vertical-") || str_istarts(mode, "sideways-"));
+        bool leftward = mode && (str_ieq(mode, "vertical-rl") || str_ieq(mode, "sideways-rl"));
+        bool sideways_left = mode && str_ieq(mode, "sideways-lr"), rtl = context->st->direction;
+        bool reverse[2] = { vertical ? leftward : rtl, vertical && (rtl != sideways_left) };
+        for (int axis = 0; axis < 2; axis++) {
+            int physical = family == 1 ? axis : (axis == 0 ? !vertical : vertical);
+            int edge = pair[axis].edge;
+            if (edge != 1 && pair[axis].logical && reverse[physical]) edge = 2 - edge;
+            result[physical] = explicit_offset[axis] ? bg_offset(offsets[axis], edge) : bg_percent(edge * 50);
+        }
+    }
+    free_toks(tokens, count);
+    if (!valid) return NULL;
+    SB out = {0}; bg_length_str(&out, result[0]); sb_putc(&out, ' '); bg_length_str(&out, result[1]); return sb_take(&out);
+}
+static bool object_position_valid(const char *value) {
+    if (!css_var_syntax_valid(value) || !css_math_spacing_valid(value)) return false;
+    if (css_math_substitution_pending(value) || var_wide_keyword(value)) return true;
+    char *text = min_size_parser_text(value); if (!text) return false;
+    ComputedStyle seed = { .font_size = 16 }; ACtx context = { .st = &seed, .em = 16, .rem = 16 };
+    char *computed = object_position_computed(&context, text); bool valid = computed != NULL;
+    free(computed); free(text); return valid;
+}
+
 static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     prop = css_animation_property_name(prop);
     /* Invalid argument grammar is discarded before pending substitution can
@@ -4949,6 +5033,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     }
     /* Authored parse errors are ignored before substitution can apply unset.
        Valid pending values are checked again after their tokens resolve. */
+    if (!strcmp(prop, "object-position") && !object_position_valid(value_in)) return;
     if (!strcmp(prop, "transition-property") && !css_transition_property_valid(prop, value_in)) return;
     if (!css_interpolate_size_valid(prop, value_in)) return;
     if (!css_box_shadow_valid(prop, value_in)) return;
@@ -4983,6 +5068,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
         border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) :
         image_longhand_kind(prop) ? css_image_longhand_parse(prop, v) :
         animation_longhand_kind(prop) ? css_animation_longhand_parse(prop, v) :
+        !strcmp(prop, "object-position") ? min_size_parser_text(v) :
         easing_property(prop) ? css_easing_parse(v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);
@@ -5181,6 +5267,13 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
         int axis = !strcmp(P, "background-position-x") ? 0 : !strcmp(P, "background-position-y") ? 1 : -1;
         if (inherit || initial || unset) { if (inherit) st->parent_sensitive = true; bg_position_copy(st, inherit ? par : NULL, axis); }
         else (void)apply_bg_position(&c, val, axis);
+        free(vbuf); free(subst); return;
+    }
+    if (!strcmp(P, "object-position")) {
+        if (inherit) { const char *parent_value = par ? gen_value(par, gen_prop(P)) : NULL;
+            gen_put(&st->gen_n, P, xstrdup(parent_value ? parent_value : "50% 50%")); st->parent_sensitive = true;
+        } else if (initial || unset) gen_put(&st->gen_n, P, xstrdup("50% 50%"));
+        else { char *computed = object_position_computed(&c, val); if (computed) gen_put(&st->gen_n, P, computed); }
         free(vbuf); free(subst); return;
     }
     char integer_value[32]; const char *generic_value = val;
@@ -7498,6 +7591,7 @@ static char *quirk_px(const char *v) {
 /* A supports() declaration asks the same native value grammars that consume
  * these properties. The broader validator chain remains in parse.c. */
 bool css_supports_native_value(const char *property, const char *value, bool quirks) {
+    if (!strcmp(property, "object-position")) return object_position_valid(value);
     bool display = !strcmp(property, "display");
     bool preferred = !strcmp(property, "width") || !strcmp(property, "height") ||
         !strcmp(property, "inline-size") || !strcmp(property, "block-size");
