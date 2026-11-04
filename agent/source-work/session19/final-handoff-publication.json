@@ -1,0 +1,17 @@
+{
+  "candidate": 1915,
+  "public_commit": "59e3de4a3d0940be75c452851e6c5f94b64c9c86",
+  "public_parent": "9d3882d753faa45fc5c52f9e9748b9f7cdaaf7e4",
+  "remote_exact_commit_verified": true,
+  "handoff_url": "https://github.com/ecooxai/lumen/tree/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19",
+  "receipt_url": "https://raw.githubusercontent.com/ecooxai/lumen/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19/delivery-receipt.json",
+  "video_url": "https://raw.githubusercontent.com/ecooxai/lumen/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1915_showcase.mp4",
+  "clean_video_url": "https://raw.githubusercontent.com/ecooxai/lumen/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1915_clean_recording.mp4",
+  "research_url": "https://github.com/ecooxai/lumen/tree/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19/research-UNINTEGRATED",
+  "source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1915-20261104",
+  "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz?checkpoint=1915",
+  "preparation_sha256": "423b0d6d5ccc81877682afce7ecd1f34e04405d34ba30e153752aeb5cafa55f4",
+  "review_sha256": "1d95d4d723c77f3d3ae076010ebeac137a9b1858a85638f72e68a7fdd5a18bc5",
+  "finished_utc": "2026-11-04T12:38:26.209329+00:00",
+  "seconds": 3.7619886869797483
+}

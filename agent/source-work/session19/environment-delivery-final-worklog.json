@@ -1,0 +1,801 @@
+{
+  "task_session_start_utc": "2026-11-04T06:33:55Z",
+  "agent": "environment_delivery",
+  "events": [
+    {
+      "label": "session19-progress-readiness",
+      "started_utc": "2026-11-04T06:41:44.458284+00:00",
+      "finished_utc": "2026-11-04T06:42:09.593601+00:00",
+      "duration_seconds": 25.132335967035033,
+      "execution_valid": true
+    },
+    {
+      "label": "session19-isolated1808-gui-baseline",
+      "started_utc": "2026-11-04T06:43:25.640431+00:00",
+      "finished_utc": "2026-11-04T06:43:44.766273+00:00",
+      "duration_seconds": 19.122565672034398,
+      "execution_valid": true
+    },
+    {
+      "label": "transition1902 proposal preparation",
+      "artifact_written_utc": "2026-11-04T06:54:02.495896+00:00",
+      "duration_seconds": null,
+      "note": "No invented model-compute time; source integration/builds are recorded by their owners."
+    },
+    {
+      "label": "animation-range-draft proposal preparation",
+      "artifact_written_utc": "2026-11-04T06:57:50.599951+00:00",
+      "duration_seconds": null,
+      "note": "No invented model-compute time; source integration/builds are recorded by their owners."
+    },
+    {
+      "label": "random-size-draft proposal preparation",
+      "artifact_written_utc": "2026-11-04T07:03:38.014538+00:00",
+      "duration_seconds": null,
+      "note": "No invented model-compute time; source integration/builds are recorded by their owners."
+    },
+    {
+      "label": "session19-prepare-public1902",
+      "started_utc": "2026-11-04T07:16:36.450741+00:00",
+      "finished_utc": "2026-11-04T07:16:46.568323+00:00",
+      "duration_seconds": 10.114343468041625,
+      "execution_valid": true,
+      "command_exit_code": 0
+    },
+    {
+      "label": "session19-css-drafts-syntax",
+      "started_utc": "2026-11-04T07:19:36.769347+00:00",
+      "finished_utc": "2026-11-04T07:19:37.970088+00:00",
+      "duration_seconds": 1.1933156250161119,
+      "execution_valid": true,
+      "command_exit_code": 0
+    },
+    {
+      "label": "session19-publish-public1902",
+      "started_utc": "2026-11-04T07:21:42.762902+00:00",
+      "finished_utc": "2026-11-04T07:21:47.953561+00:00",
+      "duration_seconds": 5.181330618041102,
+      "execution_valid": true,
+      "command_exit_code": 0
+    },
+    {
+      "label": "session19-package-public1902",
+      "started_utc": "2026-11-04T07:22:13.198734+00:00",
+      "finished_utc": "2026-11-04T07:22:24.385969+00:00",
+      "duration_seconds": 11.182178700983059,
+      "execution_valid": true,
+      "command_exit_code": 0
+    },
+    {
+      "label": "session19-promote-public1902",
+      "started_utc": "2026-11-04T07:23:18.702297+00:00",
+      "finished_utc": "2026-11-04T07:23:21.302633+00:00",
+      "duration_seconds": 2.576967410976067,
+      "execution_valid": true,
+      "command_exit_code": 1
+    },
+    {
+      "label": "session19-verify-public1902",
+      "started_utc": "2026-11-04T07:24:01.341415+00:00",
+      "finished_utc": "2026-11-04T07:24:23.511244+00:00",
+      "duration_seconds": 22.166862735990435,
+      "execution_valid": true,
+      "command_exit_code": 0
+    },
+    {
+      "label": "iteration10-public-work-preparation",
+      "started_utc": "2026-11-04T08:06:02.667258+00:00",
+      "finished_utc": "2026-11-04T08:06:08.753155+00:00",
+      "duration_seconds": 6.085897678975016,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "receipt": "build/codex-session19-tools/public-work-checkpoint10/preparation.json",
+      "scope": "source-only work checkpoint; no archive compression, build or release promotion"
+    },
+    {
+      "label": "iteration10-public-work-publication",
+      "started_utc": "2026-11-04T08:09:10.354299+00:00",
+      "finished_utc": "2026-11-04T08:09:13.741952+00:00",
+      "duration_seconds": 3.387669516960159,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "receipt": "build/codex-session19-tools/public-work-checkpoint10/publication.json",
+      "scope": "source-only work checkpoint; no archive compression, build or release promotion"
+    },
+    {
+      "label": "range-family-final-syntax-03-element.js.candidate",
+      "started_utc": "2026-11-04T08:22:40.445484+00:00",
+      "finished_utc": "2026-11-04T08:22:40.640571+00:00",
+      "duration_seconds": 0.19508796697482467,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "scope": "node syntax only, native build remains pending"
+    },
+    {
+      "label": "range-family-final-syntax-03-element.js.core-candidate",
+      "started_utc": "2026-11-04T08:22:40.640607+00:00",
+      "finished_utc": "2026-11-04T08:22:40.811347+00:00",
+      "duration_seconds": 0.17076475196518004,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "scope": "node syntax only, native build remains pending"
+    },
+    {
+      "label": "range-family-final-syntax-06b-activate.js.candidate",
+      "started_utc": "2026-11-04T08:22:40.811387+00:00",
+      "finished_utc": "2026-11-04T08:22:40.989781+00:00",
+      "duration_seconds": 0.178415987000335,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "scope": "node syntax only, native build remains pending"
+    },
+    {
+      "label": "qualified1906-publication",
+      "started_utc": "2026-11-04T08:36:29.165598+00:00",
+      "finished_utc": "2026-11-04T08:36:37.743000+00:00",
+      "duration_seconds": 8.577420838002581,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "receipt": "build/codex-session19-tools/public-checkpoint1906/publication.json"
+    },
+    {
+      "label": "qualified1906-archive-offline-restore",
+      "started_utc": "2026-11-04T08:36:45.533790+00:00",
+      "finished_utc": "2026-11-04T08:36:53.019473+00:00",
+      "duration_seconds": 7.4856936750002205,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "receipt": "agent/ops/session19/artifacts1906/package-operation.json"
+    },
+    {
+      "label": "qualified1906-promote-https-readback",
+      "started_utc": "2026-11-04T08:37:00.342635+00:00",
+      "finished_utc": "2026-11-04T08:37:48.793350+00:00",
+      "duration_seconds": 48.4507515039877,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "receipt": "agent/ops/session19/artifacts1906/public-readback.json"
+    },
+    {
+      "label": "range-family-pairing-helper-sanity8",
+      "started_utc": "2026-11-04T08:39:33.211Z",
+      "finished_utc": "2026-11-04T08:39:33.222Z",
+      "duration_seconds": 0.007615806999999989,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "scope": "Pure actual-helper sanity only; no native parser/browser/WPT qualification"
+    },
+    {
+      "label": "StyleSheetList-revised-syntax-02-node.js.candidate",
+      "started_utc": "2026-11-04T08:59:20.978743+00:00",
+      "finished_utc": "2026-11-04T08:59:21.199297+00:00",
+      "duration_seconds": 0.22059036797145382,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "scope": "syntax only, independent browser gate pending"
+    },
+    {
+      "label": "StyleSheetList-revised-syntax-06b-activate.js.candidate",
+      "started_utc": "2026-11-04T08:59:21.199582+00:00",
+      "finished_utc": "2026-11-04T08:59:21.413825+00:00",
+      "duration_seconds": 0.21427113702520728,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "scope": "syntax only, independent browser gate pending"
+    },
+    {
+      "label": "StyleSheetList-revised-syntax-08-window.js.candidate",
+      "started_utc": "2026-11-04T08:59:21.414502+00:00",
+      "finished_utc": "2026-11-04T08:59:21.584024+00:00",
+      "duration_seconds": 0.16955581697402522,
+      "execution_valid": true,
+      "command_exit_code": 0,
+      "scope": "syntax only, independent browser gate pending"
+    },
+    {
+      "label": "iteration19-public-preview-readonly-probe",
+      "started_utc": "2026-11-04T09:02:56.202Z",
+      "finished_utc": "2026-11-04T09:03:06.710Z",
+      "duration_seconds": 10.500136153,
+      "execution_valid": true,
+      "scope": "HTTP200 and public websocket ping; observed2055/4108ms intervals; bounded follow-up to assess refresh jitter"
+    },
+    {
+      "label": "iteration20-work-checkpoint-preparation",
+      "started_utc": "2026-11-04T09:17:43.815080+00:00",
+      "finished_utc": "2026-11-04T09:17:52.369281+00:00",
+      "duration_seconds": 8.554171377967577,
+      "execution_valid": true,
+      "scope": "Exact31dbb work-only source, independent inventory/ancestry review, no archive or live download change"
+    },
+    {
+      "label": "iteration20-work-checkpoint-publication",
+      "started_utc": "2026-11-04T09:19:32.629394+00:00",
+      "finished_utc": "2026-11-04T09:19:36.074328+00:00",
+      "duration_seconds": 3.44495883397758,
+      "execution_valid": true,
+      "scope": "Exact31dbb work-only source, independent inventory/ancestry review, no archive or live download change"
+    },
+    {
+      "label": "iteration19-public-heartbeat-followup",
+      "started_utc": "2026-11-04T09:03:44.340Z",
+      "finished_utc": "2026-11-04T09:04:02.902Z",
+      "duration_seconds": 18.559462773,
+      "execution_valid": true,
+      "scope": "HTTP200/public websocket;7refresh intervals1.85\u20132.16s,RTT529ms; no private history or posting capability used"
+    },
+    {
+      "label": "final-delivery-readonly-readiness",
+      "started_utc": "2026-11-04T09:07:00.399041+00:00",
+      "finished_utc": "2026-11-04T09:07:00.765652+00:00",
+      "duration_seconds": 0.36662021197844297,
+      "execution_valid": true,
+      "scope": "Authorized MI8 and exact existing display0 identity/prerequisites only; no install,restart,capture or personal data"
+    },
+    {
+      "label": "StyleSheetList-syntax-01-events.js.candidate",
+      "started_utc": "2026-11-04T09:14:04.297928+00:00",
+      "finished_utc": "2026-11-04T09:14:04.507673+00:00",
+      "duration_seconds": 0.2097485920530744,
+      "execution_valid": true,
+      "scope": "Syntax only; reviewed draft history retained; browser gates pending"
+    },
+    {
+      "label": "StyleSheetList-syntax-02-node.js.candidate",
+      "started_utc": "2026-11-04T09:14:04.507996+00:00",
+      "finished_utc": "2026-11-04T09:14:04.735292+00:00",
+      "duration_seconds": 0.22736515302676708,
+      "execution_valid": true,
+      "scope": "Syntax only; reviewed draft history retained; browser gates pending"
+    },
+    {
+      "label": "StyleSheetList-syntax-06b-activate.js.candidate",
+      "started_utc": "2026-11-04T09:14:04.735895+00:00",
+      "finished_utc": "2026-11-04T09:14:04.931108+00:00",
+      "duration_seconds": 0.19513821799773723,
+      "execution_valid": true,
+      "scope": "Syntax only; reviewed draft history retained; browser gates pending"
+    },
+    {
+      "label": "StyleSheetList-syntax-08-window.js.candidate",
+      "started_utc": "2026-11-04T09:14:04.931680+00:00",
+      "finished_utc": "2026-11-04T09:14:05.142333+00:00",
+      "duration_seconds": 0.2106682650046423,
+      "execution_valid": true,
+      "scope": "Syntax only; reviewed draft history retained; browser gates pending"
+    },
+    {
+      "label": "StyleSheetList-syntax-01-events.js.candidate",
+      "started_utc": "2026-11-04T09:21:05.047437+00:00",
+      "finished_utc": "2026-11-04T09:21:05.247929+00:00",
+      "duration_seconds": 0.20048791001318023,
+      "execution_valid": true,
+      "scope": "Syntax only; reviewed draft history retained; browser gates pending"
+    },
+    {
+      "label": "StyleSheetList-syntax-06b-activate.js.candidate",
+      "started_utc": "2026-11-04T09:21:05.248236+00:00",
+      "finished_utc": "2026-11-04T09:21:05.434003+00:00",
+      "duration_seconds": 0.18577916297363117,
+      "execution_valid": true,
+      "scope": "Syntax only; reviewed draft history retained; browser gates pending"
+    },
+    {
+      "label": "StyleSheetList-syntax-08-window.js.candidate",
+      "started_utc": "2026-11-04T09:21:05.434602+00:00",
+      "finished_utc": "2026-11-04T09:21:05.622773+00:00",
+      "duration_seconds": 0.18819038401125,
+      "execution_valid": true,
+      "scope": "Syntax only; reviewed draft history retained; browser gates pending"
+    },
+    {
+      "label": "StyleSheetList-syntax-06b-activate.js.candidate",
+      "started_utc": "2026-11-04T09:22:52.287263+00:00",
+      "finished_utc": "2026-11-04T09:22:52.514291+00:00",
+      "duration_seconds": 0.22702483501052484,
+      "execution_valid": true,
+      "scope": "Syntax only; reviewed draft history retained; browser gates pending"
+    },
+    {
+      "label": "qualified1908-publication",
+      "started_utc": "2026-11-04T09:40:17.641229+00:00",
+      "finished_utc": null,
+      "duration_seconds": 6.801565676985774,
+      "receipt": "build/codex-session19-tools/public-checkpoint1908/publication.json",
+      "receipt_sha256": "963ed483cc680f0cd322e76428f40619e4a1bc8685f283b77c44d166d13e6abb",
+      "timing_limit": "Only receipt-recorded timestamps retained; null finish means duration was measured without separate UTC finish field.",
+      "scope": "Source publication, isolated draft checks or read-only inventory; qualification remains as recorded in original receipt."
+    },
+    {
+      "label": "qualified1908-package",
+      "started_utc": "2026-11-04T09:40:24.543569+00:00",
+      "finished_utc": null,
+      "duration_seconds": 8.189223645022139,
+      "receipt": "agent/ops/session19/artifacts1908/package-operation.json",
+      "receipt_sha256": "4e1440fbe0fe2d2ce3ce0c360af5f081aee2d934e12443ec1ed9930891f27aad",
+      "timing_limit": "Only receipt-recorded timestamps retained; null finish means duration was measured without separate UTC finish field.",
+      "scope": "Source publication, isolated draft checks or read-only inventory; qualification remains as recorded in original receipt."
+    },
+    {
+      "label": "qualified1908-external-readback",
+      "started_utc": "2026-11-04T09:40:58.500685+00:00",
+      "finished_utc": "2026-11-04T09:41:18.884971+00:00",
+      "duration_seconds": 20.384286,
+      "receipt": "agent/ops/session19/artifacts1908/public-readback.json",
+      "receipt_sha256": "58ac3507efe605a6c3d37ce6442e93975c7c0e074f0bf9d16d7cf6aa7849d850",
+      "timing_limit": "Only receipt-recorded timestamps retained; null finish means duration was measured without separate UTC finish field.",
+      "scope": "Source publication, isolated draft checks or read-only inventory; qualification remains as recorded in original receipt."
+    },
+    {
+      "label": "range-calc-parser-v1",
+      "started_utc": "2026-11-04T09:52:29.200073+00:00",
+      "finished_utc": "2026-11-04T09:52:29.601306+00:00",
+      "duration_seconds": 0.40120142698287964,
+      "receipt": "agent/ops/session19/range-calc-draft/versions/parser-v1/draft-checks-v1.json",
+      "receipt_sha256": "4ad11cce1eff6dfbd44c565a0065420d58c017f5e93cb090b4698dd7cc9b103d",
+      "timing_limit": "Only receipt-recorded timestamps retained; null finish means duration was measured without separate UTC finish field.",
+      "scope": "Source publication, isolated draft checks or read-only inventory; qualification remains as recorded in original receipt."
+    },
+    {
+      "label": "range-calc-parser-v2",
+      "started_utc": "2026-11-04T09:54:22.162012+00:00",
+      "finished_utc": "2026-11-04T09:54:22.615091+00:00",
+      "duration_seconds": 0.45306137105217203,
+      "receipt": "agent/ops/session19/range-calc-draft/versions/parser-v2/draft-checks-v2.json",
+      "receipt_sha256": "a93e40ff362074a13b8e97c71c294559ad9547b10b1f6327c20ed2e19c705826",
+      "timing_limit": "Only receipt-recorded timestamps retained; null finish means duration was measured without separate UTC finish field.",
+      "scope": "Source publication, isolated draft checks or read-only inventory; qualification remains as recorded in original receipt."
+    },
+    {
+      "label": "range-calc-intrinsics-v3",
+      "started_utc": "2026-11-04T10:03:16.420283+00:00",
+      "finished_utc": "2026-11-04T10:03:16.853894+00:00",
+      "duration_seconds": 0.4335908549837768,
+      "receipt": "agent/ops/session19/range-calc-draft/versions/parser-v3/draft-checks-v3.json",
+      "receipt_sha256": "8a8dded862fa3824b32accda150c2ea422043a23f72bb57c2b39446a45a0ca02",
+      "timing_limit": "Only receipt-recorded timestamps retained; null finish means duration was measured without separate UTC finish field.",
+      "scope": "Source publication, isolated draft checks or read-only inventory; qualification remains as recorded in original receipt."
+    },
+    {
+      "label": "range-calc-native-map-v4",
+      "started_utc": "2026-11-04T10:08:00.378918+00:00",
+      "finished_utc": "2026-11-04T10:08:01.253946+00:00",
+      "duration_seconds": 0.8750152760185301,
+      "receipt": "agent/ops/session19/range-calc-draft/draft-checks-v4.json",
+      "receipt_sha256": "ccc0e112d50211e90224cabfb02a8dbf514db08df173f1f36d1093322bd691d8",
+      "timing_limit": "Only receipt-recorded timestamps retained; null finish means duration was measured without separate UTC finish field.",
+      "scope": "Source publication, isolated draft checks or read-only inventory; qualification remains as recorded in original receipt."
+    },
+    {
+      "label": "declaration-api-assembled-syntax",
+      "started_utc": "2026-11-04T10:00:26.991815+00:00",
+      "finished_utc": "2026-11-04T10:00:27.296600+00:00",
+      "duration_seconds": 0.30475720297545195,
+      "receipt": "agent/ops/session19/css-declaration-api-draft/environment-assembled-syntax-review.json",
+      "receipt_sha256": "c8cf4b4b8b1fc1020e86584aea14c6047c28ffeb1557f37431c0fc5abd3a79c0",
+      "timing_limit": "Only receipt-recorded timestamps retained; null finish means duration was measured without separate UTC finish field.",
+      "scope": "Source publication, isolated draft checks or read-only inventory; qualification remains as recorded in original receipt."
+    },
+    {
+      "label": "candidate1911-source-inventory",
+      "started_utc": "2026-11-04T10:09:32.638002+00:00",
+      "finished_utc": "2026-11-04T10:09:42.992932+00:00",
+      "duration_seconds": 10.354921891994309,
+      "receipt": "agent/ops/session19/candidate1911-source-inventory-v1.json",
+      "receipt_sha256": "0d20c662068fe37f18b8997cbd00f1e10d6f5d487c29f8192ad0bda9d57661a0",
+      "timing_limit": "Only receipt-recorded timestamps retained; null finish means duration was measured without separate UTC finish field.",
+      "scope": "Source publication, isolated draft checks or read-only inventory; qualification remains as recorded in original receipt."
+    },
+    {
+      "label": "namespace-pressure-fixed-completion",
+      "started_utc": "2026-11-04T10:30:03.195042+00:00",
+      "finished_utc": "2026-11-04T10:40:03.195086+00:00",
+      "duration_seconds": 600.0000481869793,
+      "receipt": "agent/ops/session19/host-pressure-namespace1912-v1-completion.json",
+      "receipt_sha256": "3d0b66589e8a4912c12217aeb02ac3e06ff21ebbe02d75ad8b1ee65fe761307d",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "namespace-matched-pressure-correlation",
+      "started_utc": null,
+      "finished_utc": "2026-11-04T10:37:55.533753+00:00",
+      "duration_seconds": null,
+      "receipt": "agent/ops/session19/host-pressure-namespace1912-matched-summary-v1.json",
+      "receipt_sha256": "c91397950c268b936db6bbbed26ea702379a41c5c95f18d36709666759e7bb02",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "preview1912-hold",
+      "started_utc": "2026-11-04T10:50:13.615Z",
+      "finished_utc": "2026-11-04T10:50:19.083Z",
+      "duration_seconds": 5.4533915429999995,
+      "receipt": "agent/ops/session19/preview-1912-review-v1.json",
+      "receipt_sha256": "43d8b9486902990e1b0d376942df178877ab39dacbb8bf813a31d6ca2fa815f2",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "importance-first-syntax",
+      "started_utc": "2026-11-04T10:43:09.434323+00:00",
+      "finished_utc": "2026-11-04T10:43:10.524451+00:00",
+      "duration_seconds": 1.0880377840367146,
+      "receipt": "agent/ops/session19/importance688-syntax-monitor/receipt.json",
+      "receipt_sha256": "6be9b95be9d41274c1d00a9bf04ec4ab96073baffd1f830ddbf28e4a6bdb441e",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "importance-final-and-guard-syntax",
+      "started_utc": "2026-11-04T10:47:54.519174+00:00",
+      "finished_utc": "2026-11-04T10:47:55.603850+00:00",
+      "duration_seconds": 1.0820806449628435,
+      "receipt": "agent/ops/session19/importance126-guard-syntax-monitor/receipt.json",
+      "receipt_sha256": "72d6bc12895c605364ae6fdc01d0245da62b00aa8f88497466cd269923c181c3",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "same-name-guard-review",
+      "started_utc": null,
+      "finished_utc": "2026-11-04T10:52:32.871963+00:00",
+      "duration_seconds": null,
+      "receipt": "agent/ops/session19/cssom-importance-guard-independent-review-v1.json",
+      "receipt_sha256": "fd5e02d02578516a7a2c2a8810b1fe6d9915a7f4ffd7ec5f6a87cb34897bf49e",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "static-importance-review",
+      "started_utc": null,
+      "finished_utc": "2026-11-04T10:57:45.663540+00:00",
+      "duration_seconds": null,
+      "receipt": "agent/ops/session19/static-importance-independent-review-v1.json",
+      "receipt_sha256": "39290dc013fe487ef98ecb9b0046c313eca740d7bce38b9220573bebb39ac3e1",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "session-posting-extension",
+      "started_utc": null,
+      "finished_utc": "2026-11-04T11:05:36.626275+00:00",
+      "duration_seconds": null,
+      "receipt": "agent/ops/session19/message-deadline-extension-v1.json",
+      "receipt_sha256": "a76a539bc142e46f2c442c5376b51811acb8d3848e1102e26832e9bc26c9ef13",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "x-tool-diagnostic-excluded",
+      "started_utc": null,
+      "finished_utc": "2026-11-04T11:05:04.411642+00:00",
+      "duration_seconds": null,
+      "receipt": "agent/ops/session19/x-login-private/tool-induced-navigation-v1.json",
+      "receipt_sha256": "bfe3ba67d93a43aa066d4d0745f7e360c933acac51774e660ca7f842a7d5163c",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "x-working-page-recovered",
+      "started_utc": null,
+      "finished_utc": "2026-11-04T11:13:18.062160+00:00",
+      "duration_seconds": null,
+      "receipt": "agent/ops/session19/x-login-private/recovery-receipt-v1.json",
+      "receipt_sha256": "4c0c62b8da522fbf47b27f2e1b044b8650179eb0086b5418a06db94f4e9d4c10",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "x-pre-diagnostic-cpu",
+      "started_utc": "2026-11-04T10:52:35.038000+00:00",
+      "finished_utc": "2026-11-04T10:58:35.788409+00:00",
+      "duration_seconds": null,
+      "receipt": "agent/ops/session19/x-login-private/pre-diagnostic-resource-observation-v1.json",
+      "receipt_sha256": "f2dadab7282dd5ae3011b2c2d5c0dc16362e0fc2519a88f6e22379ae1bd7ef5b",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "label": "x-current-cpu",
+      "started_utc": null,
+      "finished_utc": "2026-11-04T11:12:42.847071+00:00",
+      "duration_seconds": null,
+      "receipt": "agent/ops/session19/x-login-private/current-resource-observation-v1.json",
+      "receipt_sha256": "b1350a6c16cff5849ad0a6ac1f84ba16abb1a7787c45f79eccd6018ee072e39c",
+      "timing_limit": "Only original receipt timestamps retained; null fields are not invented. Resource windows overlap other work and are not active labor totals.",
+      "scope": "Private X diagnosis is unqualified and nonpublic; diagnostic-induced navigation is excluded from OAuth causality. Static reviews do not assert runtime qualification."
+    },
+    {
+      "receipt": "agent/ops/session19/candidate1913-source-inventory-v1.json",
+      "started_utc": "2026-11-04T11:24:00.165003+00:00",
+      "finished_utc": "2026-11-04T11:24:01.215728+00:00",
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "candidate1913-source-inventory-v1",
+      "receipt_sha256": "bc002184d24359d6b4dcd173521942e11f6386275d4136f970dfb4d9696d9d12",
+      "duration_seconds": 1.0507276009884663,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/candidate1913-source-inventory-independent-review-v1.json",
+      "started_utc": "2026-11-04T11:27:02.165793+00:00",
+      "finished_utc": "2026-11-04T11:27:02.465281+00:00",
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "candidate1913-source-inventory-independent-review-v1",
+      "receipt_sha256": "7b80b767d7ada24083f0fe832c328cecb1fcee2a51f1a2657c5f090508749112",
+      "duration_seconds": 0.2994999790098518,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/page-descriptor-routing-independent-review-v1.json",
+      "started_utc": "2026-11-04T11:39:41.733527+00:00",
+      "finished_utc": "2026-11-04T11:39:42.015350+00:00",
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "page-descriptor-routing-independent-review-v1",
+      "receipt_sha256": "884879675f13371de1086dac888271770da2411b82811d8a1e80fe0d03d963a0",
+      "duration_seconds": 0.2818179529858753,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/delivery-dashboard-switch-v1.json",
+      "started_utc": "2026-11-04T11:41:57.392769+00:00",
+      "finished_utc": "2026-11-04T11:41:58.145816+00:00",
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "delivery-dashboard-switch-v1",
+      "receipt_sha256": "7d332dff82539331902f88d970f5e47a5612423f614a7da53fd99eebaf539404",
+      "duration_seconds": null,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/delivery-dashboard-websocket-continuity-v2.json",
+      "started_utc": "2026-11-04T11:45:48.402Z",
+      "finished_utc": "2026-11-04T11:45:57.280Z",
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "delivery-dashboard-websocket-continuity-v2",
+      "receipt_sha256": "cf26fe01c401b1b636fad3da8ac9c4796b71913c418ca7fea462764fe7c80552",
+      "duration_seconds": null,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/delivery-dashboard-source-readback-v2.json",
+      "started_utc": null,
+      "finished_utc": null,
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "delivery-dashboard-source-readback-v2",
+      "receipt_sha256": "68eea6572dec0259cfc8d575f80ffd4878a227e8942d6922978cabd81ac2816e",
+      "duration_seconds": 18.06778405397199,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/host-pressure1913-namespace-overlap-v1.json",
+      "started_utc": null,
+      "finished_utc": null,
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "host-pressure1913-namespace-overlap-v1",
+      "receipt_sha256": "133e66d84643d9d071826dc06290eea31e62123f4a190311aa42f1a0941d8a54",
+      "duration_seconds": null,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/host-pressure-one-worker4-overlap-v1.json",
+      "started_utc": null,
+      "finished_utc": null,
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "host-pressure-one-worker4-overlap-v1",
+      "receipt_sha256": "ff22c2d8b43a6e57e06f62817635b372da746295e964776290b76eef438636bd",
+      "duration_seconds": null,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/deferred-transition-handoff-inventory-v3.json",
+      "started_utc": "2026-11-04T11:35:05.051069+00:00",
+      "finished_utc": "2026-11-04T11:35:05.748485+00:00",
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "deferred-transition-handoff-inventory-v3",
+      "receipt_sha256": "419f77b0b773dc392998045e5d93e07b0f64b4f36e1ecf8cc4cb391f6f873303",
+      "duration_seconds": 0.6974501509685069,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/page-orientation-value-independent-review-v1.json",
+      "started_utc": "2026-11-04T12:01:18.587183Z",
+      "finished_utc": "2026-11-04T12:01:18.587183Z",
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "page-orientation-value-independent-review-v1",
+      "receipt_sha256": "4c671788d4fecda9185bff23ef4877bb53d6d27a3ac210a881d9317296eb50b0",
+      "duration_seconds": 0.067451932,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/progress-readiness-final1915.json",
+      "started_utc": "2026-11-04T12:13:48.356Z",
+      "finished_utc": "2026-11-04T12:13:53.899Z",
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "progress-readiness-final1915",
+      "receipt_sha256": "d93330a2614b05ed918601211de1676441dcc889e64ff274898005794a01ea6a",
+      "duration_seconds": null,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/delivery-runtime/final-controller-preparation.json",
+      "started_utc": "2026-11-04T12:07:20.107307+00:00",
+      "finished_utc": "2026-11-04T12:07:20.107307+00:00",
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "final-controller-preparation",
+      "receipt_sha256": "04014b88559fa84805c418b6f237ca35d65d411522836f61dcdc1c5a664f4d4d",
+      "duration_seconds": null,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "receipt": "agent/ops/session19/delivery-runtime/final-device-readiness.json",
+      "started_utc": "2026-11-04T12:12:49.746538+00:00",
+      "finished_utc": "2026-11-04T12:12:49.746538+00:00",
+      "scope": "Review/preparation/operational evidence only; no new release/device qualification inferred.",
+      "label": "final-device-readiness",
+      "receipt_sha256": "a3ca0f5e2b765e5f731b50273104d954c2cf1fb869bec8674f79cb4d023e31da",
+      "duration_seconds": null,
+      "timing_limit": "Only original receipt timestamps retained; nulls not inferred. Resource windows overlap other work and are not active labor totals."
+    },
+    {
+      "label": "final1915-showcase-v1",
+      "started_utc": "2026-11-04T12:25:53.118217+00:00",
+      "finished_utc": "2026-11-04T12:26:42.669186+00:00",
+      "duration_seconds": 49.550969,
+      "receipt": "agent/ops/session19/delivery-runtime/final1915-showcase-v1/receipt.json",
+      "receipt_sha256": "4ce2246cafeb388c1588d5364177d85a4a2cb59c386d669c94fa0da35a69c002",
+      "accepted": true,
+      "timing_limit": "Parallel lane durations overlap and are not additive active labor. Initial failures retained."
+    },
+    {
+      "label": "final1915-linux-v1",
+      "started_utc": "2026-11-04T12:25:53.061917+00:00",
+      "finished_utc": "2026-11-04T12:26:03.665785+00:00",
+      "duration_seconds": 10.603868,
+      "receipt": "agent/ops/session19/delivery-runtime/final1915-linux-v1/receipt.json",
+      "receipt_sha256": "0752397514cee8aa68a8159eb214c214430a1dfb9f757ab61d3bb5e7ba8d9fd6",
+      "accepted": false,
+      "timing_limit": "Parallel lane durations overlap and are not additive active labor. Initial failures retained."
+    },
+    {
+      "label": "final1915-linux-recovery-v1",
+      "started_utc": "2026-11-04T12:27:21.118224+00:00",
+      "finished_utc": "2026-11-04T12:27:37.756836+00:00",
+      "duration_seconds": 16.638612,
+      "receipt": "agent/ops/session19/delivery-runtime/final1915-linux-recovery-v1/receipt.json",
+      "receipt_sha256": "db97afeae49bceb244599c47e524873716bb72270ea6f13e07771c2897382887",
+      "accepted": true,
+      "timing_limit": "Parallel lane durations overlap and are not additive active labor. Initial failures retained."
+    },
+    {
+      "label": "android1915-build-v1",
+      "started_utc": "2026-11-04T12:25:53Z",
+      "finished_utc": "2026-11-04T12:28:27Z",
+      "duration_seconds": 154.0,
+      "receipt": "agent/ops/session19/delivery-runtime/android1915-build-v1/receipt.json",
+      "receipt_sha256": "79e7382fe0040db7769b0cb9ae859dd4b47400491aa383d18473894dc5c395fb",
+      "accepted": true,
+      "timing_limit": "Parallel lane durations overlap and are not additive active labor. Initial failures retained."
+    },
+    {
+      "label": "android1915-check-v1",
+      "started_utc": "2026-11-04T12:28:28Z",
+      "finished_utc": "2026-11-04T12:28:30Z",
+      "duration_seconds": 2.0,
+      "receipt": "agent/ops/session19/delivery-runtime/android1915-check-v1/receipt.json",
+      "receipt_sha256": "a7a00f2eb99b6207367d6e4126b2514c3675a0ea7eb93633c32983c3f23d12e2",
+      "accepted": false,
+      "timing_limit": "Parallel lane durations overlap and are not additive active labor. Initial failures retained."
+    },
+    {
+      "label": "android1915-check-v1-model-recovery",
+      "started_utc": "2026-11-04T12:31:55Z",
+      "finished_utc": "2026-11-04T12:32:16Z",
+      "duration_seconds": 21.0,
+      "receipt": "agent/ops/session19/delivery-runtime/android1915-check-v1-model-recovery/receipt.json",
+      "receipt_sha256": "5186ce56d7942423d5567d42a0fecde0cbf1bb0fea119912c7407f4f1d96d1ad",
+      "accepted": true,
+      "timing_limit": "Parallel lane durations overlap and are not additive active labor. Initial failures retained."
+    },
+    {
+      "label": "android1915-deploy-v1",
+      "started_utc": "2026-11-04T12:32:17Z",
+      "finished_utc": "2026-11-04T12:32:51Z",
+      "duration_seconds": 34.0,
+      "receipt": "agent/ops/session19/delivery-runtime/android1915-deploy-v1/receipt.json",
+      "receipt_sha256": "1279701d2d045440bc5d927f90ec570637eb4bd7f2a575580d61ef7b016dde41",
+      "accepted": true,
+      "timing_limit": "Parallel lane durations overlap and are not additive active labor. Initial failures retained."
+    },
+    {
+      "label": "android1915-final-restart-v1-focus-recovery",
+      "started_utc": "2026-11-04T12:32:51.367211+00:00",
+      "finished_utc": "2026-11-04T12:33:00.032581+00:00",
+      "duration_seconds": 8.66537,
+      "receipt": "agent/ops/session19/delivery-runtime/android1915-final-restart-v1-focus-recovery/receipt.json",
+      "receipt_sha256": "2053d83b4348248dbb69b344297f42aa1f1355330e283634328fb4d2680e969c",
+      "accepted": true,
+      "timing_limit": "Parallel lane durations overlap and are not additive active labor. Initial failures retained."
+    },
+    {
+      "label": "final1915-android-model-recovery-v1",
+      "started_utc": "2026-11-04T12:31:55.663256+00:00",
+      "finished_utc": "2026-11-04T12:33:02.500005+00:00",
+      "duration_seconds": 66.836749,
+      "receipt": "agent/ops/session19/delivery-runtime/final1915-android-model-recovery-v1/receipt.json",
+      "receipt_sha256": "00a50921bb89b8e7c45b9060b09e5d75651683b17d4448d1cfa8fcb7cd097946",
+      "accepted": true,
+      "timing_limit": "Parallel lane durations overlap and are not additive active labor. Initial failures retained."
+    },
+    {
+      "label": "final-delivery-preview-health",
+      "started_utc": "2026-11-04T12:38:06.722Z",
+      "finished_utc": "2026-11-04T12:38:12.559Z",
+      "duration_seconds": 5.837,
+      "receipt": "agent/ops/session19/final-delivery-preview-health.json",
+      "receipt_sha256": "eab819114a5fd77b17152d69144a3bcddc1f427925812cfa3c12b1c28642bd01",
+      "accepted": true,
+      "timing_limit": "Parallel lane durations overlap and are not additive active labor. Initial failures retained."
+    }
+  ],
+  "intervals_overlap_other_agents": true,
+  "last_updated_utc": "2026-11-04T12:40:12.901498+00:00",
+  "elapsed_session_seconds": 20515.538868,
+  "range_family_draft": {
+    "review_ready_utc": "2026-11-04T08:21:01.870227+00:00",
+    "manifest_sha256": "22745920ed691fe395c1382211eb5da3f4ee32d45b6836958378311c28bf6bad",
+    "source_files_changed": false,
+    "model_compute_duration_measured": false,
+    "native_build_performed": false,
+    "integrated_by": "source_steward",
+    "core_commit": "b509a847",
+    "direct_longhand_commit": "9edb8697",
+    "native_build_performed_by_own_lane": false,
+    "final_manifest_sha256": "93c6e4eb92fa1a07c2fc4e74d0cce5cf176b0b03f07921253aa461e896c0fab0"
+  },
+  "resource_pressure_v2_summary": "agent/ops/session19/host-pressure-diagnostics-summary-v2.json",
+  "stylesheet_list_draft": {
+    "manifest_sha256": "fce03fe1a21f5d3bbc22011dc0e4c378d328e3b3e9d0e0c7767634f12acff4fc",
+    "integrated_commit": "6ee883838a8dba9bad203428c62c8a0bec5f6f21",
+    "status": "independently reviewed and integrated; runtime qualification pending"
+  },
+  "root_pseudo_draft": {
+    "manifest_sha256": "c2990e368369f94e0f0d37c449305c6401e566bd2abb5ac56a8ead4a82556bce",
+    "status": "independently reviewed draft; confirmed root-pseudo2 gap; no canonical integration",
+    "integrated_commit": "070bf796"
+  },
+  "required_wpt_service": {
+    "allowlist_sha256": "b9de607914e33d3cd5d09a4b1c362a3e48a23a005a79b20119ab0d14a5d72c67",
+    "process_count": 14,
+    "action": "preserved; no process/quota changes"
+  },
+  "range_calc_draft": {
+    "manifest_sha256": "4dbc7807f15c58cbe974698aa70ca53aa396fa8c8557d2e731b75002c550b678",
+    "runtime_qualified": false
+  },
+  "declaration_receiver_review": {
+    "manifest_sha256": "df9ba0700856a377f95633e9855d7fb67860fb0500fadaf2a359c6a10d815ae0",
+    "review_sha256": "b9b41a212587f2d869d124da18f3ee2414730a7764be06670e230f2bf734883e",
+    "runtime_qualified": false
+  },
+  "accepted_full_candidate": 1915,
+  "unqualified_holds": [
+    1911,
+    1912
+  ],
+  "static_importance": {
+    "review_sha256": "39290dc013fe487ef98ecb9b0046c313eca740d7bce38b9220573bebb39ac3e1",
+    "candidate1913": "native218 passed; browser qualification pending",
+    "full_transition_tier_draft": "unintegrated; logical and unresolved membership risks retained"
+  },
+  "x_user_request": {
+    "state": "X landing restored; user asked to reproduce real failure; no causal auth fix or scroll benchmark claim",
+    "private_evidence_directory": "agent/ops/session19/x-login-private",
+    "current_binary": 1808,
+    "publication": "exclude all personal captures and traces"
+  },
+  "final_release_selection_cutoff_utc": "2026-11-04T12:24:00Z",
+  "delivery_status": "COMPLETE; exact accepted1915 Linux/Android, reviewedvideo and source/handoff externalreadback verified.",
+  "development_window_end_utc": "2026-11-04T12:33:55Z",
+  "physical_delivery_finished_utc": "2026-11-04T12:33:02.500005Z",
+  "post_task_publication_readback_finished_utc": "2026-11-04T12:39:22.969903+00:00"
+}

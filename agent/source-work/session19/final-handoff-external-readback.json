@@ -1,0 +1,47 @@
+{
+  "candidate": 1915,
+  "finished_utc": "2026-11-04T12:39:22.969903+00:00",
+  "checks": [
+    {
+      "label": "durable_receipt",
+      "url": "https://raw.githubusercontent.com/ecooxai/lumen/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19/delivery-receipt.json",
+      "status": 200,
+      "bytes": 5908,
+      "sha256": "90392b9b88c6290d5862f58fb5cf135937e74f98e28fe0997b86209bc5c2adfc",
+      "expected_sha256": "90392b9b88c6290d5862f58fb5cf135937e74f98e28fe0997b86209bc5c2adfc",
+      "accepted": true,
+      "seconds": 1.0335887360270135
+    },
+    {
+      "label": "durable_video",
+      "url": "https://raw.githubusercontent.com/ecooxai/lumen/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1915_showcase.mp4",
+      "status": 200,
+      "bytes": 347017,
+      "sha256": "0525be4a390e43b6b9d8709162c425bca2df9fb9771c020e33e1cc9b1ba01adf",
+      "expected_sha256": "0525be4a390e43b6b9d8709162c425bca2df9fb9771c020e33e1cc9b1ba01adf",
+      "accepted": true,
+      "seconds": 0.7398323460365646
+    },
+    {
+      "label": "preview_video",
+      "url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
+      "status": 200,
+      "bytes": 347017,
+      "sha256": "0525be4a390e43b6b9d8709162c425bca2df9fb9771c020e33e1cc9b1ba01adf",
+      "expected_sha256": "0525be4a390e43b6b9d8709162c425bca2df9fb9771c020e33e1cc9b1ba01adf",
+      "accepted": true,
+      "seconds": 0.8594066130463034
+    },
+    {
+      "label": "source_archive",
+      "url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz?checkpoint=1915",
+      "status": 200,
+      "bytes": 10463864,
+      "sha256": "521185eb206a2671a66dc3d6d80a80e484e6b30667e6f13a690048d11f9f51ab",
+      "expected_sha256": "521185eb206a2671a66dc3d6d80a80e484e6b30667e6f13a690048d11f9f51ab",
+      "accepted": true,
+      "seconds": 38.720156989002135
+    }
+  ],
+  "accepted": true
+}
