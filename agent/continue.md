@@ -53,3 +53,9 @@ five minutes for concrete abnormal slowness. Preserve original data and runtime 
 final verified candidate must restart on display:0 and connected MI8 with install-r.
 Five-hour development budget runs to2026-11-04T11:33:55Z; an extra hour is only for
 important remaining fixes, not a claim of95/100 or automatic qualification.
+
+## Session19 current checkpoint — candidate1906 source ready
+
+Updated 2026-11-04T07:53:40.970519+00:00. Candidate1904 independently gained11 URLs and178 assertions over fresh1808 across the deduplicated198-URL focus union (106/198 and2058/2829); no previous PASS loss. This is not a full1248 result. Candidate1903 retains its namespace harness timeout HOLD even though1904 completed that URL once. Diagnostic1905 at22532988 sealed in40.07 seconds and is being used only for the fixed trace sequence, with default-off native load/CPU instrumentation.
+
+Next functional source is candidate1906:3397a288 constant abs/sign/hypot folding and6583b898 pending-token preservation, in separate reviewed commits; no DOM, stylesheet-list, or range-storage changes. Test lane will build exact freeze, run numeric81 with unchanged controls, then the unchanged full1248 cohort. See `agent/source-work/session19/candidate1906/source-freeze.json`. Keep source/Git frozen until test lane seals its build. Last qualified full result remains759/1248 (60.8173/100 selected-manifest compatibility), not an overall-browser quality score.

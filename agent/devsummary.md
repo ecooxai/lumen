@@ -712,3 +712,7 @@ Start: 2026-11-04T07:52:42.889815+00:00. End: 2026-11-04T07:52:42.910736+00:00. 
 ### Iteration 9 — fix(cssom): preserve pending substitutions before numeric folding
 
 Start: 2026-11-04T07:52:42.968801+00:00. End: 2026-11-04T07:52:42.987411+00:00. Mutation interval: 0.01861 seconds (not model compute time). Independently reviewed draft applied with exact source-base verification. Numeric81 and independent controls are delegated to the test lane; no gain claim before results. Score remains60.8173/100 from the last qualified selected1248 full baseline. Receipt: `agent/source-work/session19/math-pending-guard-v1/implementation.json`.
+
+### Independent gate checkpoint before candidate1906
+
+Candidate1904 focused union:106/198 passing URLs versus95/198 fresh1808;2058/2829 PASS assertions versus1880/2829, gain11 URLs/178 assertions, no lost previousPASS. Diagnostic1905 build/startup:40.07 seconds, exact source22532988 and immutable binary5df23395; diagnostic purpose only. Independent test/build ledger: `agent/source-work/session19/test-baseline/test-build-timings-v2.json` (26 completed tasks as reported; none over5 minutes). Total session wall interval to this checkpoint: 4785.970519 seconds. Implementation receipts record measured mutation intervals separately from build/test durations; model compute time is not inferred. Score remains60.8173/100 until a qualified full1248 replay.

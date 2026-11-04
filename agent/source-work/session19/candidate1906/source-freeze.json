@@ -1,0 +1,42 @@
+{
+  "candidate": 1906,
+  "created_utc": "2026-11-04T07:53:40.970519+00:00",
+  "production_tip": "6583b8987f42c3c27a473f5c010c81b9bfbd0ae8",
+  "source_tree": "77f543b2305aaf9146b2bb767751115084aab962",
+  "changes_since_functional1904": [
+    "default-off native diagnostic trace, separately sealed/tested as diagnostic1905",
+    "resolved abs/sign/hypot numeric folding (3397a288e881e1519223962e7f0cfa42969176d8)",
+    "pending-substitution preservation (6583b8987f42c3c27a473f5c010c81b9bfbd0ae8)"
+  ],
+  "not_included": [
+    "DOM conversion/factory fixes",
+    "StyleSheetList changes",
+    "animation-range longhand-storage rewrite"
+  ],
+  "qualification_status": "pending independent build and numeric81; full1248 planned after focused gates",
+  "qualified_prior_focus": {
+    "candidate": 1904,
+    "unique_urls": 198,
+    "passed_urls_before": 95,
+    "passed_urls_after": 106,
+    "assertions": 2829,
+    "passed_assertions_before": 1880,
+    "passed_assertions_after": 2058,
+    "lost_passes": 0,
+    "note": "Focused union, not full-suite score; original1903 namespace timeout HOLD retained"
+  },
+  "last_qualified_full": {
+    "candidate": 1808,
+    "passed_urls": 759,
+    "urls": 1248,
+    "score": 60.817307692307686
+  },
+  "diagnostic1905": {
+    "head": "225329889a0e3d8d77d12c13bedc3e631c13886c",
+    "binary_sha256": "5df23395756b562ff8a0398d998e3cc71790b8754be0c53b19619ae6dba28a82",
+    "build_seconds": 40.07,
+    "purpose": "fixed OFF/ON/OFF/ON native load diagnosis only; not a lifecycle fix"
+  },
+  "test_inputs": "unchanged pinned WPT manifests, assertions, timeouts, workers and guarded runner",
+  "freeze": "Hold tracked source/Git through build seal; test lane owns reservation and immutable qualification"
+}
