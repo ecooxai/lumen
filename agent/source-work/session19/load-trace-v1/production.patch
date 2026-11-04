@@ -2,18 +2,9 @@ diff --git a/src/js/frames.cc b/src/js/frames.cc
 index eba720a..4f9c32f 100644
 --- a/src/js/frames.cc
 +++ b/src/js/frames.cc
-@@ -4,6 +4,7 @@
- #include "jsglue.h"
- #include "../base/url.h"
- #include <algorithm>
+@@ -6,0 +7 @@
 +#include <time.h>
- 
- using FCI = v8::FunctionCallbackInfo<v8::Value>;
- 
-@@ -15,6 +16,63 @@ struct XMsg { uint32_t to; std::vector<uint8_t> data; std::string origin; double
- static std::vector<XMsg> g_xmsgs;
- static std::vector<FrameLoad *> g_loads;
- 
+@@ -17,0 +19,57 @@ static std::vector<FrameLoad *> g_loads;
 +/* Diagnostic only: native-state load boundaries, never URLs, script values or
 +   extra callbacks. Disabled unless explicitly enabled before process startup. */
 +static bool load_trace_enabled() {
@@ -71,32 +62,14 @@ index eba720a..4f9c32f 100644
 +}
 +
 +
- static std::string origin_of(const char *u) {
-     URL x{};
-     if (u && str_ieqn(u, "blob:", 5) && (str_ieqn(u + 5, "http:", 5) || str_ieqn(u + 5, "https:", 6))) u += 5;   /* a blob URL's origin is its inner URL's */
-@@ -77,6 +135,7 @@ extern "C" Node *js_doc_frame_el(Document *d) { JsCtx *k = owner_ctx(d); return
- 
- void frame_kill(JsCtx *k) {
-     if (k->dead) return;
+@@ -79,0 +138 @@ void frame_kill(JsCtx *k) {
 +    load_trace(k, "retire");
-     k->dead = true;
-     js_broadcast_deactivate(k->broadcast);
-     k->dead_at = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
-@@ -134,7 +193,10 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const std::string &key, const char
-     if (p->host.frame_open) p->host.frame_open(p->host.ud, f, d, &ch);
-     if (!ch.frame_open) ch.frame_open = p->host.frame_open;
-     ch.frame_close = p->host.frame_close;
+@@ -136,0 +196,2 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const std::string &key, const char
 +    load_trace(p, "realm-create-begin");
 +    const double trace_begin = load_trace_enabled() ? load_trace_now() : 0;
-     JsCtx *k = js_new_ex(d, &ch, p, f);
+@@ -137,0 +199 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const std::string &key, const char
 +    load_trace(k, "realm-ready", "none", false, load_trace_enabled() ? load_trace_now() - trace_begin : -1);
-     k->host_ud = ch.ud;
-     k->frame_src = key;
-     const uint64_t generation = k->parser_generation;
-@@ -554,13 +616,14 @@ void js_doc_close(JsCtx *c) {
-    parent's load event. A frame removed meanwhile no longer does. */
- bool (*js_load_blocked)(JsCtx *c) = nullptr;
- static bool frames_loading(JsCtx *c) {
+@@ -557,7 +619,8 @@ static bool frames_loading(JsCtx *c) {
 -    if (c->input_stream && !c->input_stream->complete && !c->input_stream->aborted) return true;
 -    if (c->frame_parser && !c->frame_parser->complete && !c->frame_parser->aborted) return true;
 -    if (c->pending_scripts) return true;
@@ -112,83 +85,34 @@ index eba720a..4f9c32f 100644
 +    for (FrameLoad *l : g_loads) if (l->p == c) for (JsCtx *k : c->kids) if (!k->dead && k->id == l->kid && k->frame_el == l->f) { load_trace(c, "blocked", "frame-fetch", true); return true; }
 +    for (JsCtx *k : c->kids) if (!k->dead && (k->frame_reload_pending || k->load_deferred)) { load_trace(c, "blocked", "child-load", true); return true; }
 +    load_trace(c, "unblocked", "none", true);
-     return false;
- }
- static bool load_context_active(JsCtx *saved, uint32_t id, Document *document) {
-@@ -574,12 +637,13 @@ static bool load_context_active(JsCtx *saved, uint32_t id, Document *document) {
- }
- 
- void js_fire_load(JsCtx *c) {
+@@ -577 +640,2 @@ void js_fire_load(JsCtx *c) {
 -    if (!c || c->dead || c->load_checking) return;
 +    if (!c || c->dead) return;
 +    if (c->load_checking) { load_trace(c, "recheck-skipped", "checking", true); return; }
-     const uint32_t id = c->id;
-     Document *const document = c->doc;
-     const uint64_t generation = c->parser_generation;
-     auto live = [&]() { return load_context_active(c, id, document); };
+@@ -582 +646 @@ void js_fire_load(JsCtx *c) {
 -    if (!live()) return;
 +    if (!live()) { load_trace_emit(id, 0, "inactive-entry", "state=inactive"); return; }
-     if (c->load_phase != DocumentLoadPhase::Pending &&
-         c->doc->ready_state == 2 && !c->load_deferred) return;
-     c->load_checking = true;
-@@ -591,14 +655,17 @@ void js_fire_load(JsCtx *c) {
-            a newer context or proceed with this generation's readiness work. */
-         c->load_checking = false;
-         c->load_deferred = true;
+@@ -593,0 +658 @@ void js_fire_load(JsCtx *c) {
 +        load_trace(c, "generation-changed");
-         return false;
-     };
-     frames_scan(c);
-     if (!preflight_live()) return;
-     if (!c->load_synced && c->host.sync) {
-         c->load_synced = true;
+@@ -599,0 +665 @@ void js_fire_load(JsCtx *c) {
 +        const double trace_begin = load_trace_enabled() ? load_trace_now() : 0;
-         c->host.sync(c->host.ud, c->doc, true);
-         if (!preflight_live()) return;
+@@ -601,0 +668 @@ void js_fire_load(JsCtx *c) {
 +        load_trace(c, "host-sync-end", "none", false, load_trace_enabled() ? load_trace_now() - trace_begin : -1);
-     }
-     if (frames_loading(c)) {
-         c->load_deferred = true;
-@@ -607,26 +674,32 @@ void js_fire_load(JsCtx *c) {
-     }
-     if (c->doc->ready_state != 2) js_set_ready_state(c, 2);
-     if (!preflight_live()) return;
+@@ -609,0 +677 @@ void js_fire_load(JsCtx *c) {
 +    load_trace(c, "ready-complete");
-     c->load_checking = false;
-     /* A parser created inside load/pageshow still completes its readiness, but
-        the surrounding same-Document lifecycle remains the only event cycle. */
-     if (c->load_phase != DocumentLoadPhase::Pending) return;
-     c->load_phase = DocumentLoadPhase::InProgress;
+@@ -614,0 +683 @@ void js_fire_load(JsCtx *c) {
 +    load_trace(c, "window-load-begin");
-     js_dispatch_document_event(c, JS_DOCUMENT_LOAD);
+@@ -616 +685,2 @@ void js_fire_load(JsCtx *c) {
 -    if (!live()) return;
 +    if (!live()) { load_trace_emit(id, 0, "inactive-window-load", "state=inactive"); return; }
 +    load_trace(c, "window-load-end");
-     JsCtx *const parent = c->parent;
-     const uint32_t parent_id = parent ? parent->id : 0;
-     Document *const parent_document = parent ? parent->doc : nullptr;
-     if (parent && c->el_load) {
-         c->el_load = false;
+@@ -621,0 +692 @@ void js_fire_load(JsCtx *c) {
 +        load_trace(c, "owner-load-begin");
-         js_dispatch(parent, c->frame_el, "load", "Event", false, false, 0, 0, 0, NULL);
+@@ -623 +694,2 @@ void js_fire_load(JsCtx *c) {
 -        if (!live()) return;
 +        if (!live()) { load_trace_emit(id, parent_id, "inactive-owner-load", "state=inactive"); return; }
 +        load_trace(c, "owner-load-end");
-     }
-     /* Match existing Window-load/owner-load ordering. A requested navigation
-        does not end this cycle until the active context is actually replaced. */
-     js_dispatch_document_event(c, JS_DOCUMENT_PAGESHOW);
-     if (!live()) return;
-     c->load_phase = DocumentLoadPhase::Complete;
+@@ -629,0 +702 @@ void js_fire_load(JsCtx *c) {
 +    load_trace(c, "complete");
-     if (parent && load_context_active(parent, parent_id, parent_document))
-         frames_load_check(parent);
- }
-@@ -643,6 +716,7 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
-     JsCtx *p = l->p, *blank = nullptr;
-     if (p && !p->dead) for (JsCtx *k : p->kids) if (!k->dead && !k->frame_reload_pending && k->id == l->kid && k->frame_el == l->f) blank = k;
-     if (blank) {
+@@ -645,0 +719 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
 +        load_trace(blank, "response");
-         std::string key = blank->frame_src;
-         bool ok = r && r->status > 0;
-         const char *body = ok && r->body ? r->body : "";
