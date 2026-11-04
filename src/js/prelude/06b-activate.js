@@ -548,6 +548,39 @@ function cssRuleDeclarations(rule, text) {
     const type = cssOwnerGet(rule).type;
     return parseDecls(text, type === 5, type === 8, type === 1 || type === 8);
 }
+const cssPageOrientationLower = String.prototype.toLowerCase;
+function cssPageOrientationValue(value) {
+    const ident = N.cssPropertyIdentifier(value);
+    if (ident !== null) {
+        const keyword = cssDeclarationApply(cssPageOrientationLower, ident, []);
+        switch (keyword) {
+        case 'upright': case 'rotate-left': case 'rotate-right':
+        case 'initial': case 'inherit': case 'unset': case 'revert': case 'revert-layer':
+            return keyword;
+        default: return null;
+        }
+    }
+    /* Preserve valid arbitrary substitution values without treating an
+     * ordinary identifier list or escaped identifier as a pending function. */
+    if (N.cssTransitionProperty(value) === null) return null;
+    const work = [cssMediaTokens(value)]; let pending = false;
+    for (let i = 0; i < work.length; i++) {
+        const tokens = work[i];
+        for (let j = 0; j < tokens.length; j++) {
+            const token = tokens[j];
+            if (token.kind === 'bad') return null;
+            if (i === 0 && token.kind === 'delim' &&
+                (token.value === ';' || token.value === '!')) return null;
+            if (token.kind === 'function') {
+                const name = cssDeclarationApply(cssPageOrientationLower, token.value, []);
+                if (name === 'var' || name === 'env' || name === 'attr' || name === 'if' ||
+                    name.length > 2 && name[0] === '-' && name[1] === '-') pending = true;
+            }
+            if (token.kind === 'function' || token.kind === 'block') apush(work, token.body);
+        }
+    }
+    return pending ? value : null;
+}
 class CSSRuleStyle extends CSSStyleDeclaration {
     constructor(rule, text) { super(null); const state = cssDeclarationLocalState(this), type = cssOwnerGet(rule).type; state.parent = rule; state.ruleType = type; state.operations = cssRuleDeclarationOperations; if (type === 5) cssDescriptorStyleAdd(this); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
     _m() { return new SMap(this._map); }
@@ -567,6 +600,10 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             }
         }
         if (v !== '' && !cssVarSyntax(v)) return;
+        if (type === 6 && p === 'page-orientation' && v !== '') {
+            if (pri && cssDeclarationApply(cssPageOrientationLower, pri, []) !== 'important') return;
+            v = cssPageOrientationValue(v); if (v === null) return;
+        }
         if (type !== 5 && v !== '' && cssRandomSizeRelevant(p, v) &&
             (pri && !/^important$/i.test(pri) || N.cssMinSize(v) === null)) return;
         if (p === 'z-index' && v !== '') {
