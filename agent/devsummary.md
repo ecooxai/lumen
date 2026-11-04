@@ -596,3 +596,14 @@ Source freeze explicitly released before this change. Applied exact reviewed03dr
 Transition uses existing native time/easing/property grammars and preserves pending values.
 No native animation timing or longhand expansion change. Independent frozen136WPT and
 extra controls pending; sample compatibility score remains last-qualified60.82/100.
+
+
+## Session19 iteration03 — MutationObserver semantics pending gates
+
+Agent:source_steward. Implementation write start:2026-11-04T07:00:23.964852+00:00;end:2026-11-04T07:00:23.966396+00:00.
+Prior read-only inspection and normative review overlapped independent1902build.
+Corrected observer-specific oldValue aggregation, queueing only for actual records or
+transient cleanup, and original-source identity/deduplication for nested transient nodes.
+Only01-events.jsnotify()changed; delivery/parser/realm code retained. Fresh23URLbaseline
+was13/23and158/174with allharnessOK(27.15s). Independent candidate tests pending; no gain
+claimed. Sample compatibility score remains last-qualified60.82/100, not overallquality.

@@ -353,27 +353,38 @@ function notify(type, target, extra) {
     if (type === 'attributes' && extra.attributeName === 'commandfor') commandTargets.delete(target);
     if (type !== 'characterData') slotMutated(type, target, extra);
     if (!observers.length) return;
-    /* nodes removed from an observed subtree stay observed, through transient registrations, until the observers
-       are next notified */
+    let needsDelivery = false;
+    /* Nodes removed from an observed subtree stay observed until notification.
+       Every transient points to the original registration, including removals
+       inside an already-removed subtree, so observe() can discard all of them. */
     if (type === 'childList' && extra.removedNodes && extra.removedNodes.length) {
         for (const mo of observers) for (const reg of mo._targets.slice()) {
             if (!reg.o.subtree || !(reg.t === target || N.contains(reg.t, target))) continue;
-            for (const n of extra.removedNodes) apush(mo._targets, { t: n, o: reg.o, source: reg });
+            const source = reg.source || reg;
+            for (const n of extra.removedNodes) {
+                if (mo._targets.some(x => x.t === n && x.source === source)) continue;
+                apush(mo._targets, { t: n, o: source.o, source });
+                needsDelivery = true; // Cleanup is required even without a record.
+            }
         }
     }
     for (const mo of observers) {
+        let interested = false, keepOld = false;
         for (const { t, o } of mo._targets) {
             if (!(t === target || (o.subtree && N.contains(t, target)))) continue;
             if (type === 'childList' && !o.childList) continue;
             if (type === 'attributes' && (!o.attributes || (o.attributeFilter && (extra.attributeNamespace != null || !o.attributeFilter.includes(extra.attributeName))))) continue;
             if (type === 'characterData' && !o.characterData) continue;
-            const keepOld = (type === 'attributes' && o.attributeOldValue) || (type === 'characterData' && o.characterDataOldValue);
+            interested = true;
+            keepOld ||= (type === 'attributes' && o.attributeOldValue) || (type === 'characterData' && o.characterDataOldValue);
+        }
+        if (interested) {
+            // One record per observer; any matching registration can request oldValue.
             const rec = new MutationRecord(MR_KEY, Object.assign({ type, target }, extra, keepOld ? {} : { oldValue: null }));
-            apush(mo._records, rec);
-            break;
+            apush(mo._records, rec); needsDelivery = true;
         }
     }
-    if (!moQueued) { moQueued = true; Promise.resolve().then(deliverMutations); }
+    if (needsDelivery && !moQueued) { moQueued = true; Promise.resolve().then(deliverMutations); }
 }
 function deliverMutations() {
     moQueued = false;
