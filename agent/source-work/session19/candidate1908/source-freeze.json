@@ -1,9 +1,9 @@
 {
   "candidate": 1908,
-  "frozen_utc": "2026-11-04T08:41:09.867646+00:00",
-  "production_commit": "9edb8697410f1ce0695b0f33d3987a6a18283901",
-  "source_tree": "1b3e105bf1d54e03ffd45fa612e83c23dcbf1e1a",
-  "scope": "five bounded DOM corrections and range core/direct longhand validation; phase tracing unchanged; no CPU profiler",
+  "frozen_utc": "2026-11-04T08:41:49.927197+00:00",
+  "production_commit": "f4d36e00a9e006a3b93385f8e99b5cb869fda2ac",
+  "source_tree": "487bed118fb7920b8872bd038b575364165f61ad",
+  "scope": "six bounded DOM/frame corrections and range core/direct longhand validation; phase tracing unchanged; no CPU profiler",
   "pending_gates": [
     "build/startup",
     "native218 exact HEAD",

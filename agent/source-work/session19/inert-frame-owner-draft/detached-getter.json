@@ -1,0 +1,11 @@
+{
+  "start_utc": "2026-11-04T08:41:49.867487+00:00",
+  "end_utc": "2026-11-04T08:41:49.927197+00:00",
+  "source_mutation_commit_seconds": 0.05969989800360054,
+  "commit": "f4d36e00a9e006a3b93385f8e99b5cb869fda2ac",
+  "patch_sha256": "a1bdf57014c77e3e590a0120aa4c68dd22c12776eb1c3adc4858bc8ff05b9f50",
+  "scope": "getter-only connected/current-document guard; retirement and pending-load ordering unchanged",
+  "evidence": "preregistered inert9 control fails on1906 and passes in pinned Chromium",
+  "qualification": "pending candidate1908 gates",
+  "no_namespace_timeout_fix_claim": true
+}

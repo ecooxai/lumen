@@ -767,3 +767,7 @@ Start 2026-11-04T08:40:00.053338+00:00; end 2026-11-04T08:40:00.158262+00:00; me
 ### Candidate1908 functional freeze
 
 The five DOM changes and two range changes remain independently reviewable commits. Frozen DOM48 fresh baseline36/48 URLs,1984/2009 assertions; MutationObserver23 baseline16/23,163/174. Independent DOM26/inert9 controls exposed pre-existing detached-frame getter behavior that remains outside this batch. Test owner will qualify the cumulative native218 gate under the exact clean HEAD, plus frozen DOM/frame/range neighbors and independent controls. No CPU profiler instrumentation is included in this functional batch. All tracked source/Git/status writes must remain frozen through build and native218 release.
+
+### Iteration18 — detached iframe content getters
+
+Start 2026-11-04T08:41:49.867487+00:00; end 2026-11-04T08:41:49.927197+00:00; measured source mutation/commit interval 0.059700s (not model compute time). Root approved this separately demonstrated gap from the already frozen inert9 controls before candidate1908 reservation. Commit f4d36e00a9e006a3b93385f8e99b5cb869fda2ac makes only contentWindow/contentDocument getter lookup require connected/current-document ownership; child retirement and response completion ordering remain unchanged. This supersedes the preceding provisional note that detached getter behavior was outside the batch. Qualification pending, no namespace timeout fix claim; score remains61.858974/100 from accepted1906 selected1248 full run.
