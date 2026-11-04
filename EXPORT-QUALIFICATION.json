@@ -1,40 +1,38 @@
 {
-  "candidate": 1915,
-  "status": "INDEPENDENTLY REVIEWED COMPLETE SELECTED1248 DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
-  "tested_source_commit": "b63df22ad8b67399a416ac0bc16c6d21613d23aa",
-  "tested_binary_sha256": "71478e23bcfffeead3cbe0edc694a02bfae2b8ce78321f27212a5a656ef9c908",
-  "source_manifest_digest": "21617bb5f93a800f0835b767d092e12a00557284f9a88c6cd8fcf5aeebcdf3be",
-  "public_parent": "9d3882d753faa45fc5c52f9e9748b9f7cdaaf7e4",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1915-20261104",
+  "candidate": 2002,
+  "status": "REVIEWED COMPLETE SELECTED1248 DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
+  "tested_source_commit": "32e13542be0b4eacb801d878231e3e6f51461b40",
+  "tested_binary_sha256": "784c05511d267fa7dc449d0aa0be4f1d5159168ddaf5af1a5abe1ff33e77185c",
+  "source_manifest_digest": "6887ef2d592073540a54a3d2a8ca4a6bd386a8c9bcb8d5b00a345c5a1f6a11dc",
+  "public_parent": "80fdbe8ccf9c38325c3f0ab16fd75cbc192402c1",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2002-20261104",
   "all_recorded_inputs_exact": true,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
   "private_history_included": false,
   "publication_performed": false,
   "validation_summary": {
-    "qualification": "Qualified complete unchanged selected1248-URL development checkpoint, sealed before prospective12:24UTC release cutoff; not all upstream WPT or a device delivery claim",
+    "qualification": "Accepted unchanged selected1248 development checkpoint; runtime1915 retained during authentication investigation, no2002 device delivery claimed",
     "selected_urls": {
-      "lumen_passed": 796,
+      "lumen_passed": 800,
       "total": 1248,
-      "baseline1808_passed": 759,
-      "previous1908_passed": 781,
-      "pass_percent": 63.78205128205128
+      "previous1915_passed": 796,
+      "pass_percent": 64.1025641025641
     },
     "selected_assertions": {
-      "lumen_passed": 23158,
+      "lumen_passed": 23168,
       "total": 26245,
-      "baseline1808_passed": 22826,
-      "previous1908_passed": 23103,
-      "pass_percent": 88.23775957325205
+      "previous1915_passed": 23158,
+      "pass_percent": 88.27586206896552
     },
-    "new_passing_urls": 37,
-    "new_assertion_passes": 332,
-    "new_passing_urls_vs1908": 15,
-    "new_assertion_passes_vs1908": 55,
+    "new_passing_urls_vs1915": 4,
+    "new_assertion_passes_vs1915": 10,
     "lost_preregistered_pass_identities": 0,
     "lost_required_fully_passing_urls": 0,
     "harness_regressions": 0,
-    "required_and_retained_passing_assertions": 23158,
+    "registered_identities_and_per_url_counts_unchanged": true,
+    "required_and_retained_previous_passing_assertions": 23158,
+    "next_required_passing_assertions": 23168,
     "harness_statuses": {
       "OK": 1238,
       "ERROR": 1,
@@ -42,20 +40,17 @@
     },
     "all_case_process_exits_zero": true,
     "cleanup_complete": true,
-    "full_wrapper_seconds": 1038.2596521700034,
-    "full_cohort_seconds": 1036.7155272910022,
-    "full_started_utc": "2026-11-04T12:06:39.724949+00:00",
-    "full_finished_utc": "2026-11-04T12:23:56.498634+00:00",
-    "acceptance_sealed_utc": "2026-11-04T12:23:57.325150+00:00",
-    "release_selected_utc": "2026-11-04T12:23:57.845724+00:00",
+    "full_wrapper_seconds": 1261.257116637018,
+    "full_cohort_seconds": 1259.1848573180032,
+    "full_started_utc": "2026-11-04T13:28:18.233243+00:00",
+    "full_finished_utc": "2026-11-04T13:49:17.470781+00:00",
     "full1248_replay_performed": true,
     "source_and_binary_identity_valid": true,
-    "raw_results_sha256": "cade2135be49d4852bbf4737a223c3e9f22e8d3814c0fa4eb419a23abcda53b6",
-    "runtime_receipt_sha256": "0adc30ec268702474d99a6f8928d5b62c90c864b8cf7bb53d8ec0d7dea1d76c1",
-    "prior_union_acceptance_sha256": "70d3d7b134696c128292ba7a6e9571c7a3d507e2ddd28b442f082f38a6fcb204",
-    "comparison_audit_sha256": "922c7b195d3de997d8fd39878a988c1adb43ff2a757c000f2a0f04401e6c3438",
-    "full_plan_sha256": "66fad801012f576567ca6218392ad7170f629c0070e66e49525de29b2abc81fd",
-    "prior_union_registry_sha256": "43f42cd8c39fb30cf7ac9a6b6f685607303bed935670c69c575a4ef68a66b9a0",
+    "raw_results_sha256": "19a5a6dda7a014fd78268000b6c52a88c83a022d7f3970a6c3814dd04817d460",
+    "runtime_receipt_sha256": "e706571ca406415ece0dfef82928db1271cd65e2abe53a19a3e9bbac006cc081",
+    "independent_retention_audit_sha256": "199354ccaa7748c1a272849aaec9b204eafa8c4fada833ed8cdc792311877c14",
+    "registered_count_audit_sha256": "1b11938b01a60b658ae4306d505f9db95c25dcd14f063d09c220854d9e4014a8",
+    "next_prior_union_registry_sha256": "130f2a83b74fbc5aa1d7817a219e6c2a67bbd4a611b8314c46c373acdfbd5cba",
     "historical_pinned_reference": {
       "version": "150.0.7871.114",
       "passed_urls": 1062,
@@ -66,76 +61,65 @@
     },
     "paired_common_assertions": {
       "common_exact_identities": 26004,
-      "both_pass": 22368,
-      "reference_only_pass": 2113,
+      "both_pass": 22378,
+      "reference_only_pass": 2103,
       "native_only_pass": 587,
       "neither_pass": 936,
       "native_only_registered_identities": 241,
-      "reference_only_registered_identities": 60
+      "reference_only_registered_identities": 60,
+      "reference_results_sha256": "6a90e473d2641b825e68dd450562dd038f6206291e60ca752a691badc4cb4e9e"
     },
     "build_and_startup_passed": true,
     "native_coverage": {
-      "fresh1915_native_run": false,
-      "actual_candidate": 1913,
+      "fresh_candidate2002_native_run": true,
+      "actual_candidate": 2002,
       "accepted_native_contracts": 218,
-      "native_sources_unchanged_through1915": true,
-      "changed_source_paths_since1913": [
-        "src/js/prelude/03-element.js",
-        "src/js/prelude/06b-activate.js"
-      ],
-      "report_path": "agent/validation/linux-wpt-20261101-session15/session19-candidate1913-native-actual/report.json",
-      "report_sha256": "1b4f358018800f43142c0b7f090eac0e715cdf521244d116874e35d9923d863a",
-      "omission_approved_before_outcomes": true
+      "report_sha256": "31d51b50317a2ade54673c313f6c9760f8abf0829d8b5d245d4dd12347246433"
     },
     "one_second_resource_samples": {
-      "cpu_pct": {
-        "samples": 1037,
-        "median": 100.025,
-        "sampled_max": 229.001,
-        "unit": "percent;100 equals oneCPU core"
-      },
-      "rss_mb": {
-        "samples": 1038,
-        "median": 339.81050000000005,
-        "sampled_max": 633.528,
-        "unit": "decimalMB; monitored RSS bytes divided by1e6"
-      },
-      "host_cpu_pct": {
-        "samples": 1037,
-        "median": 90.372,
-        "sampled_max": 99.554,
-        "unit": "percent of whole host"
-      }
+      "samples": 1261,
+      "cpu_median_one_core_equals100_pct": 69.001,
+      "cpu_sampled_max_pct": 249.999,
+      "rss_peak_decimal_mb": 615.023,
+      "pss_peak_decimal_mb": 317.075,
+      "shared_cgroup_weighted_cpu_pct": 87.06,
+      "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
     },
-    "namespace_reliability": "Original full namespace outcomeOK51/51 in10.0426s. Earlier intermittent failures and HOLDs retained; no source-level reliability fix claimed.",
-    "independent73": {
-      "passed": 73,
-      "total": 73,
-      "prior_pass_losses": 0,
-      "reference_passed": 70,
-      "reference_disagreements_preserved": true
+    "focused_upstream": {
+      "urls_passed": 17,
+      "urls_total": 18,
+      "assertions_passed": 92,
+      "assertions_total": 94,
+      "prior_pass_losses": 0
     },
-    "known_independent_control_limitations": [
-      "Static important repair preserves the old animated declaration path; retained all-opacity-reset and hidden-input UA-priority controls remain.",
-      "Current-draft/pinned-WPT literal-zero and explicitly disputed authored/reference cases remain documented.",
-      "Real X/Google authenticated return error and authenticated scrolling performance were not resolved by account-free messaging diagnostics."
-    ],
-    "resource_monitor_source_sha256": "57c216199f5a685f4d6a730bb0c53c92f004bb04b8f1f2d437505281e84e5a8c"
+    "independent32": {
+      "candidate_passed": 32,
+      "baseline1915_passed": 4,
+      "pinned_chromium_passed": 18,
+      "total": 32,
+      "reference_disagreements": 14,
+      "reference_disagreements_preserved": true,
+      "scope": "Authored computed-list/ingress controls; distinct from full WPT and parity claims"
+    },
+    "overall_assessment": 64,
+    "goal95_achieved": false
   },
   "limitations": [
-    "Exactly1248 selected default-timeout HTTP testharness URLs in10 DOM/CSS families from1247 files; not all upstream WPT.",
-    "796/1248=63.78% is selected-test coverage, not95 product quality, rendering coverage, Android WPT parity or Chromium parity.",
-    "One harnessERROR and nineTIMEOUTs remain; original1911/1912/1913/1914 HOLDs are preserved without rescue or erasure.",
-    "PinnedChromium150 full reference is historical and has a different assertion registration denominator; use exact common identities for paired assertion comparison.",
-    "Diagnostic lifecycle/phase/sampling code is default-off; rejected shape batching was reverted.",
-    "No real authenticated X/Google login fix or scrolling optimization is claimed.",
-    "Device installation/start and media delivery require separate environment receipts.",
-    "Public export excludes private task history, profiles, credentials, messages and guarded validation machinery; source restoration is not an independent rebuild."
+    "Selected1248 HTTP/default-timeout DOM/CSS testharness URLs only; not all upstream WPT, visual/reftest/manual/network coverage, Android WPT parity or Chromium parity.",
+    "One harnessERROR and nineTIMEOUTs remain; historical original HOLDs and namespace reliability limitations are retained.",
+    "PinnedChromium150 full reference is historical and has a different assertion registration denominator; paired counts use exact common identities.",
+    "Fourteen authored32 reference disagreements concern computed list behavior; retained expectations and failures are disclosed, not treated as Chromium parity.",
+    "Background attachment/origin/repeat grammar was repaired; complete multi-layer background painting is not claimed.",
+    "No authenticated X/Google sign-in fix or scrolling optimization is claimed.",
+    "Display0 and connected Android remain on previous1915 during auth diagnostics; accepted2002 source is not a new runtime/device installation claim.",
+    "Public export excludes private task history, profiles, credentials, messages, authentication assets and guarded validation machinery.",
+    "Source archive/offline Git recovery does not constitute an independent rebuild; external dependencies are not bundled."
   ],
-  "independent_review": {
-    "agent": "test_baseline",
-    "review_receipt_sha256": "0acc30085f6c4152d7b4ae282a667a9c5c71e5061981f468cdb285cb4e66bf52",
-    "preparation_receipt_sha256": "12a21b59d8bec4218ba05c5146fe9458dc5475a7698f1d72086b1c03e3a492f3",
+  "public_inventory_review": {
+    "agent": "project_steward",
+    "review_kind": "mechanical exact-inventory audit following root publication authorization",
+    "review_receipt_sha256": "cc9fe20d7bf4d8b5fab74d2b9dc469717be624140e7079943bbed385ff001f1e",
+    "preparation_receipt_sha256": "6f19abe71831956597af7e2b10199d2aa481c2703e3f5e5650faecf8233cde82",
     "all843_public_inventory_hashes_verified": true,
     "all743_recorded_inputs_verified_against_tested_source": true,
     "private_history_excluded": true

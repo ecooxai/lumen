@@ -221,7 +221,7 @@ function cssTransitionSet(map, value, priority, cascade = false) {
     return true;
 }
 
-const CSS_IMAGE_LONGHAND = /^(background-clip|border-image-repeat|border-image-slice)$/;
+const CSS_IMAGE_LONGHAND = /^(background-(?:clip|attachment|origin|repeat)|border-image-repeat|border-image-slice)$/;
 function cssImageLonghandSet(map, property, value, priority, cascade = false) {
     if (value === '') { if (cascade) return false; map.delete(property); return true; }
     if (priority && !/^important$/i.test(priority)) return false;

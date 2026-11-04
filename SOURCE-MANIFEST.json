@@ -1,12 +1,12 @@
 {
-  "candidate": 1915,
-  "tested_source_commit": "b63df22ad8b67399a416ac0bc16c6d21613d23aa",
-  "tested_binary_sha256": "71478e23bcfffeead3cbe0edc694a02bfae2b8ce78321f27212a5a656ef9c908",
-  "recorded_input_digest": "21617bb5f93a800f0835b767d092e12a00557284f9a88c6cd8fcf5aeebcdf3be",
+  "candidate": 2002,
+  "tested_source_commit": "32e13542be0b4eacb801d878231e3e6f51461b40",
+  "tested_binary_sha256": "784c05511d267fa7dc449d0aa0be4f1d5159168ddaf5af1a5abe1ff33e77185c",
+  "recorded_input_digest": "6887ef2d592073540a54a3d2a8ca4a6bd386a8c9bcb8d5b00a345c5a1f6a11dc",
   "recorded_input_count": 743,
-  "source_manifest_file_sha256": "80c5a5472d2e791b434ad1785eb0e0e3c3edd4e86efd6a48c69be8cc7b07e7ec",
-  "public_parent": "9d3882d753faa45fc5c52f9e9748b9f7cdaaf7e4",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1915-20261104",
+  "source_manifest_file_sha256": "048ee86c4c42764ca7c6c39244acfc41195d99e11e824a5e4b05637c62a740fe",
+  "public_parent": "80fdbe8ccf9c38325c3f0ab16fd75cbc192402c1",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2002-20261104",
   "recorded_inputs": {
     "CMakeLists.txt": {
       "sha256": "39135ade2090484ca003089b98004a8e28ed3aad5bc244c0921df7cc8798190b",
@@ -233,7 +233,7 @@
       "mode": "100644"
     },
     "src/css/style.c": {
-      "sha256": "8a9bef421048d94d850c59d2ee0d2179ada6ee099d172c99098d0ed8ad743f4a",
+      "sha256": "e3c374da54deb1c25736ecc09a88f2d0bf59434af6e524384e0ac6b02e084cfe",
       "mode": "100644"
     },
     "src/css/ua.c": {
@@ -369,7 +369,7 @@
       "mode": "100644"
     },
     "src/js/prelude/03-element.js": {
-      "sha256": "2a8d5f52f8fd6a2bd6696ce0ada872085958c5dad09162f85d64585d6135ddbb",
+      "sha256": "18f9d0f031cc848c1cba0eba4e69866147585e96611faab942efa4f3b37ee5bb",
       "mode": "100644"
     },
     "src/js/prelude/03c-svg.js": {
