@@ -4855,9 +4855,15 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     }
     if (animation_range_kind(P)) {
         int kind = animation_range_kind(P);
-        /* Unlike font-size itself, ordinary root lengths use the root's final
-         * computed font size for rem. Share this basis with unresolved math. */
-        if (e && e->doc && el == e->doc->html) c.rem = st->font_size;
+        /* Unlike font-size itself, root lengths use the root's final font.
+         * A root pseudo's parent is its originating root style; its own font
+         * is only the em basis. Share the corrected rem basis with math. */
+        if (e && e->doc && el == e->doc->html) {
+            const VarResolver *range_resolver = active_var_resolver;
+            bool root_pseudo = range_resolver && range_resolver->is_pseudo &&
+                (range_resolver->style == st || range_resolver->projection_style == st);
+            c.rem = root_pseudo && par ? par->font_size : st->font_size;
+        }
         if (inherit || initial || unset) {
             if (inherit) st->parent_sensitive = true;
             if (kind != 3) {
