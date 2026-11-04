@@ -657,7 +657,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
         if (ch == '*') {
             p->i++; s.kind = SK_UNIVERSAL;
             if (p->i < p->n && p->s[p->i] == '|' && (p->i + 1 >= p->n || p->s[p->i + 1] != '=')) {   /* *|* or *|name: any namespace */
-                p->i++;
+                p->i++; s.raw = atom("*");
                 if (p->i < p->n && p->s[p->i] == '*') p->i++;
                 else { char *t = sp_ident(p); if (!t) goto fail; s.kind = SK_TYPE; s.name = atom(t); s.value = (char *)atom_lower(t, strlen(t)); s.op = 1; free(t); }
             }
@@ -745,7 +745,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
         else if (name_start((unsigned char)ch) || ch == '\\' || (ch == '-' )) {
             char *t = sp_ident(p); if (!t) goto fail;
             if (p->i < p->n && p->s[p->i] == '|' && p->query && (p->i + 1 >= p->n || p->s[p->i + 1] != '=')) { free(t); goto fail; }   /* no @namespace prefixes here */
-            if (p->i < p->n && p->s[p->i] == '|') { p->i++; free(t); if (p->i < p->n && p->s[p->i] == '*') { p->i++; s.kind = SK_UNIVERSAL; vec_push(v, s); any = true; continue; } t = sp_ident(p); if (!t) goto fail; }
+            if (p->i < p->n && p->s[p->i] == '|') { p->i++; s.raw = atom(t); free(t); if (p->i < p->n && p->s[p->i] == '*') { p->i++; s.kind = SK_UNIVERSAL; vec_push(v, s); any = true; continue; } t = sp_ident(p); if (!t) goto fail; }
             s.kind = SK_TYPE; s.name = atom(t); s.value = (char *)atom_lower(t, strlen(t)); free(t);
             s.op = 1; /* marks value as atom (not owned) */
         }
@@ -1659,13 +1659,34 @@ static void ser_string(SB *b, const char *s) {
     }
     sb_putc(b, '"');
 }
-static void ser_list(SB *b, const SelList *l);
+typedef struct SelectorSerialization {
+    const CssNamespace *namespaces;
+    int count;
+    const char *default_uri;
+} SelectorSerialization;
+/* Prefix metadata is distinct from the matcher's namespace flag. Keeping it
+ * in the existing atom slot preserves the parsed selector layout and matching
+ * behavior while CSSOM retains the author's namespace constraints. */
+static bool ser_type_namespace(SB *b, const SimpleSel *s, const SelectorSerialization *ctx) {
+    if (s->nsk == 1) { sb_putc(b, '|'); return true; }
+    if (!s->raw) return false;
+    if (!strcmp(s->raw, "*")) {
+        if (!ctx->default_uri) return false;
+        sb_puts(b, "*|"); return true;
+    }
+    const char *uri = NULL;
+    for (int i = 0; i < ctx->count; i++) if (!strcmp(ctx->namespaces[i].prefix, s->raw)) uri = ctx->namespaces[i].uri;
+    if (uri && !*uri) { sb_putc(b, '|'); return true; }
+    if (uri && ctx->default_uri && !strcmp(uri, ctx->default_uri)) return false;
+    ser_ident(b, s->raw); sb_putc(b, '|'); return true;
+}
+static void ser_list(SB *b, const SelList *l, const SelectorSerialization *ctx);
 static void ser_anb(SB *b, int a, int bb) {
     if (!a) { sb_printf(b, "%d", bb); return; }
     if (a == 1) sb_puts(b, "n"); else if (a == -1) sb_puts(b, "-n"); else sb_printf(b, "%dn", a);
     if (bb > 0) sb_printf(b, "+%d", bb); else if (bb < 0) sb_printf(b, "%d", bb);
 }
-static void ser_selector(SB *b, const Selector *s) {
+static void ser_selector(SB *b, const Selector *s, const SelectorSerialization *ctx) {
     static const char *combs[] = { "", " ", " > ", " + ", " ~ " };
     bool first = true;
     for (int i = 0; i < s->n; i++) {
@@ -1676,8 +1697,8 @@ static void ser_selector(SB *b, const Selector *s) {
         for (int j = 0; j < c->n; j++) {
             const SimpleSel *x = &c->s[j];
             switch (x->kind) {
-            case SK_UNIVERSAL: if (c->n == 1) sb_putc(b, '*'); break;
-            case SK_TYPE: ser_ident(b, x->name); break;
+            case SK_UNIVERSAL: if (ser_type_namespace(b, x, ctx) || c->n == 1) sb_putc(b, '*'); break;
+            case SK_TYPE: ser_type_namespace(b, x, ctx); ser_ident(b, x->name); break;
             case SK_ID: sb_putc(b, '#'); ser_ident(b, x->name); break;
             case SK_CLASS: sb_putc(b, '.'); ser_ident(b, x->name); break;
             case SK_ATTR:
@@ -1686,18 +1707,21 @@ static void ser_selector(SB *b, const Selector *s) {
                 sb_putc(b, ']'); break;
             case SK_PSEUDO: case SK_PSEUDO_EL:
                 sb_puts(b, x->kind == SK_PSEUDO_EL ? "::" : ":"); ser_ident(b, x->name);
-                if (str_starts(x->name, "nth-")) { sb_putc(b, '('); ser_anb(b, x->a, x->b); if (x->sub && x->sub->n) { sb_puts(b, " of "); ser_list(b, x->sub); } sb_putc(b, ')'); }
-                else if (x->sub) { sb_putc(b, '('); ser_list(b, x->sub); sb_putc(b, ')'); }
+                if (str_starts(x->name, "nth-")) { sb_putc(b, '('); ser_anb(b, x->a, x->b); if (x->sub && x->sub->n) { sb_puts(b, " of "); ser_list(b, x->sub, ctx); } sb_putc(b, ')'); }
+                else if (x->sub) { sb_putc(b, '('); ser_list(b, x->sub, ctx); sb_putc(b, ')'); }
                 else if (x->value) { sb_putc(b, '('); sb_puts(b, x->value); sb_putc(b, ')'); }
                 break;
             }
         }
     }
 }
-static void ser_list(SB *b, const SelList *l) { for (int i = 0; i < l->n; i++) { if (i) sb_puts(b, ", "); ser_selector(b, &l->v[i]); } }
-char *css_selector_text(const char *src) {
+static void ser_list(SB *b, const SelList *l, const SelectorSerialization *ctx) { for (int i = 0; i < l->n; i++) { if (i) sb_puts(b, ", "); ser_selector(b, &l->v[i], ctx); } }
+char *css_selector_text_ns(const char *src, const CssNamespace *namespaces, int count) {
     SelList l = {0};
     if (!css_parse_selector_list(src, &l) || !l.n) { css_sellist_free(&l); return NULL; }
-    SB b; sb_init(&b); ser_list(&b, &l); css_sellist_free(&l);
+    SelectorSerialization ctx = { namespaces, count, NULL };
+    for (int i = 0; i < count; i++) if (!*namespaces[i].prefix) ctx.default_uri = namespaces[i].uri;
+    SB b; sb_init(&b); ser_list(&b, &l, &ctx); css_sellist_free(&l);
     return b.s ? b.s : xstrdup("");
 }
+char *css_selector_text(const char *src) { return css_selector_text_ns(src, NULL, 0); }

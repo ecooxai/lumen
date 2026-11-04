@@ -1467,7 +1467,27 @@ FN(runWritten) { CTX; js_run_written_inline(c); }
 FN(hidden) { CTX; RET(v8::Boolean::New(iso, c->bg)); }
 FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
 FN(mediaValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_media_valid(q.c_str()))); }
-FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
+FN(cssSelText) {
+    CTX; std::string q = S(0);
+    std::vector<std::string> values;
+    if (a.Length() > 1 && a[1]->IsArray()) {
+        auto pairs = a[1].As<v8::Array>();
+        const uint32_t length = pairs->Length();
+        if (length % 2) { RET(v8::Null(iso)); return; }
+        values.reserve(length);
+        for (uint32_t i = 0; i < length; i++) {
+            v8::Local<v8::Value> value;
+            if (!pairs->Get(ctx, i).ToLocal(&value)) return;
+            if (!value->IsString()) { RET(v8::Null(iso)); return; }
+            values.push_back(jcstr(iso, value));
+        }
+    }
+    std::vector<CssNamespace> namespaces;
+    namespaces.reserve(values.size() / 2);
+    for (size_t i = 0; i < values.size(); i += 2) namespaces.push_back({values[i].c_str(), values[i + 1].c_str()});
+    char *r = css_selector_text_ns(q.c_str(), namespaces.data(), (int)namespaces.size());
+    RET(nstr(iso, r)); free(r);
+}
 FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
 extern "C" bool css_var_syntax_valid(const char *value);
 extern "C" bool css_universal_initial_valid(const char *value, size_t length);

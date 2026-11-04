@@ -301,7 +301,7 @@ typedef struct SimpleSel {
     uint8_t kind, op, ci; /* attr op: 0 exists, '=', '~', '|', '^', '$', '*' */
     uint8_t nsk;          /* type/universal: 1 = elements in no namespace (|name); attr: 1 = [|name], 2 = any namespace [*|name] */
     const char *name;     /* atom: tag/id/class/attr/pseudo */
-    const char *raw;      /* attr: the name as written (atom), matched case-sensitively outside HTML elements in HTML documents */
+    const char *raw;      /* atom: attr name as written; type/universal explicit namespace prefix (NULL when omitted) */
     char *value;
     int a, b;             /* nth */
     SelList *sub;         /* :not/:is/:where/:has/nth-of */
@@ -468,6 +468,8 @@ bool css_parse_query_selector_list(const char *src, SelList *out);   /* querySel
 bool css_supports_selector(const char *src);   /* one complex selector, recursively supported */
 void css_sellist_free(SelList *l);
 char *css_selector_text(const char *src); /* canonical CSSOM serialization; NULL if invalid */
+typedef struct CssNamespace { const char *prefix, *uri; } CssNamespace;
+char *css_selector_text_ns(const char *src, const CssNamespace *namespaces, int count);
 /* Syntax only: matching always observes live DOM/state. Caller frees scratch. */
 const SelList *css_query_syntax(Document *d, const char *text, SelList *scratch);
 extern uint64_t css_has_stats[2];

@@ -200,12 +200,30 @@ function cssSplit(s, rawPrelude = false) {
     if (pre.trim()[0] === '@') out.push({ pre: pre.trim(), body: null });
     return out;
 }
-/* Only ownership lives here; rule contents and list objects are retained. */
+/* Private ownership and parsed namespace metadata; public rule/list objects remain live. */
 const cssOwners = new WeakMap();
 const cssOwnerGet = Function.prototype.call.bind(WeakMap.prototype.get, cssOwners);
 const cssOwnerSet = Function.prototype.call.bind(WeakMap.prototype.set, cssOwners);
 const cssListDefine = Object.defineProperty;
 const cssListOwn = Object.getOwnPropertyDescriptor;
+/* Namespace context is private parsed metadata. Do not rebuild it from author
+ * overridable CSSNamespaceRule accessors or an exposed rule-list iterator. */
+function cssNamespaceAdd(pairs, prefix, uri) {
+    let i = 0;
+    while (i < pairs.length && pairs[i] !== prefix) i += 2;
+    cssListDefine(pairs, i, { value: prefix, writable: true, enumerable: true, configurable: true });
+    cssListDefine(pairs, i + 1, { value: uri, writable: true, enumerable: true, configurable: true });
+}
+function cssSheetNamespaces(sheet) { return sheet ? cssOwnerGet(sheet).namespaces || [] : []; }
+function cssRefreshNamespaces(sheet, list) {
+    if (!sheet) return;
+    const pairs = [];
+    for (let i = 0; i < list.length; i++) {
+        const own = cssListOwn(list, i), data = own && cssOwnerGet(own.value);
+        if (data && data.namespace) cssNamespaceAdd(pairs, data.namespace[0], data.namespace[1]);
+    }
+    cssOwnerGet(sheet).namespaces = pairs;
+}
 function cssRuleSheet(rule) {
     let d = cssOwnerGet(rule);
     while (d.parent) d = cssOwnerGet(d.parent);
@@ -642,7 +660,7 @@ cssMediaRuleChanged = Function.prototype.call.bind(CSSRule.prototype._changed);
 class CSSStyleRule extends CSSRule {
     get type() { return 1; }
     get selectorText() { return this._sel; }
-    set selectorText(v) { const s = N.cssSelText(String(v)); if (s != null) { this._sel = s; this._changed(); } }
+    set selectorText(v) { const s = N.cssSelText(String(v), cssSheetNamespaces(cssRuleSheet(this))); if (s != null) { this._sel = s; this._changed(); } }
     get style() { return ruleStyle(this); } set style(v) { this.style.cssText = v; }
     get cssText() { return this._text || (this._text = `${this._sel} ${blockText(this)}`); }
 }
@@ -917,11 +935,11 @@ function cssMkKeyframe(it, sheet, parent) {
     const rule = cssMk(CSSKeyframeRule, { _body: it.body, _style: null, _sheet: sheet, _parent: parent });
     cssKeyframeSet(rule, key); return rule;
 }
-function cssMkRule(it, sheet, parent) {
+function cssMkRule(it, sheet, parent, namespaces = cssSheetNamespaces(sheet)) {
     const p = it.pre, base = { _sheet: sheet, _parent: parent };
     if (p[0] !== '@') {
         if (it.body == null) return null;
-        const st = N.cssSelText(p); if (st == null) return null;
+        const st = N.cssSelText(p, namespaces); if (st == null) return null;
         return cssMk(CSSStyleRule, { ...base, _sel: st, _body: it.body, _style: null });
     }
     const m = /^@([-\w]+)\s*([\s\S]*)$/.exec(p); if (!m) return null;
@@ -935,7 +953,13 @@ function cssMkRule(it, sheet, parent) {
         const u = /^(?:url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*?))\s*\)|"([^"]*)"|'([^']*)')\s*([\s\S]*)$/.exec(rest); if (!u) return null;
         r = cssMk(CSSImportRule, { ...base, _href: u[1] ?? u[2] ?? u[3] ?? u[4] ?? u[5], _media: null }); r._media = cssCreateMediaList(u[6] || '', r); return r;
     }
-    else if (kw === 'namespace' && !blk) { const q = /^(?:([-\w]+)\s+)?(?:url\(\s*["']?([^"')]*)["']?\s*\)|"([^"]*)"|'([^']*)')$/.exec(rest); if (!q) return null; return cssMk(CSSNamespaceRule, { ...base, _prefix: q[1] || '', _ns: q[2] ?? q[3] ?? q[4] }); }
+    else if (kw === 'namespace' && !blk) {
+        const q = /^(?:([-\w]+)\s+)?(?:url\(\s*["']?([^"')]*)["']?\s*\)|"([^"]*)"|'([^']*)')$/.exec(rest); if (!q) return null;
+        const prefix = q[1] || '', uri = q[2] ?? q[3] ?? q[4];
+        const rule = cssMk(CSSNamespaceRule, { ...base, _prefix: prefix, _ns: uri });
+        cssOwnerGet(rule).namespace = [prefix, uri];
+        return rule;
+    }
     else if (kw === 'font-face' && blk) return cssMk(CSSFontFaceRule, { ...base, _body: it.body, _style: null });
     else if (kw === 'property' && blk) return cssMkPropertyRule(m[2], it.body, base);
     else if (kw === 'position-try' && blk && /^--\S+$/.test(rest)) return cssMk(CSSPositionTryRule, { ...base, _name: rest, _body: it.body, _style: null });
@@ -946,16 +970,29 @@ function cssMkRule(it, sheet, parent) {
     }
     else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { r = cssMk(CSSKeyframesRule, { ...base, _name: rest, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body, true)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
     else return null;
-    def(r, '_list', cssParseList(it.body, sheet, r));
+    def(r, '_list', cssParseList(it.body, sheet, r, namespaces));
     return r;
 }
-function cssParseList(src, sheet, parent) { const l = new CSSRuleList(); for (const it of cssSplit(src)) { const r = cssMkRule(it, sheet, parent); if (r) l.push(r); } return l; }
+function cssParseList(src, sheet, parent, namespaces = []) {
+    const list = new CSSRuleList();
+    for (const it of cssSplit(src)) {
+        const rule = cssMkRule(it, sheet, parent, namespaces);
+        if (!rule) continue;
+        list.push(rule);
+        const ns = !parent && cssOwnerGet(rule).namespace;
+        if (ns) cssNamespaceAdd(namespaces, ns[0], ns[1]);
+    }
+    if (!parent && sheet) cssOwnerGet(sheet).namespaces = namespaces;
+    return list;
+}
 function cssInsert(list, rule, index, sheet, parent) {
     index = toU32(index);
     if (index > list.length) throw new DOMException(`Failed to execute 'insertRule' on 'CSSStyleSheet': The index provided (${index}) is larger than the maximum index (${list.length}).`, 'IndexSizeError');
     const items = cssSplit(String(rule)), r = items.length === 1 ? cssMkRule(items[0], sheet, parent) : null;
     if (!r) throw new DOMException(`Failed to execute 'insertRule' on 'CSSStyleSheet': Failed to parse the rule '${rule}'.`, 'SyntaxError');
-    list.splice(index, 0, r); return index;
+    list.splice(index, 0, r);
+    if (!parent) cssRefreshNamespaces(sheet, list);
+    return index;
 }
 function cssDelete(list, i) {
     i = toU32(i);
@@ -982,7 +1019,7 @@ class CSSStyleSheet extends StyleSheet {
         else this._sync();
         return r;
     }
-    deleteRule(i) { this._load(); cssDelete(this._list, i); this._sync(); }
+    deleteRule(i) { this._load(); cssDelete(this._list, i); cssRefreshNamespaces(this, this._list); this._sync(); }
     addRule(sel = 'undefined', style = 'undefined', i) { this._load(); this.insertRule(`${sel} { ${style} }`, i === undefined ? this._list.length : i); return -1; }
     removeRule(i = 0) { this.deleteRule(i); }
     replace(t) { cssReplaceSheet(this, t); return Promise.resolve(this); }

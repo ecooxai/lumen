@@ -1,0 +1,268 @@
+diff --git a/src/css/css.h b/src/css/css.h
+index 17afcd3..14adddb 100644
+--- a/src/css/css.h
++++ b/src/css/css.h
+@@ -301,7 +301,7 @@ typedef struct SimpleSel {
+     uint8_t kind, op, ci; /* attr op: 0 exists, '=', '~', '|', '^', '$', '*' */
+     uint8_t nsk;          /* type/universal: 1 = elements in no namespace (|name); attr: 1 = [|name], 2 = any namespace [*|name] */
+     const char *name;     /* atom: tag/id/class/attr/pseudo */
+-    const char *raw;      /* attr: the name as written (atom), matched case-sensitively outside HTML elements in HTML documents */
++    const char *raw;      /* atom: attr name as written; type/universal explicit namespace prefix (NULL when omitted) */
+     char *value;
+     int a, b;             /* nth */
+     SelList *sub;         /* :not/:is/:where/:has/nth-of */
+@@ -468,6 +468,8 @@ bool css_parse_query_selector_list(const char *src, SelList *out);   /* querySel
+ bool css_supports_selector(const char *src);   /* one complex selector, recursively supported */
+ void css_sellist_free(SelList *l);
+ char *css_selector_text(const char *src); /* canonical CSSOM serialization; NULL if invalid */
++typedef struct CssNamespace { const char *prefix, *uri; } CssNamespace;
++char *css_selector_text_ns(const char *src, const CssNamespace *namespaces, int count);
+ /* Syntax only: matching always observes live DOM/state. Caller frees scratch. */
+ const SelList *css_query_syntax(Document *d, const char *text, SelList *scratch);
+ extern uint64_t css_has_stats[2];
+diff --git a/src/css/parse.c b/src/css/parse.c
+index 2739edc..2cdc2d0 100644
+--- a/src/css/parse.c
++++ b/src/css/parse.c
+@@ -657,7 +657,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
+         if (ch == '*') {
+             p->i++; s.kind = SK_UNIVERSAL;
+             if (p->i < p->n && p->s[p->i] == '|' && (p->i + 1 >= p->n || p->s[p->i + 1] != '=')) {   /* *|* or *|name: any namespace */
+-                p->i++;
++                p->i++; s.raw = atom("*");
+                 if (p->i < p->n && p->s[p->i] == '*') p->i++;
+                 else { char *t = sp_ident(p); if (!t) goto fail; s.kind = SK_TYPE; s.name = atom(t); s.value = (char *)atom_lower(t, strlen(t)); s.op = 1; free(t); }
+             }
+@@ -745,7 +745,7 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
+         else if (name_start((unsigned char)ch) || ch == '\\' || (ch == '-' )) {
+             char *t = sp_ident(p); if (!t) goto fail;
+             if (p->i < p->n && p->s[p->i] == '|' && p->query && (p->i + 1 >= p->n || p->s[p->i + 1] != '=')) { free(t); goto fail; }   /* no @namespace prefixes here */
+-            if (p->i < p->n && p->s[p->i] == '|') { p->i++; free(t); if (p->i < p->n && p->s[p->i] == '*') { p->i++; s.kind = SK_UNIVERSAL; vec_push(v, s); any = true; continue; } t = sp_ident(p); if (!t) goto fail; }
++            if (p->i < p->n && p->s[p->i] == '|') { p->i++; s.raw = atom(t); free(t); if (p->i < p->n && p->s[p->i] == '*') { p->i++; s.kind = SK_UNIVERSAL; vec_push(v, s); any = true; continue; } t = sp_ident(p); if (!t) goto fail; }
+             s.kind = SK_TYPE; s.name = atom(t); s.value = (char *)atom_lower(t, strlen(t)); free(t);
+             s.op = 1; /* marks value as atom (not owned) */
+         }
+@@ -1659,13 +1659,34 @@ static void ser_string(SB *b, const char *s) {
+     }
+     sb_putc(b, '"');
+ }
+-static void ser_list(SB *b, const SelList *l);
++typedef struct SelectorSerialization {
++    const CssNamespace *namespaces;
++    int count;
++    const char *default_uri;
++} SelectorSerialization;
++/* Prefix metadata is distinct from the matcher's namespace flag. Keeping it
++ * in the existing atom slot preserves the parsed selector layout and matching
++ * behavior while CSSOM retains the author's namespace constraints. */
++static bool ser_type_namespace(SB *b, const SimpleSel *s, const SelectorSerialization *ctx) {
++    if (s->nsk == 1) { sb_putc(b, '|'); return true; }
++    if (!s->raw) return false;
++    if (!strcmp(s->raw, "*")) {
++        if (!ctx->default_uri) return false;
++        sb_puts(b, "*|"); return true;
++    }
++    const char *uri = NULL;
++    for (int i = 0; i < ctx->count; i++) if (!strcmp(ctx->namespaces[i].prefix, s->raw)) uri = ctx->namespaces[i].uri;
++    if (uri && !*uri) { sb_putc(b, '|'); return true; }
++    if (uri && ctx->default_uri && !strcmp(uri, ctx->default_uri)) return false;
++    ser_ident(b, s->raw); sb_putc(b, '|'); return true;
++}
++static void ser_list(SB *b, const SelList *l, const SelectorSerialization *ctx);
+ static void ser_anb(SB *b, int a, int bb) {
+     if (!a) { sb_printf(b, "%d", bb); return; }
+     if (a == 1) sb_puts(b, "n"); else if (a == -1) sb_puts(b, "-n"); else sb_printf(b, "%dn", a);
+     if (bb > 0) sb_printf(b, "+%d", bb); else if (bb < 0) sb_printf(b, "%d", bb);
+ }
+-static void ser_selector(SB *b, const Selector *s) {
++static void ser_selector(SB *b, const Selector *s, const SelectorSerialization *ctx) {
+     static const char *combs[] = { "", " ", " > ", " + ", " ~ " };
+     bool first = true;
+     for (int i = 0; i < s->n; i++) {
+@@ -1676,8 +1697,8 @@ static void ser_selector(SB *b, const Selector *s) {
+         for (int j = 0; j < c->n; j++) {
+             const SimpleSel *x = &c->s[j];
+             switch (x->kind) {
+-            case SK_UNIVERSAL: if (c->n == 1) sb_putc(b, '*'); break;
+-            case SK_TYPE: ser_ident(b, x->name); break;
++            case SK_UNIVERSAL: if (ser_type_namespace(b, x, ctx) || c->n == 1) sb_putc(b, '*'); break;
++            case SK_TYPE: ser_type_namespace(b, x, ctx); ser_ident(b, x->name); break;
+             case SK_ID: sb_putc(b, '#'); ser_ident(b, x->name); break;
+             case SK_CLASS: sb_putc(b, '.'); ser_ident(b, x->name); break;
+             case SK_ATTR:
+@@ -1686,18 +1707,21 @@ static void ser_selector(SB *b, const Selector *s) {
+                 sb_putc(b, ']'); break;
+             case SK_PSEUDO: case SK_PSEUDO_EL:
+                 sb_puts(b, x->kind == SK_PSEUDO_EL ? "::" : ":"); ser_ident(b, x->name);
+-                if (str_starts(x->name, "nth-")) { sb_putc(b, '('); ser_anb(b, x->a, x->b); if (x->sub && x->sub->n) { sb_puts(b, " of "); ser_list(b, x->sub); } sb_putc(b, ')'); }
+-                else if (x->sub) { sb_putc(b, '('); ser_list(b, x->sub); sb_putc(b, ')'); }
++                if (str_starts(x->name, "nth-")) { sb_putc(b, '('); ser_anb(b, x->a, x->b); if (x->sub && x->sub->n) { sb_puts(b, " of "); ser_list(b, x->sub, ctx); } sb_putc(b, ')'); }
++                else if (x->sub) { sb_putc(b, '('); ser_list(b, x->sub, ctx); sb_putc(b, ')'); }
+                 else if (x->value) { sb_putc(b, '('); sb_puts(b, x->value); sb_putc(b, ')'); }
+                 break;
+             }
+         }
+     }
+ }
+-static void ser_list(SB *b, const SelList *l) { for (int i = 0; i < l->n; i++) { if (i) sb_puts(b, ", "); ser_selector(b, &l->v[i]); } }
+-char *css_selector_text(const char *src) {
++static void ser_list(SB *b, const SelList *l, const SelectorSerialization *ctx) { for (int i = 0; i < l->n; i++) { if (i) sb_puts(b, ", "); ser_selector(b, &l->v[i], ctx); } }
++char *css_selector_text_ns(const char *src, const CssNamespace *namespaces, int count) {
+     SelList l = {0};
+     if (!css_parse_selector_list(src, &l) || !l.n) { css_sellist_free(&l); return NULL; }
+-    SB b; sb_init(&b); ser_list(&b, &l); css_sellist_free(&l);
++    SelectorSerialization ctx = { namespaces, count, NULL };
++    for (int i = 0; i < count; i++) if (!*namespaces[i].prefix) ctx.default_uri = namespaces[i].uri;
++    SB b; sb_init(&b); ser_list(&b, &l, &ctx); css_sellist_free(&l);
+     return b.s ? b.s : xstrdup("");
+ }
++char *css_selector_text(const char *src) { return css_selector_text_ns(src, NULL, 0); }
+diff --git a/src/js/jsnative.cc b/src/js/jsnative.cc
+index 5d7b64c..cdfc3bb 100644
+--- a/src/js/jsnative.cc
++++ b/src/js/jsnative.cc
+@@ -1467,7 +1467,27 @@ FN(runWritten) { CTX; js_run_written_inline(c); }
+ FN(hidden) { CTX; RET(v8::Boolean::New(iso, c->bg)); }
+ FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
+ FN(mediaValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_media_valid(q.c_str()))); }
+-FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
++FN(cssSelText) {
++    CTX; std::string q = S(0);
++    std::vector<std::string> values;
++    if (a.Length() > 1 && a[1]->IsArray()) {
++        auto pairs = a[1].As<v8::Array>();
++        const uint32_t length = pairs->Length();
++        if (length % 2) { RET(v8::Null(iso)); return; }
++        values.reserve(length);
++        for (uint32_t i = 0; i < length; i++) {
++            v8::Local<v8::Value> value;
++            if (!pairs->Get(ctx, i).ToLocal(&value)) return;
++            if (!value->IsString()) { RET(v8::Null(iso)); return; }
++            values.push_back(jcstr(iso, value));
++        }
++    }
++    std::vector<CssNamespace> namespaces;
++    namespaces.reserve(values.size() / 2);
++    for (size_t i = 0; i < values.size(); i += 2) namespaces.push_back({values[i].c_str(), values[i + 1].c_str()});
++    char *r = css_selector_text_ns(q.c_str(), namespaces.data(), (int)namespaces.size());
++    RET(nstr(iso, r)); free(r);
++}
+ FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
+ extern "C" bool css_var_syntax_valid(const char *value);
+ extern "C" bool css_universal_initial_valid(const char *value, size_t length);
+diff --git a/src/js/prelude/06b-activate.js b/src/js/prelude/06b-activate.js
+index 3f194b8..b0c6d81 100644
+--- a/src/js/prelude/06b-activate.js
++++ b/src/js/prelude/06b-activate.js
+@@ -200,12 +200,30 @@ function cssSplit(s, rawPrelude = false) {
+     if (pre.trim()[0] === '@') out.push({ pre: pre.trim(), body: null });
+     return out;
+ }
+-/* Only ownership lives here; rule contents and list objects are retained. */
++/* Private ownership and parsed namespace metadata; public rule/list objects remain live. */
+ const cssOwners = new WeakMap();
+ const cssOwnerGet = Function.prototype.call.bind(WeakMap.prototype.get, cssOwners);
+ const cssOwnerSet = Function.prototype.call.bind(WeakMap.prototype.set, cssOwners);
+ const cssListDefine = Object.defineProperty;
+ const cssListOwn = Object.getOwnPropertyDescriptor;
++/* Namespace context is private parsed metadata. Do not rebuild it from author
++ * overridable CSSNamespaceRule accessors or an exposed rule-list iterator. */
++function cssNamespaceAdd(pairs, prefix, uri) {
++    let i = 0;
++    while (i < pairs.length && pairs[i] !== prefix) i += 2;
++    cssListDefine(pairs, i, { value: prefix, writable: true, enumerable: true, configurable: true });
++    cssListDefine(pairs, i + 1, { value: uri, writable: true, enumerable: true, configurable: true });
++}
++function cssSheetNamespaces(sheet) { return sheet ? cssOwnerGet(sheet).namespaces || [] : []; }
++function cssRefreshNamespaces(sheet, list) {
++    if (!sheet) return;
++    const pairs = [];
++    for (let i = 0; i < list.length; i++) {
++        const own = cssListOwn(list, i), data = own && cssOwnerGet(own.value);
++        if (data && data.namespace) cssNamespaceAdd(pairs, data.namespace[0], data.namespace[1]);
++    }
++    cssOwnerGet(sheet).namespaces = pairs;
++}
+ function cssRuleSheet(rule) {
+     let d = cssOwnerGet(rule);
+     while (d.parent) d = cssOwnerGet(d.parent);
+@@ -642,7 +660,7 @@ cssMediaRuleChanged = Function.prototype.call.bind(CSSRule.prototype._changed);
+ class CSSStyleRule extends CSSRule {
+     get type() { return 1; }
+     get selectorText() { return this._sel; }
+-    set selectorText(v) { const s = N.cssSelText(String(v)); if (s != null) { this._sel = s; this._changed(); } }
++    set selectorText(v) { const s = N.cssSelText(String(v), cssSheetNamespaces(cssRuleSheet(this))); if (s != null) { this._sel = s; this._changed(); } }
+     get style() { return ruleStyle(this); } set style(v) { this.style.cssText = v; }
+     get cssText() { return this._text || (this._text = `${this._sel} ${blockText(this)}`); }
+ }
+@@ -917,11 +935,11 @@ function cssMkKeyframe(it, sheet, parent) {
+     const rule = cssMk(CSSKeyframeRule, { _body: it.body, _style: null, _sheet: sheet, _parent: parent });
+     cssKeyframeSet(rule, key); return rule;
+ }
+-function cssMkRule(it, sheet, parent) {
++function cssMkRule(it, sheet, parent, namespaces = cssSheetNamespaces(sheet)) {
+     const p = it.pre, base = { _sheet: sheet, _parent: parent };
+     if (p[0] !== '@') {
+         if (it.body == null) return null;
+-        const st = N.cssSelText(p); if (st == null) return null;
++        const st = N.cssSelText(p, namespaces); if (st == null) return null;
+         return cssMk(CSSStyleRule, { ...base, _sel: st, _body: it.body, _style: null });
+     }
+     const m = /^@([-\w]+)\s*([\s\S]*)$/.exec(p); if (!m) return null;
+@@ -935,7 +953,13 @@ function cssMkRule(it, sheet, parent) {
+         const u = /^(?:url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*?))\s*\)|"([^"]*)"|'([^']*)')\s*([\s\S]*)$/.exec(rest); if (!u) return null;
+         r = cssMk(CSSImportRule, { ...base, _href: u[1] ?? u[2] ?? u[3] ?? u[4] ?? u[5], _media: null }); r._media = cssCreateMediaList(u[6] || '', r); return r;
+     }
+-    else if (kw === 'namespace' && !blk) { const q = /^(?:([-\w]+)\s+)?(?:url\(\s*["']?([^"')]*)["']?\s*\)|"([^"]*)"|'([^']*)')$/.exec(rest); if (!q) return null; return cssMk(CSSNamespaceRule, { ...base, _prefix: q[1] || '', _ns: q[2] ?? q[3] ?? q[4] }); }
++    else if (kw === 'namespace' && !blk) {
++        const q = /^(?:([-\w]+)\s+)?(?:url\(\s*["']?([^"')]*)["']?\s*\)|"([^"]*)"|'([^']*)')$/.exec(rest); if (!q) return null;
++        const prefix = q[1] || '', uri = q[2] ?? q[3] ?? q[4];
++        const rule = cssMk(CSSNamespaceRule, { ...base, _prefix: prefix, _ns: uri });
++        cssOwnerGet(rule).namespace = [prefix, uri];
++        return rule;
++    }
+     else if (kw === 'font-face' && blk) return cssMk(CSSFontFaceRule, { ...base, _body: it.body, _style: null });
+     else if (kw === 'property' && blk) return cssMkPropertyRule(m[2], it.body, base);
+     else if (kw === 'position-try' && blk && /^--\S+$/.test(rest)) return cssMk(CSSPositionTryRule, { ...base, _name: rest, _body: it.body, _style: null });
+@@ -946,16 +970,29 @@ function cssMkRule(it, sheet, parent) {
+     }
+     else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { r = cssMk(CSSKeyframesRule, { ...base, _name: rest, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body, true)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
+     else return null;
+-    def(r, '_list', cssParseList(it.body, sheet, r));
++    def(r, '_list', cssParseList(it.body, sheet, r, namespaces));
+     return r;
+ }
+-function cssParseList(src, sheet, parent) { const l = new CSSRuleList(); for (const it of cssSplit(src)) { const r = cssMkRule(it, sheet, parent); if (r) l.push(r); } return l; }
++function cssParseList(src, sheet, parent, namespaces = []) {
++    const list = new CSSRuleList();
++    for (const it of cssSplit(src)) {
++        const rule = cssMkRule(it, sheet, parent, namespaces);
++        if (!rule) continue;
++        list.push(rule);
++        const ns = !parent && cssOwnerGet(rule).namespace;
++        if (ns) cssNamespaceAdd(namespaces, ns[0], ns[1]);
++    }
++    if (!parent && sheet) cssOwnerGet(sheet).namespaces = namespaces;
++    return list;
++}
+ function cssInsert(list, rule, index, sheet, parent) {
+     index = toU32(index);
+     if (index > list.length) throw new DOMException(`Failed to execute 'insertRule' on 'CSSStyleSheet': The index provided (${index}) is larger than the maximum index (${list.length}).`, 'IndexSizeError');
+     const items = cssSplit(String(rule)), r = items.length === 1 ? cssMkRule(items[0], sheet, parent) : null;
+     if (!r) throw new DOMException(`Failed to execute 'insertRule' on 'CSSStyleSheet': Failed to parse the rule '${rule}'.`, 'SyntaxError');
+-    list.splice(index, 0, r); return index;
++    list.splice(index, 0, r);
++    if (!parent) cssRefreshNamespaces(sheet, list);
++    return index;
+ }
+ function cssDelete(list, i) {
+     i = toU32(i);
+@@ -982,7 +1019,7 @@ class CSSStyleSheet extends StyleSheet {
+         else this._sync();
+         return r;
+     }
+-    deleteRule(i) { this._load(); cssDelete(this._list, i); this._sync(); }
++    deleteRule(i) { this._load(); cssDelete(this._list, i); cssRefreshNamespaces(this, this._list); this._sync(); }
+     addRule(sel = 'undefined', style = 'undefined', i) { this._load(); this.insertRule(`${sel} { ${style} }`, i === undefined ? this._list.length : i); return -1; }
+     removeRule(i = 0) { this.deleteRule(i); }
+     replace(t) { cssReplaceSheet(this, t); return Promise.resolve(this); }
