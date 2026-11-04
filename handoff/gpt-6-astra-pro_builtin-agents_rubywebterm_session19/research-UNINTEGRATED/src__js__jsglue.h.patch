@@ -1,0 +1,11 @@
+--- a/src/js/jsglue.h
++++ b/src/js/jsglue.h
+@@ -12,7 +12,7 @@
+ void js_transition_start(Node *n, const char *prop, const char *from, const char *to);
+ void js_animation_names(Node *n, const char *names);
+ char *jsg_computed(Node *el, const char *prop, int pseudo);
+-void jsg_set_anim_style(Node *el, const char *css);
++void jsg_set_anim_style(Node *el, const char *css, const char *transitions);
+ uint64_t jsg_layout_generation(void);
+ uint64_t jsg_visual_generation(void);
+ void jsg_visual_changed(void);

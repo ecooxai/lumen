@@ -1,0 +1,57 @@
+{
+  "recorded_utc": "2026-11-04T11:24:01.292493+00:00",
+  "browser_candidate": 1808,
+  "scope": "Observed Linux display0 process, logged-out X landing. Windows include hydration/recovery, not a controlled idle or scrolling benchmark. No login failure or authenticated feed was observed.",
+  "cpu_unit": "100 percent equals one CPU core; host CPU percentage is aggregate across all CPUs.",
+  "memory_unit": "decimal MB = 1000000 bytes",
+  "windows": [
+    {
+      "seconds": 60,
+      "samples": 60,
+      "start_utc": "2026-11-04T11:11:43.232930+00:00",
+      "end_utc": "2026-11-04T11:12:42.177229+00:00",
+      "browser_cpu_pct_one_core_100": {
+        "median": 0.0,
+        "p95": 1.0,
+        "max": 4.0
+      },
+      "browser_rss_mb_decimal": {
+        "median": 210.838,
+        "p95": 270.336,
+        "max": 279.249
+      },
+      "host_cpu_percent": {
+        "median": 72.38900000000001,
+        "p95": 85.876,
+        "max": 94.125
+      }
+    },
+    {
+      "seconds": 15,
+      "samples": 15,
+      "start_utc": "2026-11-04T11:12:28.134655+00:00",
+      "end_utc": "2026-11-04T11:12:42.177229+00:00",
+      "browser_cpu_pct_one_core_100": {
+        "median": 0.0,
+        "p95": 1.0,
+        "max": 1.0
+      },
+      "browser_rss_mb_decimal": {
+        "median": 177.545,
+        "p95": 207.299,
+        "max": 207.299
+      },
+      "host_cpu_percent": {
+        "median": 77.917,
+        "p95": 84.483,
+        "max": 84.982
+      }
+    }
+  ],
+  "renderer": "wgpu Vulkan, NVIDIA GeForce MX110",
+  "limits": [
+    "No authenticated scrolling measurement or Google-login fix claim.",
+    "Host activity was not controlled.",
+    "No personal screenshots, authentication URLs, credentials, tokens, process IDs or device IDs are included."
+  ]
+}

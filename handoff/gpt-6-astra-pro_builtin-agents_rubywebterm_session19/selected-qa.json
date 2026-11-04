@@ -1,0 +1,38 @@
+{
+  "candidate": 1915,
+  "source_commit": "b63df22ad8b67399a416ac0bc16c6d21613d23aa",
+  "source_subtree": "c90cb233430c82237c7f05076415f2e7c28fac05",
+  "binary_sha256": "71478e23bcfffeead3cbe0edc694a02bfae2b8ce78321f27212a5a656ef9c908",
+  "source_manifest_digest": "21617bb5f93a800f0835b767d092e12a00557284f9a88c6cd8fcf5aeebcdf3be",
+  "validation_summary": {
+    "selected_urls": {
+      "lumen_passed": 796,
+      "total": 1248,
+      "baseline1808_passed": 759,
+      "pass_percent": 63.78205128205128
+    },
+    "selected_assertions": {
+      "lumen_passed": 23158,
+      "total": 26245,
+      "baseline1808_passed": 22826,
+      "pass_percent": 88.23775957325205
+    },
+    "new_passing_urls": 37,
+    "new_assertion_passes": 332,
+    "lost_required_pass_identities": 0,
+    "lost_required_fully_passing_urls": 0,
+    "harness_regressions": 0,
+    "all_case_process_exits_zero": true,
+    "cleanup_complete": true,
+    "full1248_replay_performed": true,
+    "accepted_utc": "2026-11-04T12:23:57.325Z",
+    "selected_utc": "2026-11-04T12:23:57.846Z",
+    "native_coverage": "Native218 passed on exact1913 native source; no new1915 native rerun. Subsequent changes were JavaScript-only.",
+    "chromium_parity_claimed": false,
+    "prior_holds_retained": true,
+    "proof_sha256": {
+      "candidate1915-full-prior-union-acceptance-v1.json": "70d3d7b134696c128292ba7a6e9571c7a3d507e2ddd28b442f082f38a6fcb204",
+      "final-release-selection-v1.json": "902a612ca027b7ea5479feac123dafd26510647837925ba1f93e076154af46bc"
+    }
+  }
+}

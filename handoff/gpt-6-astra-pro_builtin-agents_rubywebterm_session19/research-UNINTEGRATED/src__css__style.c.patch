@@ -1,0 +1,83 @@
+--- a/src/css/style.c
++++ b/src/css/style.c
+@@ -22,9 +22,25 @@
+ long g_styles_live;
+ static void match_memo_free(void *memo);
+ void node_free_inline_style(Node *n) { css_decls_free(n->inline_decls); n->inline_decls = NULL; css_decls_free(n->anim_decls); n->anim_decls = NULL; match_memo_free(n->match_memo); n->match_memo = NULL; }
+-void css_set_anim_style(Node *n, const char *css) {
++/* The private animation bridge supplies separate ordinary/transition channels.
++ * Authored priorities are invalid in sampled values. Only this producer may
++ * mark Decl.important as the private transition tier inside anim_decls. */
++static void sampled_declarations_append(DeclList *out, const char *css, bool transition) {
++    if (!css || !*css) return;
++    DeclList *parsed = css_parse_decls(css, strlen(css));
++    for (int i = 0; i < parsed->n; i++) if (!parsed->v[i].important) {
++        Decl *d = &parsed->v[i]; d->important = transition;
++        vec_push(*out, *d); d->value = NULL; /* transfer the owned value exactly once */
++    }
++    css_decls_free(parsed);
++}
++void css_set_anim_style(Node *n, const char *css, const char *transitions) {
++    DeclList *sampled = xcalloc(1, sizeof *sampled);
++    sampled_declarations_append(sampled, css, false);
++    sampled_declarations_append(sampled, transitions, true);
+     css_decls_free(n->anim_decls);
+-    n->anim_decls = css && *css ? css_parse_decls(css, strlen(css)) : NULL;
++    if (sampled->n) n->anim_decls = sampled;
++    else { css_decls_free(sampled); n->anim_decls = NULL; }
+     if (n->doc) doc_mark_style_dirty(n->doc, n);
+ }
+ static const char *display_canon(const char *val);
+@@ -7740,13 +7756,23 @@
+     VEC(MDecl) all = {0};
+     for (int i = ua; i < split; i++) vec_push(all, md[i]);
+     const char *inl = node_attr_atom(el, A_style);
++    DeclList *inline_declarations = NULL;
+     if (inl) {
+         if (!el->inline_style_src || strcmp(el->inline_style_src, inl)) { free(el->inline_style_src); el->inline_style_src = xstrdup(inl); css_decls_free(el->inline_decls); el->inline_decls = css_parse_decls(inl, strlen(inl)); }
+-        DeclList *dl = el->inline_decls;
+-        for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); }
+-    }
+-    if (el->anim_decls) { DeclList *dl = el->anim_decls; for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); } }
+-    for (int i = split; i < mn; i++) vec_push(all, md[i]);
++        inline_declarations = el->inline_decls;
++        for (int i = 0; i < inline_declarations->n; i++) if (!inline_declarations->v[i].important) { MDecl m = { &inline_declarations->v[i], 0, 0 }; vec_push(all, m); }
++    }
++    DeclList *sampled = el->anim_decls;
++    if (sampled) for (int i = 0; i < sampled->n; i++) if (!sampled->v[i].important) { MDecl m = { &sampled->v[i], 0, 0 }; vec_push(all, m); }
++    /* Keep each source-order subsequence; inline important wins over author
++     * important, UA important follows it, then genuine sampled transitions. */
++    int ua_important = split; while (ua_important < mn && (md[ua_important].key >> 62) == 2) ua_important++;
++    for (int i = split; i < ua_important; i++) vec_push(all, md[i]);
++    if (inline_declarations) for (int i = 0; i < inline_declarations->n; i++) if (inline_declarations->v[i].important) { MDecl m = { &inline_declarations->v[i], 0, 0 }; vec_push(all, m); }
++    for (int i = ua_important; i < mn; i++) vec_push(all, md[i]);
++    /* Existing family replays place the top key tier last; append transitions
++     * after UA declarations in that tier without changing their phase logic. */
++    if (sampled) for (int i = 0; i < sampled->n; i++) if (sampled->v[i].important) { MDecl m = { &sampled->v[i], UINT64_MAX, UINT64_MAX }; vec_push(all, m); }
+     apply_decl_ordered(st, par, all.v, all.n, e, el, true, false);
+     vec_free(all);
+     if (owned) free(md);
+@@ -9050,6 +9076,23 @@
+         if (g && !g->native) tr_scan_one(n, o, s, g->name, seen, cb);
+     }
+ }
++/* Match the computed list through the same token boundary as transition scan;
++ * this private query lets JS retire ownership when a property is excluded. */
++bool css_transition_property_includes(const char *list, const char *property) {
++    if (!list || !*list) return true;
++    CLexer lexer; clex_init(&lexer, list, strlen(list)); int depth = 0;
++    for (;;) {
++        CTok token = clex_next(&lexer); int type = token.type;
++        bool match = !depth && type == CT_IDENT && token.str &&
++            (str_ieq(token.str, "all") || (property[0] == '-' && property[1] == '-' ?
++             !strcmp(token.str, property) : str_ieq(token.str, property)));
++        if (type == CT_FUNC || type == CT_LPAREN || type == CT_LBRACK || type == CT_LBRACE) depth++;
++        else if (depth && (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE)) depth--;
++        free(token.str);
++        if (match) return true;
++        if (type == CT_EOF) return false;
++    }
++}
+ void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s, void (*cb)(Node *, const char *, const char *, const char *)) {
+     /* One computed change produces one job per property. Keep the authored
+      * list untouched: its last matching position still selects JS timing. */

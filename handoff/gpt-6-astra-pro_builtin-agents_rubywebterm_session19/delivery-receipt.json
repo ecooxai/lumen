@@ -1,0 +1,117 @@
+{
+  "session": "2026-11-04-session19",
+  "created_utc": "2026-11-04T12:33:41.396035+00:00",
+  "candidate": 1915,
+  "tested_source_commit": "b63df22ad8b67399a416ac0bc16c6d21613d23aa",
+  "source_subtree": "c90cb233430c82237c7f05076415f2e7c28fac05",
+  "linux_binary_sha256": "71478e23bcfffeead3cbe0edc694a02bfae2b8ce78321f27212a5a656ef9c908",
+  "apk_sha256": "b564cb4fc6e7e75d64d47bd70803cc67d809cbaff6cd5d228a81d4e23baf56aa",
+  "selected_release_reason": "Original full1915 accepted and selected before the fixed12:24 cutoff; zero required prior losses.",
+  "selected_suite": {
+    "candidate": 1915,
+    "source_commit": "b63df22ad8b67399a416ac0bc16c6d21613d23aa",
+    "source_subtree": "c90cb233430c82237c7f05076415f2e7c28fac05",
+    "binary_sha256": "71478e23bcfffeead3cbe0edc694a02bfae2b8ce78321f27212a5a656ef9c908",
+    "source_manifest_digest": "21617bb5f93a800f0835b767d092e12a00557284f9a88c6cd8fcf5aeebcdf3be",
+    "validation_summary": {
+      "selected_urls": {
+        "lumen_passed": 796,
+        "total": 1248,
+        "baseline1808_passed": 759,
+        "pass_percent": 63.78205128205128
+      },
+      "selected_assertions": {
+        "lumen_passed": 23158,
+        "total": 26245,
+        "baseline1808_passed": 22826,
+        "pass_percent": 88.23775957325205
+      },
+      "new_passing_urls": 37,
+      "new_assertion_passes": 332,
+      "lost_required_pass_identities": 0,
+      "lost_required_fully_passing_urls": 0,
+      "harness_regressions": 0,
+      "all_case_process_exits_zero": true,
+      "cleanup_complete": true,
+      "full1248_replay_performed": true,
+      "accepted_utc": "2026-11-04T12:23:57.325Z",
+      "selected_utc": "2026-11-04T12:23:57.846Z",
+      "native_coverage": "Native218 passed on exact1913 native source; no new1915 native rerun. Subsequent changes were JavaScript-only.",
+      "chromium_parity_claimed": false,
+      "prior_holds_retained": true,
+      "proof_sha256": {
+        "candidate1915-full-prior-union-acceptance-v1.json": "70d3d7b134696c128292ba7a6e9571c7a3d507e2ddd28b442f082f38a6fcb204",
+        "final-release-selection-v1.json": "902a612ca027b7ea5479feac123dafd26510647837925ba1f93e076154af46bc"
+      }
+    }
+  },
+  "linux_display0": {
+    "restarted": true,
+    "accepted": true,
+    "exact_binary_verified": true,
+    "own_page_checks": 4,
+    "input_navigation_history_smoke": true,
+    "profile_data_cleared": false,
+    "finished_utc": "2026-11-04T12:27:37.728499+00:00"
+  },
+  "android": {
+    "installed_and_restarted": true,
+    "exact_installed_apk_hash_verified": true,
+    "data_preserved": true,
+    "package_uid_preserved": true,
+    "own_page_checks": 4,
+    "foreground_liveness_samples": 6,
+    "version_name": "0.1.0-adapter",
+    "version_code": 1,
+    "signature_verified": true,
+    "signer_certificate_sha256": [
+      "54921a3a54191e8545842cdf135b7603043f58e9e392c77fb484c0cccd8e3f4f"
+    ],
+    "apk_original_checks": 23,
+    "apk_rtc_checks": 10,
+    "finished_utc": "2026-11-04T12:33:00.032581+00:00",
+    "android_wpt_claimed": false
+  },
+  "showcase": {
+    "file": "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1915_showcase.mp4",
+    "sha256": "0525be4a390e43b6b9d8709162c425bca2df9fb9771c020e33e1cc9b1ba01adf",
+    "bytes": 347017,
+    "clean_file": "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1915_clean_recording.mp4",
+    "clean_sha256": "df66b0e614acc677401869b7dcece165cfe1b61c7bad0378454fff9e3dfb0107",
+    "duration_seconds": 36.0,
+    "width": 1280,
+    "height": 960,
+    "aspect_ratio": "4:3",
+    "audio": false,
+    "creator_credit": "GPT-6 Astra Pro / built-in agents / RubyWebTerm",
+    "own_project_page_only": true,
+    "isolated_profile": true,
+    "visual_review_passed": true
+  },
+  "source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1915-20261104",
+  "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz?checkpoint=1915",
+  "source_archive_sha256": "521185eb206a2671a66dc3d6d80a80e484e6b30667e6f13a690048d11f9f51ab",
+  "work_checkpoint_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-work-iteration30-20261104",
+  "limitations": [
+    "Selected DOM/CSS testharness coverage is not all WPT or Chromium parity.",
+    "Android packaging and own-page smoke are not Android WPT conformance.",
+    "The real X-to-Google-to-X failure was not reproduced; observed Google identity verification expired before completion. No login fix is claimed.",
+    "Logged-out X idle CPU was measured; authenticated feed scrolling was not reproduced or optimized.",
+    "Later held or incomplete candidates remain development evidence, not the selected installed release.",
+    "The separate transition research attachment is UNINTEGRATED and not part of the release build."
+  ],
+  "retained_delivery_recoveries": [
+    "Original i1808 exit exceeded the first short grace period; exact process later exited before the guarded1915 launch.",
+    "Initial model-selection wrapper stopped on a stale CXX artifact without Build ID; that artifact became nonmatching, exactly one positive model and all unchanged23+10APK checks remained required."
+  ],
+  "private_data_included": false,
+  "private_receipt_sha256": {
+    "linux_desktop": "6b216b62d014076e1ad3141895347267610590410f6f5d40eb7b39cb2a9a820f",
+    "linux_restart": "170a01f6be55a07ef1bb12a3596a3bb2932eda7bb3f076ee13edc3847f3c9a3d",
+    "showcase": "5ad86cb671a9b41ab4f93bc6231afb53906c36c711d66bec133579f0fa1128ec",
+    "android_build": "79e7382fe0040db7769b0cb9ae859dd4b47400491aa383d18473894dc5c395fb",
+    "android_check": "5186ce56d7942423d5567d42a0fecde0cbf1bb0fea119912c7407f4f1d96d1ad",
+    "android_deploy": "1279701d2d045440bc5d927f90ec570637eb4bd7f2a575580d61ef7b016dde41",
+    "android_restart": "2053d83b4348248dbb69b344297f42aa1f1355330e283634328fb4d2680e969c"
+  }
+}

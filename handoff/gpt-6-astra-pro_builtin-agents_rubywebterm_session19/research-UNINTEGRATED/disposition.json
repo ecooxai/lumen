@@ -1,0 +1,13 @@
+{
+  "recorded_utc": "2026-11-04T10:59:54.672644+00:00",
+  "status": "UNINTEGRATED; not runtime-qualified and not a delivered transition fix",
+  "reason": "Independent review found ownership/composite/membership requirements, including logical/physical false-exclusion risk and possible new important-tier exposure. Root selected static-only assembly to avoid expanding scope or knowingly adding regressions.",
+  "source_candidate1913_does_not_include": [
+    "private sampled transition channel",
+    "new ownership WeakMap/WeakRef tracking",
+    "new transition-property helper",
+    "new composite order/replaceable guard",
+    "new metadata/envelope cache"
+  ],
+  "future_requirement": "Reassess complete supported membership and every newly exposed cancellation case using preserved paired controls. Original ambiguous mixed-effect expectation remains diagnostic; primary highest-contributor corrected control is separate."
+}
