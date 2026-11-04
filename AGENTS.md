@@ -19,7 +19,11 @@ are retained background, not the current runtime or qualification state.
 
 Candidate1910 descriptor batching failed the frozen CPU/wall thresholds and was reverted
 without removing the later range-priority, root-pseudo and StyleSheetList commits. Candidate1911
-seals those functional fixes plus the unchanged default-off sampler; specified-calc remains separate.
+passed native/focused gates but its completed full run has a retained namespace harness HOLD.
+Candidate1912 seals reviewed CSSStyleDeclaration API/public-receiver and range specified-calc
+fixes separately; runtime qualification is pending. The approved narrow generic importance
+assembly investigation remains outside1912 and outside the previously rejected broad rollback
+rewrite. Exact source/review/acceptance distinctions are in agent/continue.md.
 Coordinate exact tracked source/Git/status freezes before builds and native gates; immutable
 sealed binaries may be tested while subsequent source is prepared. Use never-reused IDs
 and one heavy job under the existing480% shared quota. Preserve all old HOLDs and private

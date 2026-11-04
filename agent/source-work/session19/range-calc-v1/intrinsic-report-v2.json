@@ -1,0 +1,8 @@
+{
+  "scope": "Isolated new helper only; pre-existing/native parser intrinsic behavior is not exercised.",
+  "expected": "calc(1% * sign(100em - 1px))",
+  "actual": "calc(1% * sign(100em - 1px))",
+  "author_calls": 0,
+  "error": null,
+  "passed": true
+}

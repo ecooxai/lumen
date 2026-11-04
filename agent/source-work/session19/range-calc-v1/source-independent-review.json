@@ -1,0 +1,18 @@
+{
+  "created_utc": "2026-11-04T10:09:06.331434+00:00",
+  "status": "independently accepted for bounded runtime qualification",
+  "manifest_sha256": "4dbc7807f15c58cbe974698aa70ca53aa396fa8c8557d2e731b75002c550b678",
+  "source_owner": "environment_delivery",
+  "reviewer": "source_steward",
+  "verified_scope": [
+    "Only animation-range specified serialization after existing native grammar validation; two call sites.",
+    "Safe finite integer folding and contextual-term preservation; unsupported decimal/distribution/division, escaped/comment/pending and signed-zero/nonfinite forms keep existing representation.",
+    "Specified calc wrappers and typed zero percentages retained; numeric, percentage, dimension-unit, then opaque ordering matches CSS Values4 serialization.",
+    "32-level/4096-character bounds retained; no native/computed/global evaluator changes.",
+    "New helper captures required numeric/string/regex/sort/native Map/Reflect intrinsics and uses safe appends/numeric loops.",
+    "The existing parser/cssBorderPending path is not covered by a whole-pipeline intrinsic-isolation claim."
+  ],
+  "primary_source": "https://drafts.csswg.org/css-values-4/#calc-serialize",
+  "browser_qualification_pending": true,
+  "target_evidence": "candidate1908-range-failures-v1.json retains four specified serialization failures, one also fails pinned Chromium by different compression."
+}

@@ -1,0 +1,10 @@
+--- a/src/js/prelude/01-events.js
++++ b/src/js/prelude/01-events.js
+@@ -235,6 +235,7 @@
+ const REALM = Object.freeze({
+     isEvent: e => evIs(e),
+     styleSheetListGetter: receiver => cssStyleSheetListLocalGetter(receiver),
++    cssStyleDeclarationState: receiver => cssDeclarationLocalState(receiver),
+     compileEventHandler: (el, name, source) => compileHandler(el, name, source),
+     resetOpenedHandlers: target => resetOpenedHandlers(target),
+     dispatch(t, ev) {

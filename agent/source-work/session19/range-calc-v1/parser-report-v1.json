@@ -1,0 +1,115 @@
+{
+  "scope": "Pure helper checks only; native grammar, browser paths and WPT remain untested. Expected values frozen before execution.",
+  "rows": [
+    {
+      "name": "typed zero",
+      "input": "calc(10% - 10%)",
+      "expected": "calc(0%)",
+      "actual": "calc(0%)"
+    },
+    {
+      "name": "typed hundred",
+      "input": "calc(50% + 50%)",
+      "expected": "calc(100%)",
+      "actual": "calc(100%)"
+    },
+    {
+      "name": "mixed order",
+      "input": "calc(10px + 10%)",
+      "expected": "calc(10% + 10px)",
+      "actual": "calc(10% + 10px)"
+    },
+    {
+      "name": "opaque sign product",
+      "input": "calc(sign(100em - 1px) * 1%)",
+      "expected": "calc(1% * sign(100em - 1px))",
+      "actual": "calc(1% * sign(100em - 1px))"
+    },
+    {
+      "name": "finite precision",
+      "input": "calc(1234567px + 1%)",
+      "expected": "calc(1% + 1234567px)",
+      "actual": "calc(1% + 1234567px)"
+    },
+    {
+      "name": "same unit",
+      "input": "calc(2em + 3em)",
+      "expected": "calc(5em)",
+      "actual": "calc(5em)"
+    },
+    {
+      "name": "distinct relative units",
+      "input": "calc(2rem + 1em + 3%)",
+      "expected": "calc(3% + 1em + 2rem)",
+      "actual": "calc(3% + 1em + 2rem)"
+    },
+    {
+      "name": "exponent boundaries",
+      "input": "calc(1e2px + 1e-1%)",
+      "expected": "calc(0.1% + 100px)",
+      "actual": "calc(0.1% + 100px)"
+    },
+    {
+      "name": "absolute conversion",
+      "input": "calc(1in + 1px)",
+      "expected": "calc(97px)",
+      "actual": "calc(97px)"
+    },
+    {
+      "name": "nested calc",
+      "input": "calc(calc(2% + 3%) + 4%)",
+      "expected": "calc(9%)",
+      "actual": "calc(9%)"
+    },
+    {
+      "name": "sum product fallback",
+      "input": "calc((2% + 1px) * sign(2em - 1px))",
+      "expected": "calc((2% + 1px) * sign(2em - 1px))",
+      "actual": "calc((2% + 1px) * sign(2em - 1px))"
+    },
+    {
+      "name": "signed zero preservation",
+      "input": "calc(-0% + 1%)",
+      "expected": "calc(-0% + 1%)",
+      "actual": "calc(-0% + 1%)"
+    },
+    {
+      "name": "nonfinite preservation",
+      "input": "calc(infinity * 1%)",
+      "expected": "calc(infinity * 1%)",
+      "actual": "calc(infinity * 1%)"
+    },
+    {
+      "name": "unitful division preservation",
+      "input": "calc(1px / 1em * 1%)",
+      "expected": "calc(1px / 1em * 1%)",
+      "actual": "calc(1px / 1em * 1%)"
+    },
+    {
+      "name": "pending var",
+      "input": "calc(var(--offset) + 10%)",
+      "expected": "calc(var(--offset) + 10%)",
+      "actual": "calc(var(--offset) + 10%)"
+    },
+    {
+      "name": "pending attr",
+      "input": "calc(attr(data-x type(<length>)) + 10%)",
+      "expected": "calc(attr(data-x type(<length>)) + 10%)",
+      "actual": "calc(attr(data-x type(<length>)) + 10%)"
+    },
+    {
+      "name": "escape preservation",
+      "input": "calc(1p\\78 + 10%)",
+      "expected": "calc(1p\\78 + 10%)",
+      "actual": "calc(1p\\78 + 10%)"
+    },
+    {
+      "name": "comment preservation",
+      "input": "calc(1px /*keep*/ + 10%)",
+      "expected": "calc(1px /*keep*/ + 10%)",
+      "actual": "calc(1px /*keep*/ + 10%)"
+    }
+  ],
+  "passed": 18,
+  "total": 18
+}

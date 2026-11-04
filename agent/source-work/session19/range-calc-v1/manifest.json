@@ -1,0 +1,22 @@
+{
+  "created_utc": "2026-11-04T09:52:17.024441+00:00",
+  "base_head": "a16d5f4bdda91036fd01c8a99325460285b6143a",
+  "base_sha256": "6cb4f3dbbae48a5f4741a35c57f90463e2c1a828966eba4c149841eee212b756",
+  "candidate_sha256": "e46725fd59b1a9cf063c77d5ba69a5ebc73806e1adef594423a768fb5d848e61",
+  "patch_sha256": "9910f61c1eab1c04b12fa4b4bc3d3265df82a47b91c41d233bdaca1c6754a8fb",
+  "helper_sha256": "5a21e1c80c2edf0c4b09bcb1dc4485acadfefe19ff69f2e795b17141257d15e2",
+  "control_sha256": "0c54d9ab324ecd8a83b4dd75449bf2f70cba7fc0d8e7cbf0b05ba3a92f579bfe",
+  "files": [
+    "src/js/prelude/03-element.js"
+  ],
+  "scope": "Range-only specified calc serializer after existing native validation; all unsupported forms retain existing text; no native/computed/global evaluator changes.",
+  "canonical_written": false,
+  "qualification": "Unbuilt, pending source review and immutable browser tests.",
+  "revised_utc": "2026-11-04T10:08:01.253946+00:00",
+  "arithmetic_bound": "Safe integer finite folding only; fractional/overflow arithmetic retains existing representation, while supported uncombined finite terms may be ordered.",
+  "intrinsic_capture": "Bootstrap captures numeric/string/regex/map/sort/Reflect intrinsics; array appends use existing apush; internal arrays use numeric traversal; no new author-overridable collection dispatch.",
+  "draft_checks_sha256": "ccc0e112d50211e90224cabfb02a8dbf514db08df173f1f36d1093322bd691d8",
+  "intrinsic_control_sha256": "9a5c68931e347c0c2504fb9f1d167be4e1d4df3f3f290d694e7c4dda1a56d0ac",
+  "native_map_capture": "OMap.prototype.get bypasses safecoll wrapper mutable Function.apply dispatch.",
+  "scope_limit": "Syntax/new helper only. Existing cssBorderPending/native-parser intrinsic limitations are unchanged; this is not a whole-pipeline mutation guarantee."
+}

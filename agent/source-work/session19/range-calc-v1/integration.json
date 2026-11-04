@@ -1,0 +1,12 @@
+{
+  "status": "reviewed range serializer integrated separately; browser qualification pending",
+  "commit": "b9a98b328b6647271e1ff97e11ebd54c2cdc63f3",
+  "source_tree": "639d5b6ce603c6b89affd6590be98e43aa321d76",
+  "start_utc": "2026-11-04T10:09:06.379737+00:00",
+  "end_utc": "2026-11-04T10:09:06.494405+00:00",
+  "source_mutation_commit_seconds": 0.15132470801472664,
+  "draft_manifest_sha256": "4dbc7807f15c58cbe974698aa70ca53aa396fa8c8557d2e731b75002c550b678",
+  "independent_review_sha256": "3f8432e4adc1000d9a1389062d4745f356206997ee7eaaa6fd2687dc3bca2406",
+  "combined_03_sha256": "8eb713f41d9cb658235ba34eebbafbafa39bb4d640d2d78f9a1d91c481606b29",
+  "api_receiver_section_byte_identical": true
+}

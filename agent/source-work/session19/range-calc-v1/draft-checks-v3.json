@@ -1,0 +1,29 @@
+{
+  "started_utc": "2026-11-04T10:03:16.420283+00:00",
+  "finished_utc": "2026-11-04T10:03:16.853894+00:00",
+  "elapsed_seconds": 0.4335908549837768,
+  "checks": [
+    {
+      "name": "syntax",
+      "elapsed_seconds": 0.13208937901072204,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "parser-smoke",
+      "elapsed_seconds": 0.1392241430003196,
+      "exit_code": 0,
+      "stdout": "{\"passed\":21,\"total\":21,\"failures\":[]}\n",
+      "stderr": ""
+    },
+    {
+      "name": "intrinsic-isolation",
+      "elapsed_seconds": 0.16212699696188793,
+      "exit_code": 0,
+      "stdout": "{\"scope\":\"Isolated new helper only; pre-existing/native parser intrinsic behavior is not exercised.\",\"expected\":\"calc(1% * sign(100em - 1px))\",\"actual\":\"calc(1% * sign(100em - 1px))\",\"author_calls\":0,\"error\":null,\"passed\":true}\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "Draft syntax/pure helper only; browser/native validation still pending."
+}

@@ -1,0 +1,110 @@
+{
+  "scope": "Pure helper checks only; native grammar, browser paths and WPT remain untested. Expected values frozen before execution.",
+  "cases": [
+    [
+      "typed zero",
+      "calc(10% - 10%)",
+      "calc(0%)"
+    ],
+    [
+      "typed hundred",
+      "calc(50% + 50%)",
+      "calc(100%)"
+    ],
+    [
+      "mixed order",
+      "calc(10px + 10%)",
+      "calc(10% + 10px)"
+    ],
+    [
+      "opaque sign product",
+      "calc(sign(100em - 1px) * 1%)",
+      "calc(1% * sign(100em - 1px))"
+    ],
+    [
+      "finite precision",
+      "calc(1234567px + 1%)",
+      "calc(1% + 1234567px)"
+    ],
+    [
+      "same unit",
+      "calc(2em + 3em)",
+      "calc(5em)"
+    ],
+    [
+      "distinct relative units",
+      "calc(2rem + 1em + 3%)",
+      "calc(3% + 1em + 2rem)"
+    ],
+    [
+      "exponent boundaries",
+      "calc(1e2px + 1e-1%)",
+      "calc(0.1% + 100px)"
+    ],
+    [
+      "absolute conversion",
+      "calc(1in + 1px)",
+      "calc(97px)"
+    ],
+    [
+      "nested calc",
+      "calc(calc(2% + 3%) + 4%)",
+      "calc(9%)"
+    ],
+    [
+      "sum product fallback",
+      "calc((2% + 1px) * sign(2em - 1px))",
+      "calc((2% + 1px) * sign(2em - 1px))"
+    ],
+    [
+      "signed zero preservation",
+      "calc(-0% + 1%)",
+      "calc(-0% + 1%)"
+    ],
+    [
+      "nonfinite preservation",
+      "calc(infinity * 1%)",
+      "calc(infinity * 1%)"
+    ],
+    [
+      "unitful division preservation",
+      "calc(1px / 1em * 1%)",
+      "calc(1px / 1em * 1%)"
+    ],
+    [
+      "pending var",
+      "calc(var(--offset) + 10%)",
+      "calc(var(--offset) + 10%)"
+    ],
+    [
+      "pending attr",
+      "calc(attr(data-x type(<length>)) + 10%)",
+      "calc(attr(data-x type(<length>)) + 10%)"
+    ],
+    [
+      "escape preservation",
+      "calc(1p\\78 + 10%)",
+      "calc(1p\\78 + 10%)"
+    ],
+    [
+      "comment preservation",
+      "calc(1px /*keep*/ + 10%)",
+      "calc(1px /*keep*/ + 10%)"
+    ],
+    [
+      "decimal arithmetic preservation",
+      "calc(0.1% + 0.2%)",
+      "calc(0.1% + 0.2%)"
+    ],
+    [
+      "fractional absolute preservation",
+      "calc(1cm + 10%)",
+      "calc(1cm + 10%)"
+    ],
+    [
+      "unsafe integer preservation",
+      "calc(9007199254740991% + 1%)",
+      "calc(9007199254740991% + 1%)"
+    ]
+  ]
+}

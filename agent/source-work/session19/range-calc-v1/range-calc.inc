@@ -1,0 +1,146 @@
+/* Specified range offsets retain calc() and typed zero percentages. This
+ * bounded serializer runs only after native grammar validation. Functions
+ * needing a value context remain opaque; unsupported trees keep their text. */
+const cssRangeMathApply = Reflect.apply, cssRangeMathSort = Array.prototype.sort;
+const cssRangeMathExec = RegExp.prototype.exec, cssRangeMathSlice = String.prototype.slice;
+const cssRangeMathLower = String.prototype.toLowerCase, cssRangeMathMapGet = OMap.prototype.get;
+const cssRangeMathOwn = Object.prototype.hasOwnProperty, cssRangeMathNumber = Number;
+const cssRangeMathString = String, cssRangeMathFinite = Number.isFinite;
+const cssRangeMathSafe = Number.isSafeInteger, cssRangeMathIs = Object.is;
+function cssAnimationRangeSpecifiedMath(value) {
+    const match = (re, text) => cssRangeMathApply(cssRangeMathExec, re, [text]);
+    const slice = (start, end) => cssRangeMathApply(cssRangeMathSlice, value, [start, end]);
+    const lower = text => cssRangeMathApply(cssRangeMathLower, text, []);
+    if (!match(/^calc\(/i, value) || value.length > 4096 || match(/[\\'\"]|\/\*/, value) || cssBorderPending(value)) return value;
+    let index = 0, depth = 0;
+    const fail = () => { throw null; };
+    const ws = () => { const before = index; while (index < value.length && match(/\s/, value[index])) index++; return index !== before; };
+    const numeric = (number, unit) => {
+        // Do not simplify away a signed-zero or nonfinite intermediate.
+        if (!cssRangeMathFinite(number) || cssRangeMathIs(number, -0)) fail();
+        return {kind: 'number', number, unit};
+    };
+    // Fold only exactly representable safe-integer arithmetic; other finite
+    // decimal calculations retain their existing representation.
+    const exact = number => { if (!cssRangeMathSafe(number)) fail(); return number; };
+    const rank = node => node.kind !== 'number' ? 3 : !node.unit ? 0 : node.unit === '%' ? 1 : 2;
+    const ordered = nodes => cssRangeMathApply(cssRangeMathSort, nodes, [(a, b) => {
+        const ar = rank(a), br = rank(b);
+        return ar !== br ? ar - br : ar === 2 ? (a.unit < b.unit ? -1 : a.unit > b.unit ? 1 : 0) : 0;
+    }]);
+    const sumOf = nodes => {
+        const children = [];
+        for (let n = 0; n < nodes.length; n++) {
+            const node = nodes[n], terms = node.kind === 'sum' ? node.children : [node];
+            for (let t = 0; t < terms.length; t++) {
+                const term = terms[t]; let previous = -1;
+                if (term.kind === 'number') for (let c = 0; c < children.length; c++)
+                    if (children[c].kind === 'number' && children[c].unit === term.unit) { previous = c; break; }
+                if (previous < 0) apush(children, term);
+                else children[previous] = numeric(exact(exact(children[previous].number) + exact(term.number)), term.unit);
+            }
+        }
+        // Keep zero-valued units:0% still carries a percentage dependency.
+        ordered(children);
+        return children.length === 1 ? children[0] : {kind: 'sum', children};
+    };
+    const productOf = nodes => {
+        let combined = null; const rest = [];
+        for (let n = 0; n < nodes.length; n++) {
+            const node = nodes[n], terms = node.kind === 'product' ? node.children : [node];
+            for (let t = 0; t < terms.length; t++) {
+                const term = terms[t];
+                if (term.kind === 'sum') fail(); // Distribution is outside this bounded path.
+                if (term.kind !== 'number') { apush(rest, term); continue; }
+                if (combined && combined.unit && term.unit) fail();
+                combined = combined ? numeric(exact(exact(combined.number) * exact(term.number)), combined.unit || term.unit) : term;
+            }
+        }
+        const children = [];
+        if (combined) apush(children, combined);
+        for (let n = 0; n < rest.length; n++) apush(children, rest[n]);
+        ordered(children);
+        return children.length === 1 ? children[0] : {kind: 'product', children};
+    };
+    function atom() {
+        ws(); if (++depth > 32) fail();
+        let result;
+        if (value[index] === '(') {
+            index++; result = sum(); ws(); if (value[index++] !== ')') fail();
+        } else {
+            const token = match(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(%|[a-z]+)?/i, slice(index));
+            if (token) {
+                index += token[0].length;
+                let number = cssRangeMathNumber(token[1]), unit = lower(token[2] || '');
+                if (unit && unit !== '%' && cssRangeMathApply(cssRangeMathMapGet, MATH_UNITS, [unit]) !== 'length') fail();
+                if (unit && unit !== '%' && cssRangeMathApply(cssRangeMathOwn, MATH_UNIT, [unit])) {
+                    if (MATH_UNIT[unit][0] !== 'px') fail();
+                    number = exact(exact(number) * exact(MATH_UNIT[unit][1])); unit = 'px';
+                }
+                result = numeric(number, unit);
+            } else {
+                const fn = match(/^([a-z-][a-z0-9-]*)\(/i, slice(index)); if (!fn) fail();
+                const start = index; index += fn[0].length;
+                if (lower(fn[1]) === 'calc') {
+                    result = sum(); ws(); if (value[index++] !== ')') fail();
+                } else {
+                    let nesting = 1;
+                    while (index < value.length && nesting) {
+                        if (value[index] === '(') nesting++;
+                        else if (value[index] === ')') nesting--;
+                        index++;
+                    }
+                    if (nesting) fail();
+                    result = {kind: 'opaque', text: slice(start, index)};
+                }
+            }
+        }
+        depth--; return result;
+    }
+    function product() {
+        const terms = [atom()];
+        for (;;) {
+            const before = index; ws(); const operation = value[index];
+            if (operation !== '*' && operation !== '/') { index = before; break; }
+            index++; let term = atom();
+            if (operation === '/') {
+                if (term.kind !== 'number' || term.unit || term.number === 0) fail();
+                term = numeric(exact(1 / exact(term.number)), '');
+            }
+            apush(terms, term);
+        }
+        return productOf(terms);
+    }
+    function sum() {
+        const terms = [product()];
+        for (;;) {
+            const before = index, spaced = ws(), operation = value[index];
+            if ((operation !== '+' && operation !== '-') || !spaced || !match(/\s/, value[index + 1] || '')) { index = before; break; }
+            index++; let term = product();
+            if (operation === '-') {
+                if (term.kind !== 'number') fail();
+                term = numeric(-term.number, term.unit);
+            }
+            apush(terms, term);
+        }
+        return sumOf(terms);
+    }
+    function text(node, parent = 0) {
+        if (node.kind === 'number') return cssRangeMathString(node.number) + node.unit;
+        if (node.kind === 'opaque') return node.text;
+        const precedence = node.kind === 'sum' ? 1 : 2;
+        let result = '';
+        for (let i = 0; i < node.children.length; i++) {
+            const child = node.children[i];
+            if (i && node.kind === 'sum' && child.kind === 'number' && child.number < 0)
+                result += ' - ' + text(numeric(-child.number, child.unit), precedence);
+            else result += (i ? node.kind === 'sum' ? ' + ' : ' * ' : '') + text(child, precedence);
+        }
+        return precedence < parent ? '(' + result + ')' : result;
+    }
+    try {
+        const root = atom(); ws(); if (index !== value.length) return value;
+        return 'calc(' + text(root) + ')';
+    } catch (_) { return value; }
+}
+

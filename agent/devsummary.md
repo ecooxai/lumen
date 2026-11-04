@@ -814,3 +814,27 @@ Only isolated production64fd6463 was reverted by 051a0d6408ff5c00874fd300fe4d15d
 ### Candidate1911 functional freeze preparation
 
 Prepared 2026-11-04T09:40:33.574060+00:00, elapsed session wall11198.574s. Production tree680ebea75737d135b4d1fe0416a26405589afe6d differs from qualified1908 in exactly five files: the default-off Linux sampler from1909 plus range priority, root-pseudo rem, and StyleSheetList changes. Descriptor batching is fully reverted. The separate specified-calc draft is excluded to keep this ready batch moving. Build/startup, native218 and frozen functional/independent controls are pending; then the unchanged full1248 prior-pass union must pass before promotion. All tracked source/Git/status writes will hold through exact-HEAD build and native218 release. Qualified1908 export independently verified843 hashes/modes,810 tested blobs,743 inputs,28 retained public files,222 approved ancestors and four proof hashes; publication remains environment-owned and separately verified.
+
+
+### Iteration25 — CSSStyleDeclaration API contracts
+
+Start 2026-11-04T10:01:27.019222+00:00; end 2026-11-04T10:01:27.212529+00:00; measured source mutation/commit interval 0.204738s. Production commit a0061811f7852ee184f6e68bb6eb6a422bde6a30. Private genuine state and captured original operations implement WebIDL conversion/arity, indexed behavior, live iterator, parentRule and computed readonly exceptions. Existing grammar and color validation are reused; margin/padding expansion remains outside scope. Independent review accepted the draft. A later receiver-boundary issue found before runtime qualification is corrected in iteration26. Score remains62.580128/100 from fully qualified1908 selected1248 manifest; candidate1912 runtime results are pending. These intervals are source operations, not model compute time or summed user elapsed time.
+
+
+### Iteration26 — Canonical public declaration receiver boundary
+
+Start 2026-11-04T10:07:54.401880+00:00; end 2026-11-04T10:07:54.557811+00:00; measured source mutation/commit interval 0.169033s. Production commit abf3591f756ea2292f59b8b9a5cbc26d18f40612. Independent review found raw private targets could reach author callbacks through original operations. Every operation now receives the immutable canonical public proxy, and grid/font recursion uses captured getters. The shared private record is frozen after wrapper construction. No browser proof or whole-parser intrinsic immunity is claimed before the frozen controls run. Score remains62.580128/100 from fully qualified1908 selected1248 manifest; candidate1912 runtime results are pending. These intervals are source operations, not model compute time or summed user elapsed time.
+
+
+### Iteration27 — Bounded specified animation-range math serialization
+
+Start 2026-11-04T10:09:06.379737+00:00; end 2026-11-04T10:09:06.494405+00:00; measured source mutation/commit interval 0.151325s. Production commit b9a98b328b6647271e1ff97e11ebd54c2cdc63f3. The reviewed range-only helper preserves calc wrappers and typed zero, folds only supported exact finite safe-integer operations, and orders terms using CSS Values serialization. Unsupported/opaque/pending forms preserve original syntax. Captured native intrinsics and bounded recursion avoid new author callbacks in the helper; whole existing parser immunity is not claimed. Disjoint integration preserved the API receiver section byte-for-byte. Score remains62.580128/100 from fully qualified1908 selected1248 manifest; candidate1912 runtime results are pending. These intervals are source operations, not model compute time or summed user elapsed time.
+
+
+## Candidate1912 source freeze — 2026-11-04T10:14:49.047982+00:00
+
+Production b9a98b328b6647271e1ff97e11ebd54c2cdc63f3, source tree639d5b6ce603c6b89affd6590be98e43aa321d76; three separately reviewed commits, no native source delta from1911. Elapsed session wall time 13254.048s from06:33:55UTC. Candidate1911 native218 passed218/218 in201.16s, frozen307 qualified180/307 and3670/4468 (+3URLs/+7assertions), independent110 passed108/110 with zero old PASS losses. Its original full run remains completing/HOLD after a namespace TIMEOUT with51 PASS assertions; no blind rerun or timeout change is allowed. Last fully qualified full score remains1908 781/1248. Required API/range and full prior-pass gates for1912 are pending.
+
+Qualified1908 delivery verified public commit9d3882d753faa45fc5c52f9e9748b9f7cdaaf7e4, archive10424331bytes SHA2560f6156e1c9649236e2ec227e22df9539be56f6dc8435a059aa38fc4881a9435e, offline recovery and complete HTTPS readback at09:41:18.884971UTC. Environment worklog separately retains receipt-linked publication6.80s, packaging8.19s and readback20.38s; overlapping task wall intervals are not added to user elapsed time. Test owner timing ledgers retain every run, including failures and rejectedperformance versions. Iteration30 triggers the next work checkpoint if reached.
+
+Candidate1911 full completion update10:14:04.54UTC:783/1248 and23110/26245, with three gained URLs/seven gained assertions but one required namespace harnessOK/fullURL loss. All51 namespace assertions passed before TIMEOUT. No assertion PASS loss; all1248 exits0 and pins/cleanup valid. Result remains HOLD, accepted1908 prior-pass obligations remain binding for1912. The preceding broad docs whitespace check stopped on unchanged reviewed patch-context whitespace and the helper's final blank line; a check restricted to non-patch/non-include continuity files passed. Reviewed artifact bytes were preserved, not rewritten.

@@ -1,0 +1,14 @@
+{
+  "status": "reviewed complete receiver boundary integrated; runtime qualification pending",
+  "commit": "abf3591f756ea2292f59b8b9a5cbc26d18f40612",
+  "source_tree": "3e501bd4eb7bb8564c875b5480138f43e56fcf58",
+  "start_utc": "2026-11-04T10:07:54.401880+00:00",
+  "end_utc": "2026-11-04T10:07:54.557811+00:00",
+  "source_mutation_commit_seconds": 0.16903327801264822,
+  "manifest_sha256": "df9ba0700856a377f95633e9855d7fb67860fb0500fadaf2a359c6a10d815ae0",
+  "review_sha256": "b9b41a212587f2d869d124da18f3ee2414730a7764be06670e230f2bf734883e",
+  "03_sha256": "4bb2232cf4e011721853744b8f5e809d6e70fe310a78ed714037d236124e4ee1",
+  "raw_target_dispatch_removed": true,
+  "canonical_receiver_frozen": true,
+  "grid_font_recursion_captured": true
+}

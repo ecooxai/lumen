@@ -1,0 +1,22 @@
+{
+  "started_utc": "2026-11-04T09:52:29.200073+00:00",
+  "finished_utc": "2026-11-04T09:52:29.601306+00:00",
+  "elapsed_seconds": 0.40120142698287964,
+  "checks": [
+    {
+      "name": "syntax",
+      "elapsed_seconds": 0.20728716801386327,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "parser-smoke",
+      "elapsed_seconds": 0.19368807499995455,
+      "exit_code": 0,
+      "stdout": "{\"passed\":18,\"total\":18,\"failures\":[]}\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "Syntax and isolated pure-helper parser checks only; no native validation or browser coverage claim."
+}

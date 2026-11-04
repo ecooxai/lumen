@@ -1,0 +1,37 @@
+{
+  "started_utc": "2026-11-04T09:59:47.428002+00:00",
+  "finished_utc": "2026-11-04T09:59:48.719871+00:00",
+  "elapsed_seconds": 1.2918583590071648,
+  "manifest_sha256": "3aff19019849b0b8e8b909df8556b32d866f57215ec2ca8be6d33cc1f0cf4725",
+  "checks": [
+    {
+      "source": "src/js/prelude/01-events.js",
+      "sha256": "1b86d9c780b92418b90fb7c8b4d5057bac24529317eda002026657bac682e2e2",
+      "elapsed_seconds": 0.33626054000342265,
+      "exit_code": 1,
+      "stderr": "[stdin]:395\n\n\n\nSyntaxError: Unexpected end of input\n    at wrapSafe (node:internal/modules/cjs/loader:1637:18)\n    at checkSyntax (node:internal/main/check_syntax:78:3)\n    at node:internal/main/check_syntax:45:5\n    at Socket.<anonymous> (node:internal/process/execution:201:5)\n    at Socket.emit (node:events:531:35)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)\n\nNode.js v22.22.2\n"
+    },
+    {
+      "source": "src/js/prelude/03-element.js",
+      "sha256": "27c4a3c98f93cb04bc8fef37028f01731cb591c55ee1c575467dd75a23f1cc9b",
+      "elapsed_seconds": 0.23538251098943874,
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "source": "src/js/prelude/06b-activate.js",
+      "sha256": "6638776280ac9b9ec66b02f8144173f45a82477720e30e66669da9e7963c5a1a",
+      "elapsed_seconds": 0.3118585429619998,
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "source": "src/js/prelude/08-window.js",
+      "sha256": "e2f0772ef02609976912f77db84b2b14e212866ad1dd874c7544c48dd40042a5",
+      "elapsed_seconds": 0.38055797200649977,
+      "exit_code": 1,
+      "stderr": "[stdin]:1095\n})\n^\n\nSyntaxError: Unexpected token '}'\n    at wrapSafe (node:internal/modules/cjs/loader:1637:18)\n    at checkSyntax (node:internal/main/check_syntax:78:3)\n    at node:internal/main/check_syntax:45:5\n    at Socket.<anonymous> (node:internal/process/execution:201:5)\n    at Socket.emit (node:events:531:35)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)\n\nNode.js v22.22.2\n"
+    }
+  ],
+  "scope": "Syntax only; runtime/browser qualification pending."
+}

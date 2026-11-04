@@ -1,0 +1,37 @@
+{
+  "scope": "CSSStyleDeclaration API contracts; no parser/storage/padding rewrite",
+  "expected_shared_gap_counts": {
+    "style-set-property": 5,
+    "iterator": 1,
+    "computed-style-set-property": 3,
+    "indexed-properties-excluding-padding": 5,
+    "setter-declarations-longhand-only": 2
+  },
+  "private_state": "receiver maps and original per-kind operations, same-origin private REALM lookup, registered original wrappers; no public markers/native bridge",
+  "conversion": "receiver and required arity precede property/value/priority conversions; only null is legacy-empty; optional undefined priority defaults empty; Symbols throw; conversion completes before reading mutable declarations",
+  "computed": "private readonly flag controls setProperty/removeProperty/cssText and supported-property assignment; parentRule from private association",
+  "index": "canonical array indices, absent index prototype fallback, readonly enumerable own index descriptors, ordered ownKeys, live standard Array.values iterator",
+  "subclass": "CSSRuleStyle and position-try capture their original per-kind operations; position-try super calls route explicitly to captured rule operations to avoid recursive public-wrapper dispatch",
+  "existing_parser_reuse": "Rule color values now use the same specColor validator as element styles, so invalid converted strings are rejected without a test-specific undefined check",
+  "remaining": "margin/padding shorthand storage/expansion stays unchanged; constructor availability remains outside this slice",
+  "primary_sources": [
+    {
+      "url": "https://drafts.csswg.org/cssom/#the-cssstyledeclaration-interface",
+      "basis": "CSSOM declaration signatures, nullable parent rule, readonly mutation and supported indices; existing internal operations must not dispatch through author-overridden public methods."
+    },
+    {
+      "url": "https://webidl.spec.whatwg.org/#es-DOMString",
+      "basis": "LegacyNullToEmptyString applies only to null; ordinary string conversion handles undefined and rejects Symbol."
+    },
+    {
+      "url": "https://webidl.spec.whatwg.org/#define-the-iteration-methods",
+      "basis": "An indexed property getter exposes the realm Array.prototype.values function as Symbol.iterator."
+    },
+    {
+      "url": "https://webidl.spec.whatwg.org/#legacy-platform-objects",
+      "basis": "Supported index descriptors/enumeration, ordinary fallback for unsupported indices, no indexed setter, deletion and extensibility rules."
+    }
+  ],
+  "evidence": "agent/source-work/session19/test-baseline/candidate1908-shared-reference-gaps-v1.json",
+  "frozen_tests": "cssapi-neighbors50 and cssapi-boundaries28-v1; test owner runs unchanged baseline/reference/candidate"
+}

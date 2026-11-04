@@ -1,0 +1,172 @@
+{
+  "started_utc": "2026-11-04T10:00:26.991815+00:00",
+  "finished_utc": "2026-11-04T10:00:27.296600+00:00",
+  "elapsed_seconds": 0.30475720297545195,
+  "exit_code": 0,
+  "stderr": "",
+  "manifest_sha256": "3aff19019849b0b8e8b909df8556b32d866f57215ec2ca8be6d33cc1f0cf4725",
+  "assembled_sha256": "9c7a489cf73f139f354864bb513bdbef304c67b61aebfa3f9d213299964d9015",
+  "inputs": [
+    {
+      "name": "01-events.js",
+      "sha256": "1b86d9c780b92418b90fb7c8b4d5057bac24529317eda002026657bac682e2e2",
+      "draft_override": true
+    },
+    {
+      "name": "02-node.js",
+      "sha256": "d4ca7145cc89974254cfef048aa03bdfbf5db5d50bd0e6432ab85bcf9d5c083a",
+      "draft_override": false
+    },
+    {
+      "name": "03-element.js",
+      "sha256": "27c4a3c98f93cb04bc8fef37028f01731cb591c55ee1c575467dd75a23f1cc9b",
+      "draft_override": true
+    },
+    {
+      "name": "03c-svg.js",
+      "sha256": "f7282578edffae046157bbeccd026629701b55d3a65f73f8aad598aec4314357",
+      "draft_override": false
+    },
+    {
+      "name": "03d-grid-cssom.js",
+      "sha256": "14ecc44bcb00314cefda6f378d532d4d9d37981805234e11c9728dc21e9978ef",
+      "draft_override": false
+    },
+    {
+      "name": "03e-typedom.js",
+      "sha256": "fe6293ee04a02fa77d77a06bbf72265687cb9e5a3b2b480dac54b8f053f87f50",
+      "draft_override": false
+    },
+    {
+      "name": "04-tags.js",
+      "sha256": "eb940893a3d3b327f88842723a99971765c365b66470affd465f32068c76e08b",
+      "draft_override": false
+    },
+    {
+      "name": "04e-color.js",
+      "sha256": "00d9ee971ea7e87b91911944d1ef637b078a31d62c77af52ead218a1e8e10ad6",
+      "draft_override": false
+    },
+    {
+      "name": "04f-forms.js",
+      "sha256": "77b0b46ba94f2e0474c2b02dd196c9cfa2d2a76811956215764ee97549a77f76",
+      "draft_override": false
+    },
+    {
+      "name": "04p-popover.js",
+      "sha256": "190a103ec7871f2b50c18ce7b60a708e60b7c52511fe016ac4f00a46922fd786",
+      "draft_override": false
+    },
+    {
+      "name": "05-ce.js",
+      "sha256": "84a66cb2f3874f11fa7ece94145cd48e2d7419543716e3866c4ba28d88a4c7cc",
+      "draft_override": false
+    },
+    {
+      "name": "05r-reflect.js",
+      "sha256": "8756f0b8023c38dc844ae6dfa3a31fe74b5d2fd0e090be0eaca6883f6f99b93d",
+      "draft_override": false
+    },
+    {
+      "name": "06-document.js",
+      "sha256": "988afe2672201d1f2d0699710c549f5d7c3e74e03fb139c2f3fcb38ba450d6b0",
+      "draft_override": false
+    },
+    {
+      "name": "06b-activate.js",
+      "sha256": "6638776280ac9b9ec66b02f8144173f45a82477720e30e66669da9e7963c5a1a",
+      "draft_override": true
+    },
+    {
+      "name": "06c-traversal.js",
+      "sha256": "f5abfc945f122aecc15ff90614ee522fc7f7cae34d9d3d467b8d9b51c7ff30e9",
+      "draft_override": false
+    },
+    {
+      "name": "06d-anim.js",
+      "sha256": "7ceb5a821cf6ec7e4571fa463c6dcd7cb87107835eda3f75b5864c88c729759b",
+      "draft_override": false
+    },
+    {
+      "name": "07-web.js",
+      "sha256": "f908a2d9589288120e97a1542ba994b0dd0e26c2cf2db4a580523e7e29ccf7b0",
+      "draft_override": false
+    },
+    {
+      "name": "07b-net.js",
+      "sha256": "e94fe0632330dc1b80d2dcc1ee4383a1833d2dc41f60cb28eee7a4c114b077e2",
+      "draft_override": false
+    },
+    {
+      "name": "07g-webgl.js",
+      "sha256": "6c50afb312d31f4d5e135344300396b9caa88da1404ec227e504d981af90b572",
+      "draft_override": false
+    },
+    {
+      "name": "07h-webgpu.js",
+      "sha256": "18cecd1cfd633d907155b26a6209ef6c567200096619febc7191c96a579c6d2f",
+      "draft_override": false
+    },
+    {
+      "name": "07i-idb.js",
+      "sha256": "6a2fda4697644ace59aef216b9f480b16b53940553cdbf8afa909fe724010974",
+      "draft_override": false
+    },
+    {
+      "name": "07j-xpath.js",
+      "sha256": "6ee800dda6600d13ee6a11cd8719632d5da46c7563b9e798e642abfb5a84129d",
+      "draft_override": false
+    },
+    {
+      "name": "07k-sanitizer.js",
+      "sha256": "67e6e2798d75feaeacd4991fc345d403923db576fbae54292583c4ca4aacbc22",
+      "draft_override": false
+    },
+    {
+      "name": "07l-trusted-types.js",
+      "sha256": "47d143391c4959e2674283e93ab733ab4c2a857cfd482789555bfcec46f12e59",
+      "draft_override": false
+    },
+    {
+      "name": "07r-rtc.js",
+      "sha256": "b355d4db5ffed54de619f174655f8fa4bc209474416f9cfe49ddce1afa9b01c4",
+      "draft_override": false
+    },
+    {
+      "name": "07s-rtc-native.js",
+      "sha256": "1f21fb856c2e5e5d2b44bf3d87c40a7b4d3cd7ce2488b8473c8484cd99e47288",
+      "draft_override": false
+    },
+    {
+      "name": "07w-audio.js",
+      "sha256": "efc3ed16f32865cd995a488c688c04019633b5252f5676fa130f099e80da401a",
+      "draft_override": false
+    },
+    {
+      "name": "07y-canvas2d.js",
+      "sha256": "2dc9396fa7b2495726810769525a356c8b83fd8341ca3d22fdb3eac34517170b",
+      "draft_override": false
+    },
+    {
+      "name": "07z-extra.js",
+      "sha256": "d9e98bd14db91d5b7149d5efef7188588f41d574ea7910bd6c87de0007075d47",
+      "draft_override": false
+    },
+    {
+      "name": "07zz-touch.js",
+      "sha256": "126c404102fd1f4d16fcf2ba42a32dd62ac9d03dd5929960de71e3cd7e2a3aea",
+      "draft_override": false
+    },
+    {
+      "name": "07zzz-accname.js",
+      "sha256": "473a8ebaea82e426c162c663a4bc93669eb88d39988ba18472f6ece95b218771",
+      "draft_override": false
+    },
+    {
+      "name": "08-window.js",
+      "sha256": "e2f0772ef02609976912f77db84b2b14e212866ad1dd874c7544c48dd40042a5",
+      "draft_override": true
+    }
+  ],
+  "scope": "Complete ordered prelude syntax with four draft overrides; shared insertion markers stay comments. Earlier standalone01/08 failures are expected unmatched fragment boundaries, retained as original observations."
+}

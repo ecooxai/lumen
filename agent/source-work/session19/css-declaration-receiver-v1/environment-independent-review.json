@@ -1,0 +1,43 @@
+{
+  "reviewed_utc": "2026-11-04T10:07:24.363437+00:00",
+  "reviewer": "environment_delivery",
+  "manifest_sha256": "df9ba0700856a377f95633e9855d7fb67860fb0500fadaf2a359c6a10d815ae0",
+  "candidate_sha256": "4bb2232cf4e011721853744b8f5e809d6e70fe310a78ed714037d236124e4ee1",
+  "status": "STATIC REVIEW ACCEPTED FOR RUNTIME QUALIFICATION",
+  "audited_original_operations": [
+    "Inline cssText getter/setter, length, item, getPropertyValue, getPropertyPriority, setProperty, removeProperty",
+    "Computed own overrides and inherited readonly operations",
+    "CSSRuleStyle own operations and inherited inline operations",
+    "Position-try own operations and explicitly captured parent operations"
+  ],
+  "author_callback_paths": [
+    "_m/_w/_names method lookups",
+    "Configurable own _el/_src/_map/_none/_ps/_rule property accessors",
+    "Public getPropertyValue recursion for computed font/grid",
+    "Instanceof custom hasInstance hooks and ordinary prototype accessor fallback"
+  ],
+  "resolution": [
+    "State now stores canonical public receiver and no raw target field.",
+    "All operation-table application uses state.receiver, including indexed helpers.",
+    "Wrapping sets receiver to proxy, freezes state through a captured intrinsic, then registers same state for proxy before exposure.",
+    "Descriptor-based repeated-wrap check returns the already registered receiver.",
+    "Computed font/grid recursive getter operations are captured and dispatched on the same public receiver."
+  ],
+  "static_limits": [
+    "No baseline1911 reproduction was performed; original callback findings were static inferences.",
+    "Existing author-overridable internal helpers may still run, but receive the public receiver on the reviewed paths.",
+    "This does not claim global CSS parser immunity to arbitrary prototype replacement."
+  ],
+  "syntax": {
+    "started_utc": "2026-11-04T10:07:24.136942+00:00",
+    "elapsed_seconds": 0.2267509869998321,
+    "exit_code": 0,
+    "stderr": ""
+  },
+  "required_controls": [
+    "Saved computed getter with public prototype getPropertyValue replacement for grid/font",
+    "Borrowed inline/rule/computed methods across same-origin realms",
+    "Own/prototype accessor callback Receiver is the public style object; no private identity escape",
+    "Read-only flag, parentRule, indexed-property behavior and all prior passing neighbors"
+  ]
+}

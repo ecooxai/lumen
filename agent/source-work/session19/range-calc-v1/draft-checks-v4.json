@@ -1,0 +1,29 @@
+{
+  "started_utc": "2026-11-04T10:08:00.378918+00:00",
+  "finished_utc": "2026-11-04T10:08:01.253946+00:00",
+  "elapsed_seconds": 0.8750152760185301,
+  "checks": [
+    {
+      "name": "syntax",
+      "elapsed_seconds": 0.23693551600445062,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "parser-smoke",
+      "elapsed_seconds": 0.237936225021258,
+      "exit_code": 0,
+      "stdout": "{\"passed\":21,\"total\":21,\"failures\":[]}\n",
+      "stderr": ""
+    },
+    {
+      "name": "intrinsic-isolation",
+      "elapsed_seconds": 0.39998033799929544,
+      "exit_code": 0,
+      "stdout": "{\"scope\":\"Isolated new helper only; pre-existing/native parser intrinsic behavior is not exercised.\",\"expected\":\"calc(1% * sign(100em - 1px))\",\"actual\":\"calc(1% * sign(100em - 1px))\",\"author_calls\":0,\"error\":null,\"passed\":true}\n",
+      "stderr": ""
+    }
+  ],
+  "scope": "Syntax/new helper only. Existing cssBorderPending/native-parser intrinsic limitations are unchanged; this is not a whole-pipeline mutation guarantee."
+}

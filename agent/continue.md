@@ -1,6 +1,6 @@
 # Continue Lumen Linux — session19 active
 
-Updated 2026-11-04T09:40:33.574060+00:00. Session started2026-11-04T06:33:55Z and remains active.
+Updated 2026-11-04T10:14:49.047982+00:00. Session started2026-11-04T06:33:55Z and remains active.
 Work through RubyWebTerm in `/mnt/p3/project/browser/lumen-android/lumen-android`.
 Branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104`.
 Read AGENTS.md, the complete user request in agent/task.md, and the latest entries in
@@ -48,38 +48,52 @@ next-candidate fixes. The manifest is1248 selected HTTP/default-timeout DOM/CSS 
 URLs from1247 files, not all WPT. Historical pinned Chromium150.0.7871.114 scored1062/1248;
 this is not a current latest-Chromium run or an overall browser quality score.
 
-## Current source and next candidate
+## Current source and candidate1912
 
-Current functional production HEAD before the next docs freeze:
-`051a0d6408ff5c00874fd300fe4d15df964ad2c0`, source tree
-`680ebea75737d135b4d1fe0416a26405589afe6d`.
-The three separate, statically reviewed follow-ups are not runtime qualified yet:
+Production HEAD `b9a98b328b6647271e1ff97e11ebd54c2cdc63f3`, source tree
+`639d5b6ce603c6b89affd6590be98e43aa321d76`. Candidate1912 adds three separate reviewed
+commits to immutable1911:
 
-- `2abd7f95c45b12a3bc70bd1e9bd70583798aecb2`: range-only native priority replay,
-  using existing priority tiers and validated all projections. Explicit CSSOM API
-  replacement remains unchanged.
-- `070bf79632a3391960eca1e2fe5553edd0323174`: root pseudo range rem uses the
-  originating root font; ordinary root/non-root contexts stay unchanged.
-- `6ee883838a8dba9bad203428c62c8a0bec5f6f21`: private live branded StyleSheetList
-  collections, item/identity/liveness/index semantics and genuine same-origin cross-realm
-  borrowing. Generic02-node.js helpers are unchanged.
+- `a0061811f7852ee184f6e68bb6eb6a422bde6a30`: CSSStyleDeclaration WebIDL conversion,
+  required arguments, private genuine receiver state, indexed properties, live iterator,
+  parentRule and computed readonly behavior. Existing color validation is reused.
+- `abf3591f756ea2292f59b8b9a5cbc26d18f40612`: all captured declaration operations use
+  the immutable canonical public receiver; raw-target dispatch is removed. Computed
+  grid/font recursion uses captured internal operations. This fixes an interaction caught
+  during independent review before any candidate1912 runtime qualification.
+- `b9a98b328b6647271e1ff97e11ebd54c2cdc63f3`: range-only specified calc serialization
+  preserves wrappers and typed zero while simplifying supported exact terms and sorting
+  percentage/dimension operands. Native grammar/computed behavior is unchanged.
 
-Exact integration hashes, reviews and source mutation intervals are in
-agent/source-work/session19/range-and-list-integration-ledger.json and the associated
-range-priority-v1, range-root-pseudo-v1 and stylesheet-list-v1 directories.
+Independent reviews and exact integration intervals are retained in
+agent/source-work/session19/css-declaration-api-v1, css-declaration-receiver-v1 and
+range-calc-v1. Margin/padding storage expansion, constructor availability, broad cascade
+rollback and immunity of every pre-existing parser helper to arbitrary overrides are not
+claimed. API state is private and frozen; legitimate same-origin cross-realm borrowing
+uses the existing private REALM bridge, with exceptions created by the calling operation's
+realm. The separate generic inline importance assembly correction is approved for a later
+bounded draft, not included in1912.
 
-Candidate1911 is now being sealed from this production tree plus continuity docs. Keep all
-tracked source/Git/status frozen through build and native218 until the test owner releases
-that exact HEAD. Required frozen range priority, root-pseudo, StyleSheetList and prior-pass
-neighbors precede the unchanged full1248 replay. The separate specified-calc draft is excluded.
+Candidate1912 build/startup and frozen API50, API boundary/realm/receiver controls, range
+controls and prior-pass/full1248 gates are pending. Hold all tracked source/Git/status
+writes until the test owner releases the exact frozen candidate. Diagnostic flags
+LUMEN_TRACE_LOAD and LUMEN_PROFILE_PRELUDE must remain unset during qualification.
 
-The isolated1910 descriptor-batching hypothesis was rejected after all six fixed comparisons:
-owned CPU15.383061s to15.431443s did not meet5% improvement, and wall8.583s to8.3747s
-improved2.426890%, below3%. Only the RSS criterion passed. Production64fd6463 was reverted
-in051a0d6408ff5c00874fd300fe4d15df964ad2c0; exact source comparison proves the08-window
-change relative to1909 is solely the StyleSheetList export. All benchmark receipts and the
-unused reflection plan remain retained; no extra runs may be used to erase the rejection.
-The default-off sampler remains unchanged and explicitly unset during qualification.
+Candidate1911, exact frozen HEAD `a16d5f4bdda91036fd01c8a99325460285b6143a`, passed
+build/startup and native218 (218/218 in201.16s), frozen307 URLs (180/307 and3670/4468,
++3 URLs/+7 assertions, no prior losses) and independent110 (108/110, no old PASS loss).
+Binary SHA256 `46b373e10f613ceedab6e58106279a617faa3e38e0616401ae7ed60e30777f0c`.
+Its unchanged full1248 run completed10:14:04.54UTC with783/1248 URLs and23110/26245
+assertions. Three new URLs and seven assertions passed, but the namespace URL lost its
+required harnessOK/fullURL status despite all51 assertions passing. All1248 browser exits,
+pins and cleanup were valid; no assertion PASS was lost. The original run is HOLD and must
+not be relabeled by later passing runs. Last fully qualified full candidate remains1908.
+
+The isolated1910 descriptor-batching hypothesis was rejected after all six fixed
+comparisons: owned CPU15.383061s to15.431443s did not meet5% improvement, and namespace
+wall8.583s to8.3747s improved2.426890%, below3%. Only RSS passed. Production64fd6463 was
+reverted in051a0d6408ff5c00874fd300fe4d15df964ad2c0. The benchmark receipts and unused
+reflection plan remain retained; no extra runs may erase this rejection.
 
 ## Reliability and profiler evidence
 
@@ -95,18 +109,22 @@ counts are lower bounds. The isolated batching hypothesis was measured, rejected
 
 ## Public persistence and remaining delivery
 
-Qualified1906 public commit: `0d76bf0aeefb3c975b94b550f831681c41e3beda`.
-Current live source archive remains1906:10,395,999 bytes, SHA256
-`ad13919b9b5963c8ecf440f0d3b6d173f8139459073155d7cb9924e69930962c`,
-verified by offline recovery and full HTTPS readback. Qualified1908 passed independent source/ancestry review and environment is publishing it
-separately; defer only tracked status updates while1911 is frozen. Exact publication/archive
-readback is still required before changing the live archive label.
-Iteration20 work-only public commit: `e86534d5831f4d1a66b9fec029f44d2a0c3350cc`;
-exact31dbb source, marked unqualified at preparation, reviewed and remote-readback verified.
-The accepted live dashboard is1908; the archive label remains1906 until replacement verifies.
+Qualified1908 public commit: `9d3882d753faa45fc5c52f9e9748b9f7cdaaf7e4`.
+The live exact-source archive is10,424,331 bytes, SHA256
+`0f6156e1c9649236e2ec227e22df9539be56f6dc8435a059aa38fc4881a9435e`.
+Offline recovery and full external HTTPS readback verified at09:41:18.884971UTC.
+Receipt: agent/ops/session19/artifacts1908/public-readback.json, copied into source-work.
+The1906 archive remains safely archived. Iteration20 work-only public commit is
+`e86534d5831f4d1a66b9fec029f44d2a0c3350cc`; it is not a qualified runtime artifact.
+The next mandatory work checkpoint is iteration30 if reached. Environment has prepared
+only a lightweight1911 source inventory; no1911 full acceptance or promotion is implied.
 
-Continue the authorized development session. After the final candidate qualifies, update
-AGENTS/continue/devsummary, preserve original evidence, publish the exact reviewed source,
-and restart the browser on display:0 and the authorized connected MI8 using the established
-install-r/data-preserving workflow. Do not present public source publication as device
-installation or infer Android conformance from Linux tests. Root/environment own delivery.
+The normal five-hour deadline is11:33:55UTC. Root approved up to one additional hour only
+if the concrete generic importance bug's validation/delivery needs it; absolute cap12:33:55UTC.
+Keep user elapsed wall time separate from summed parallel task durations. Do not invent
+unmeasured model compute time. Continue authorized development and preserve all evidence.
+After final acceptance, finalize AGENTS/continue/devsummary and agent/next-agent-prompt.md,
+publish the exact reviewed source, and restart on display:0 and the authorized connected
+MI8 with install-r/data preservation. Source publication, desktop execution and Android
+installation have separate identities and receipts. Linux results do not imply Android
+conformance. Root/environment own final delivery.

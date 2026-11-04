@@ -1,0 +1,42 @@
+{
+  "status": "reviewed API correction integrated; runtime qualification pending",
+  "commit": "a0061811f7852ee184f6e68bb6eb6a422bde6a30",
+  "source_tree": "c06cb18bf466c8d7d5bb2f080ff5b97facbb5029",
+  "start_utc": "2026-11-04T10:01:27.019222+00:00",
+  "end_utc": "2026-11-04T10:01:27.212529+00:00",
+  "source_mutation_commit_seconds": 0.20473801699699834,
+  "draft_manifest_sha256": "3aff19019849b0b8e8b909df8556b32d866f57215ec2ca8be6d33cc1f0cf4725",
+  "independent_review_sha256": "d3db98dd9914e00a1fa5b244e365fec6bbabded36a6f27f64321833141f20616",
+  "files": {
+    "src/js/prelude/01-events.js": {
+      "base_sha256": "53aaaf4a2c7ce415abc429c28dc97698aa51678a0cbc952b8e481a1aa4c295b8",
+      "candidate_sha256": "1b86d9c780b92418b90fb7c8b4d5057bac24529317eda002026657bac682e2e2",
+      "patch_sha256": "f09c60a215691c2758e8296b13484a930ed410dfa936d66f053994e5f298dcf3",
+      "changed_lines": 1
+    },
+    "src/js/prelude/03-element.js": {
+      "base_sha256": "6cb4f3dbbae48a5f4741a35c57f90463e2c1a828966eba4c149841eee212b756",
+      "candidate_sha256": "27c4a3c98f93cb04bc8fef37028f01731cb591c55ee1c575467dd75a23f1cc9b",
+      "patch_sha256": "15ec4f4a5dca3c25e474212e164f8a5ff0ceb879b0524ad838a9a953a51a8790",
+      "changed_lines": 179
+    },
+    "src/js/prelude/06b-activate.js": {
+      "base_sha256": "e8094a6805f0d991e4a44a2357c69e0ae07f47bc9201885d1f91b9e33119e7a6",
+      "candidate_sha256": "6638776280ac9b9ec66b02f8144173f45a82477720e30e66669da9e7963c5a1a",
+      "patch_sha256": "4e8714935202c7e1deff0ec5011fc8e5cf9c522d35a9e4166330a6a3425f3a0f",
+      "changed_lines": 19
+    },
+    "src/js/prelude/08-window.js": {
+      "base_sha256": "2a8065e34bf7e135df384132b2e32af89ea860dc9a55df36a020845efa7b0c27",
+      "candidate_sha256": "e2f0772ef02609976912f77db84b2b14e212866ad1dd874c7544c48dd40042a5",
+      "patch_sha256": "71b2690530fd74ef068be1b0a783c905969860664f5191fb185dc0c742271154",
+      "changed_lines": 2
+    }
+  },
+  "excluded": [
+    "margin/padding storage rewrite",
+    "constructor availability changes",
+    "range specified-calc draft"
+  ],
+  "score_from_last_full_qualification": 62.580128205128204
+}

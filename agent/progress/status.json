@@ -1,6 +1,6 @@
 {
   "title": "Lumen Linux \u00b7 WPT improvement session19",
-  "phase": "Candidate1908 completed the unchanged selected1248-URL replay:781 passed and23103 assertions passed, up22 URLs and277 assertions over1808 with no required prior-pass or harness losses. Isolated1910 startup measurements and a separate range/List follow-up batch are pending.",
+  "phase": "Accepted candidate1908 remains 781/1248 URLs (62.58%) and23103/26245 assertions. Candidate1911 full qualification is HOLD: Document-createElement-namespace retained all51 passing assertions but timed out at the harness level, losing a required prior harnessOK/fullURL. Final full receipt is pending. No1911 qualified publication or device promotion is approved; API/range work remains a later unqualified candidate.",
   "iteration": 1908,
   "session_iteration": 20,
   "score": 62.580128205128204,
@@ -24,7 +24,7 @@
   "overall_result_label": "Session19 active;1906 full selected replay qualified at61.86%",
   "accepted_iteration": 1908,
   "active_iteration": 1910,
-  "active_candidate": 1910,
+  "active_candidate": 1911,
   "accepted_binary_sha256": "cf2692999572a09524c11697d76de073ccbba7e3c6fe496b89bb241ccfc9bdc9",
   "accepted_binary_scope": "Qualified complete unchanged selected1248 replay on1908:781 fully passing URLs and23103/26245 assertions, all23103 preregistered passes retained, zero required URL/harness losses. Final device delivery pending.",
   "coverage": "781/1248 selected cases and23103/26245 assertions; all23103 required passes retained. Historical pinnedChromium150:1062/1248 and24541/26064. Selected scope, not allWPT.",
@@ -34,7 +34,10 @@
     "Harness outcomes remain1238OK,1ERROR,9TIMEOUT. Earlier held runs remain preserved; no causal namespace reliability fix is claimed.",
     "Range start/end computed and invalid files fully pass, but shorthand132/133 and valid longhand canonicalization gaps remain. Independent range24 has23passes; root-pseudo rem and parsed priority follow-ups are isolated.",
     "PinnedChromium150.0.7871.114 historical full reference remains1062/1248 and24541/26064, with different assertion-registration totals.",
-    "Accepted1908 publication is being prepared. Current downloadable source is exact qualified1906; iteration20 work-only Git snapshot is separately preserved."
+    "Accepted1908 publication is being prepared. Current downloadable source is exact qualified1906; iteration20 work-only Git snapshot is separately preserved.",
+    "Qualified1908 source is published with independently reviewed public ancestry, exact source inputs, offline Git restoration and complete HTTPS archive hash readback.",
+    "Isolated1910 startup descriptor batching failed preregistered useful-gain thresholds in the fixed six-run comparison; its production hunk was reverted before candidate1911.",
+    "Candidate1911 full gate HOLD: namespace case10:08:15.644794\u201310:08:27.645790UTC retained51/51assertionPASS but harnessTIMEOUT lost a required priorOK/fullURL. Exact full audit is pending; no resource or timeout adjustment, rescue run, qualified publication or device promotion. Candidate1908 remains the accepted source/download."
   ],
   "findings": [
     "Full1908 retains all prior passes and confirms22URL/277assertion gains over1808.",
@@ -48,8 +51,8 @@
     "comparison": "Current pinned reference Chromium150. Older234/640-file measurements use different scope."
   },
   "source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
-  "source_archive_label": "Candidate1906 qualified complete selected1248 source checkpoint",
-  "source_archive_note": "Qualified complete unchanged selected1248-URL development checkpoint:772/1248 URLs and23024/26245 assertions, gain13 URLs and198 assertions over1808, zero prior-pass or harness losses. OneERROR and nineTIMEOUT outcomes remain. Not allWPT, Chromium parity, overall95 quality or a new display0/Android installation claim.",
+  "source_archive_label": "Candidate1908 qualified complete selected1248 source checkpoint",
+  "source_archive_note": "Qualified complete unchanged selected1248-URL development checkpoint:781/1248 URLs and23103/26245 assertions, gain22 URLs and277 assertions over1808, zero prior-pass or harness losses. OneERROR and nineTIMEOUT outcomes remain. Not allWPT, Chromium parity, overall95 quality or a new display0/Android installation claim.",
   "broad_current": {
     "iteration": 1908,
     "files": 1248,
@@ -73,8 +76,8 @@
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104",
   "working_commit": "6ee883838a8dba9bad203428c62c8a0bec5f6f21",
-  "updated_utc": "2026-11-04T09:28:20.041337+00:00",
-  "updated_at": "2026-11-04T09:28:20.041337+00:00",
+  "updated_utc": "2026-11-04T10:15:21.938965+00:00",
+  "updated_at": "2026-11-04T10:15:21.938965+00:00",
   "runtime_candidate": 1808,
   "runtime_note": "Existing verified candidate1808 desktop process remains untouched while session19 development proceeds; Android still needs final candidate delivery.",
   "qualified_prior_candidate_scope": {
@@ -192,10 +195,10 @@
     "full_fixed1248_replayed": false,
     "native218_replayed": false
   },
-  "source_archive_candidate": 1906,
-  "source_archive_sha256": "ad13919b9b5963c8ecf440f0d3b6d173f8139459073155d7cb9924e69930962c",
-  "source_archive_bytes": 10395999,
-  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1906-20261104",
+  "source_archive_candidate": 1908,
+  "source_archive_sha256": "0f6156e1c9649236e2ec227e22df9539be56f6dc8435a059aa38fc4881a9435e",
+  "source_archive_bytes": 10424331,
+  "source_public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1908-20261104",
   "latest_broad_observation": {
     "candidate": 1908,
     "qualification_status": "QUALIFIED SELECTED MANIFEST",
@@ -423,8 +426,8 @@
   },
   "score_basis": "781/1248 selected HTTP/default-timeout test URLs from1247 source files, qualified candidate1908 full replay.",
   "working_commit_role": "Later isolated performance and range/List follow-ups are separate from accepted1908. Current public downloadable source remains qualified1906 until1908 publication and readback.",
-  "public_source_commit": "0d76bf0aeefb3c975b94b550f831681c41e3beda",
-  "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1906-20261104",
+  "public_source_commit": "9d3882d753faa45fc5c52f9e9748b9f7cdaaf7e4",
+  "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1908-20261104",
   "source_archive_external_hash_verified": true,
   "source_archive_offline_restore_verified": true,
   "session18_delivery_history": {
@@ -591,5 +594,6 @@
       "full1248_status": "QUALIFIED",
       "device_delivery_performed": false
     }
-  }
+  },
+  "active_full_replay_status": "HOLD"
 }

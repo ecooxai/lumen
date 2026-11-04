@@ -1,0 +1,43 @@
+{
+  "reviewed_utc": "2026-11-04T10:00:54.300569+00:00",
+  "reviewer": "environment_delivery",
+  "manifest_sha256": "3aff19019849b0b8e8b909df8556b32d866f57215ec2ca8be6d33cc1f0cf4725",
+  "status": "STATIC REVIEW ACCEPTED FOR RUNTIME QUALIFICATION",
+  "scope": [
+    "Private genuine receiver state and original per-kind dispatch tables",
+    "Caller-side WebIDL conversion order, required arity, readonly mutation and private parentRule",
+    "Captured Array.values iterator, bounded indexed own-property behavior and ordinary Receiver fallback",
+    "Inline, rule, computed, invalid-pseudo and position-try wrapper registration",
+    "Position-try explicit captured parent operations avoid recursive public wrapper dispatch"
+  ],
+  "resolved_findings": [
+    {
+      "finding": "Ordinary property fallback originally passed the private target as Receiver.",
+      "resolution": "Final get/set traps preserve their supplied public Receiver; explicit internal operations still invoke the private target."
+    }
+  ],
+  "syntax": {
+    "complete_ordered_prelude": "PASS",
+    "elapsed_seconds": 0.30475720297545195,
+    "assembled_sha256": "9c7a489cf73f139f354864bb513bdbef304c67b61aebfa3f9d213299964d9015",
+    "receipt": "environment-assembled-syntax-review.json",
+    "initial_fragment_attempts": "Standalone01/08 are unmatched fragments; original errors retained and correctly resolved with full ordered assembly."
+  },
+  "limits": [
+    "No immutable browser qualification performed by this review.",
+    "Existing computed grid/font recursion through public getPropertyValue remains outside this patch and the intrinsic-immunity claim.",
+    "Constructor exposure and margin/padding storage remain outside this scope."
+  ],
+  "required_controls": [
+    "Same-origin foreign borrowing and forged/wrong-interface rejection",
+    "Conversion side effects and readonly exceptions",
+    "Iterator/index descriptors, boundary4294967295, ordinary prototype getter/setter Receiver",
+    "Position-try accepted/rejected property dispatch and cssText",
+    "All previously passing unchanged upstream neighbors"
+  ],
+  "primary_sources": [
+    "https://drafts.csswg.org/cssom/#the-cssstyledeclaration-interface",
+    "https://webidl.spec.whatwg.org/#es-DOMString",
+    "https://webidl.spec.whatwg.org/#legacy-platform-objects"
+  ]
+}

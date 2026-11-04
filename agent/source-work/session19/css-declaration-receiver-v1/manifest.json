@@ -1,0 +1,22 @@
+{
+  "created_utc": "2026-11-04T10:04:39.626354+00:00",
+  "status": "DRAFT ONLY; API receiver follow-up after independent review",
+  "base_commit": "a0061811f7852ee184f6e68bb6eb6a422bde6a30",
+  "path": "src/js/prelude/03-element.js",
+  "base_sha256": "27c4a3c98f93cb04bc8fef37028f01731cb591c55ee1c575467dd75a23f1cc9b",
+  "candidate_sha256": "4bb2232cf4e011721853744b8f5e809d6e70fe310a78ed714037d236124e4ee1",
+  "patch_sha256": "0d2f5f1abb91f32b00609d9eab5437c53c026e596b19c665dd4639d3d0c68f6d",
+  "scope": [
+    "Captured original operations use canonical public receiver, preserving old callback receiver identity across all originals.",
+    "Private state still stores brand, parent, readonly and owning-realm operation table; raw target never crosses that table.",
+    "Grid/font recursive getters dispatch captured originals instead of author-overridden public methods.",
+    "Canonical public receiver and private associations freeze immediately after initial wrapper creation; repeated internal wrapping returns the existing receiver."
+  ],
+  "unchanged": [
+    "constructor availability",
+    "parser/storage",
+    "all other computed behavior"
+  ],
+  "required_control": "separate cssapi-computed-dispatch4-v1 and API46 union",
+  "revised_utc": "2026-11-04T10:05:28.781522+00:00"
+}
