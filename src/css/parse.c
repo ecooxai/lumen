@@ -951,7 +951,7 @@ static DeclList *css_parse_declarations(const char *s, size_t n, bool property_d
         /* A stray closing token invalidates the declaration, not just its
            suffix. Continue to the next semicolon so later declarations survive. */
         if (name_valid && !bad_close && math_valid && (arbitrary || v[0]) && css_var_syntax_valid(v) &&
-            (arbitrary || (css_numeric_dimension_valid(property, v) && css_transition_property_valid(property, v) && css_easing_valid(property, v) && css_box_shadow_valid(property, v) && css_border_valid(property, v) && css_image_longhand_valid(property, v) && css_interpolate_size_valid(property, v)))) vec_push(*d, dc); else free(dc.value);
+            (arbitrary || (css_numeric_dimension_valid(property, v) && css_transition_property_valid(property, v) && css_easing_valid(property, v) && css_box_shadow_valid(property, v) && css_border_valid(property, v) && css_image_longhand_valid(property, v) && css_animation_longhand_valid(property, v) && css_interpolate_size_valid(property, v)))) vec_push(*d, dc); else free(dc.value);
         free(val);
     }
     return d;
@@ -1335,6 +1335,7 @@ bool css_supports_declaration(const char *p, const char *v, bool quirks) {
     if (r) r = css_box_shadow_valid(p, v);
     if (r) r = css_border_valid(p, v);
     if (r) r = css_image_longhand_valid(p, v);
+    if (r) r = css_animation_longhand_valid(p, v);
     if (r) r = css_interpolate_size_valid(p, v);
     if (r) r = css_supports_native_value(p, v, quirks);
     if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
@@ -1658,6 +1659,21 @@ static void ser_string(SB *b, const char *s) {
         else { if (*u == '"' || *u == '\\') sb_putc(b, '\\'); sb_putc(b, (char)*u); }
     }
     sb_putc(b, '"');
+}
+/* CSSKeyframesRule.name is a DOMString attribute. Serialize its value without
+ * reparsing it as authored CSS; embedded NUL becomes U+FFFD only in CSS text. */
+char *css_keyframes_name_serialize(const char *name, size_t length) {
+    SB value = {0}, output = {0};
+    for (size_t i = 0; i < length; i++) {
+        if (!name[i]) sb_puts(&value, "\xef\xbf\xbd");
+        else sb_putc(&value, name[i]);
+    }
+    const char *text = value.s ? value.s : "";
+    bool quoted = str_ieq(text, "none") || str_ieq(text, "default") ||
+        str_ieq(text, "initial") || str_ieq(text, "inherit") || str_ieq(text, "unset") ||
+        str_ieq(text, "revert") || str_ieq(text, "revert-layer");
+    if (quoted) ser_string(&output, text); else ser_ident(&output, text);
+    sb_free(&value); return sb_take(&output);
 }
 typedef struct SelectorSerialization {
     const CssNamespace *namespaces;

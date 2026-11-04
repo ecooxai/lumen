@@ -115,7 +115,7 @@ function parseDecls(s, fontFace = false, keyframe = false, supportedNames = true
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) { v = cssScalarSpecified(lk, v); const previous = m.get(lk); if (previous && previous[1] && !imp) continue; } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (!fontFace && CSS_ANIMATION_LONGHAND.test(lk)) { cssAnimationLonghandSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) { v = cssScalarSpecified(lk, v); const previous = m.get(lk); if (previous && previous[1] && !imp) continue; } m.set(lk, [v, imp]); }
     return m;
 }
 /* The native enum parser owns acceptance; authored pending tokens remain opaque. */
@@ -219,6 +219,18 @@ function cssTransitionSet(map, value, priority, cascade = false) {
     if (cascade && old && old[1] && !priority) return true;
     map.delete('transition'); map.set('transition', [parsed, priority ? 'important' : '']);
     return true;
+}
+
+const CSS_ANIMATION_LONGHAND = /^animation-(?:name|composition|direction|fill-mode|play-state)$/;
+function cssAnimationLonghandSet(map, property, value, priority, cascade = false) {
+    if (value === '') { if (cascade) return false; map.delete(property); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
+    const parsed = N.cssAnimationLonghand(property, value);
+    if (parsed === null) return false;
+    const old = map.get(property);
+    if (cascade && old && old[1] && !priority) return true;
+    if (cascade) map.delete(property);
+    map.set(property, [parsed, priority ? 'important' : '']); return true;
 }
 
 const CSS_IMAGE_LONGHAND = /^(background-(?:clip|attachment|origin|repeat)|border-image-repeat|border-image-slice)$/;
@@ -1358,6 +1370,7 @@ function mathValid(p, v) {
     if (p === 'interpolate-size') return cssInterpolateSizeParse(v) !== null;
     if (p === 'z-index') return N.cssSupports('(z-index:' + v + ')');
     if (CSS_IMAGE_LONGHAND.test(p)) return N.cssImageLonghand(p, v) !== null;
+    if (CSS_ANIMATION_LONGHAND.test(p)) return N.cssAnimationLonghand(p, v) !== null;
     if (CSS_EASING_LONGHAND.test(p)) return N.cssEasing(v) !== null;
     if (p === 'transition') return cssTransitionParse(v) !== null;
     if (cssAnimationRangeRelevant(p)) return N.cssAnimationRange(p, v) !== null;
@@ -1975,6 +1988,11 @@ class CSSStyleDeclaration {
         if (cssAnimationRangeRelevant(p)) {
             const m = new SMap(this._m());
             if (!cssAnimationRangeSet(m, p, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (!cssDescriptorStyleHas(this) && CSS_ANIMATION_LONGHAND.test(p)) {
+            const m = new SMap(this._m());
+            if (!cssAnimationLonghandSet(m, p, v, pri)) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
         if (CSS_IMAGE_LONGHAND.test(p)) {

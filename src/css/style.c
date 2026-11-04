@@ -3762,6 +3762,132 @@ bool css_image_longhand_valid(const char *property, const char *value) {
     free(parsed); return valid;
 }
 
+/* The enum/name longhands share a complete comma-list grammar. Custom names
+ * retain their decoded, case-sensitive identity; display serialization is not
+ * the key used for @keyframes lookup. Pending substitutions keep their tokens. */
+static int animation_longhand_kind(const char *property) {
+    property = css_animation_property_name(property);
+    if (!strcmp(property, "animation-name")) return 1;
+    if (!strcmp(property, "animation-composition")) return 2;
+    if (!strcmp(property, "animation-direction")) return 3;
+    if (!strcmp(property, "animation-fill-mode")) return 4;
+    if (!strcmp(property, "animation-play-state")) return 5;
+    return 0;
+}
+static const char *animation_wide_keyword(const char *value) {
+    static const char *const words[] = { "initial", "inherit", "unset", "revert", "revert-layer" };
+    for (unsigned i = 0; i < sizeof words / sizeof words[0]; i++)
+        if (str_ieq(value, words[i])) return words[i];
+    return NULL;
+}
+static bool animation_name_token_valid(const CTok *token, bool allow_none) {
+    if (!token->str || !*token->str) return false;
+    if (token->type == CT_STRING) return true;
+    if (token->type != CT_IDENT || animation_wide_keyword(token->str) ||
+        str_ieq(token->str, "default")) return false;
+    return allow_none || !str_ieq(token->str, "none");
+}
+static const char *animation_enum_keyword(int kind, const char *value) {
+    static const char *const words[][5] = {
+        { NULL }, { NULL }, { "replace", "add", "accumulate", NULL },
+        { "normal", "reverse", "alternate", "alternate-reverse", NULL },
+        { "none", "forwards", "backwards", "both", NULL },
+        { "running", "paused", NULL }
+    };
+    for (unsigned i = 0; words[kind][i]; i++)
+        if (str_ieq(value, words[kind][i])) return words[kind][i];
+    return NULL;
+}
+char *css_animation_longhand_parse(const char *property, const char *value) {
+    int kind = animation_longhand_kind(property);
+    if (!kind || !value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    SB out = {0}; bool need_value = true, singleton = false; unsigned count = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_EOF) {
+            free(token.str);
+            if (!need_value) return sb_take(&out);
+            break;
+        }
+        if (!need_value) {
+            bool comma = type == CT_COMMA && !singleton;
+            free(token.str);
+            if (!comma) break;
+            need_value = true; continue;
+        }
+        const char *wide = type == CT_IDENT && token.str ? animation_wide_keyword(token.str) : NULL;
+        if (wide) {
+            if (count) { free(token.str); break; }
+            sb_puts(&out, wide); singleton = true;
+        } else if (kind == 1) {
+            if (!animation_name_token_valid(&token, true)) { free(token.str); break; }
+            if (count) sb_puts(&out, ", ");
+            if (type == CT_IDENT && str_ieq(token.str, "none")) sb_puts(&out, "none");
+            else {
+                char *name = css_keyframes_name_serialize(token.str, strlen(token.str));
+                sb_puts(&out, name); free(name);
+            }
+        } else {
+            const char *keyword = type == CT_IDENT && token.str ? animation_enum_keyword(kind, token.str) : NULL;
+            if (!keyword) { free(token.str); break; }
+            if (count) sb_puts(&out, ", ");
+            sb_puts(&out, keyword);
+        }
+        free(token.str); count++; need_value = false;
+    }
+    sb_free(&out); return NULL;
+}
+bool css_animation_longhand_valid(const char *property, const char *value) {
+    if (!animation_longhand_kind(property)) return true;
+    char *parsed = css_animation_longhand_parse(property, value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+char *css_keyframes_name_parse(const char *value) {
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    CTok name;
+    do { name = clex_next(&lexer); if (name.type == CT_WS) free(name.str); } while (name.type == CT_WS);
+    bool valid = animation_name_token_valid(&name, false);
+    CTok end;
+    do { end = clex_next(&lexer); free(end.str); } while (end.type == CT_WS);
+    if (!valid || end.type != CT_EOF) { free(name.str); return NULL; }
+    return name.str;
+}
+void css_animation_names_free(char **names, size_t count) {
+    for (size_t i = 0; i < count; i++) free(names[i]);
+    free(names);
+}
+char **css_animation_names_parse(const char *value, size_t *count) {
+    *count = 0;
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    char **names = NULL; bool need_value = true;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_EOF) {
+            free(token.str);
+            if (!need_value) return names;
+            break;
+        }
+        if (!need_value) {
+            bool comma = type == CT_COMMA; free(token.str);
+            if (!comma) break;
+            need_value = true; continue;
+        }
+        if (!animation_name_token_valid(&token, true)) { free(token.str); break; }
+        bool none = type == CT_IDENT && str_ieq(token.str, "none");
+        names = xrealloc(names, (*count + 1) * sizeof *names);
+        names[(*count)++] = none ? NULL : token.str;
+        if (none) free(token.str);
+        need_value = false;
+    }
+    css_animation_names_free(names, *count); *count = 0; return NULL;
+}
+
 /* Easing longhands share strict component boundaries and numeric typing.
  * This bounded parser leaves the established linear() component behavior intact;
  * it does not replace the Web Animations curve evaluator. */
@@ -4289,7 +4415,33 @@ static void anim_shorthand_gen(ComputedStyle *st, const char *Q, const char *val
     }
     for (int f = 0; f < nf; f++) gen_put(&st->gen_n, names[f], sb_take(&out[f]));
 }
+/* The legacy event fields retain their first-animation meaning. The runtime
+ * notification must compare all names, including duplicates and none slots. */
+const char *css_animation_name_list(const ComputedStyle *style) {
+    if (!style) return NULL;
+    const char *value = gen_value(style, gen_prop("animation-name"));
+    if (!value || !*value) value = style->anim_name;
+    if (!value || !*value) return NULL;
+    /* Canonical all-none lists need no parser allocation on the restyle path.
+     * Quoted/escaped identifiers cannot enter this exact keyword sequence. */
+    const char *p = value;
+    for (;;) {
+        if (strncmp(p, "none", 4)) return value;
+        p += 4;
+        if (!*p) return NULL;
+        if (p[0] != ',' || p[1] != ' ') return value;
+        p += 2;
+    }
+}
 static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
+    if (!strcmp(Q, "animation-name")) {
+        /* The native first-name slot must not cut an escaped/quoted comma.
+         * The full canonical list remains in gen_n for CSSOM and runtime. */
+        size_t count = 0; char **names = css_animation_names_parse(val, &count);
+        char *first = count && names[0] ? css_keyframes_name_serialize(names[0], strlen(names[0])) : NULL;
+        st->anim_name = first ? atom(first) : NULL;
+        free(first); css_animation_names_free(names, count); return;
+    }
     char *buf = xstrdup(val), *layer[32], *tok[16];
     int nl = split_top(buf, ',', layer, 32);
     float f;
@@ -4303,8 +4455,7 @@ static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
             else if ((f = strtof(tok[i], &e)), e != tok[i] && !*e) st->anim_iter = f;
             else if (!anim_kw(tok[i]) && !str_ieq(tok[i], "none")) st->anim_name = atom(tok[i]);
         }
-    } else if (!strcmp(Q, "animation-name")) st->anim_name = nl && !str_ieq(layer[0], "none") ? atom(layer[0]) : NULL;
-    else if (!strcmp(Q, "animation-duration")) st->anim_dur = nl && css_time(layer[0], &f) ? f : 0;
+    } else if (!strcmp(Q, "animation-duration")) st->anim_dur = nl && css_time(layer[0], &f) ? f : 0;
     else if (!strcmp(Q, "animation-delay")) st->anim_delay = nl && css_time(layer[0], &f) ? f : 0;
     else if (!strcmp(Q, "animation-iteration-count")) st->anim_iter = !nl ? 1 : str_ieq(layer[0], "infinite") ? INFINITY : strtof(layer[0], NULL);
     else if (!strcmp(Q, "transition")) {
@@ -4803,6 +4954,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     if (!css_box_shadow_valid(prop, value_in)) return;
     if (!css_border_valid(prop, value_in)) return;
     if (!css_image_longhand_valid(prop, value_in)) return;
+    if (!css_animation_longhand_valid(prop, value_in)) return;
     if (!css_easing_valid(prop, value_in)) return;
     if (!css_animation_range_valid(prop, value_in)) return;
     char *subst = NULL;
@@ -4830,6 +4982,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
         !strcmp(prop, "box-shadow") ? css_box_shadow_parse(v) :
         border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) :
         image_longhand_kind(prop) ? css_image_longhand_parse(prop, v) :
+        animation_longhand_kind(prop) ? css_animation_longhand_parse(prop, v) :
         easing_property(prop) ? css_easing_parse(v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);

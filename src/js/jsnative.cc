@@ -1549,6 +1549,25 @@ extern "C" char *css_border_parse(const char *property, const char *value);
 FN(cssBorder) { CTX; std::string p = S(0), q = S(1); char *value = css_border_parse(p.c_str(), q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
 extern "C" char *css_image_longhand_parse(const char *property, const char *value);
 FN(cssImageLonghand) { CTX; std::string p = S(0), q = S(1); char *value = css_image_longhand_parse(p.c_str(), q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
+extern "C" char *css_animation_longhand_parse(const char *property, const char *value);
+extern "C" char *css_keyframes_name_parse(const char *value);
+extern "C" char *css_keyframes_name_serialize(const char *name, size_t length);
+extern "C" char **css_animation_names_parse(const char *value, size_t *count);
+extern "C" void css_animation_names_free(char **names, size_t count);
+FN(cssAnimationLonghand) { CTX; std::string p = S(0), q = S(1); char *value = css_animation_longhand_parse(p.c_str(), q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
+FN(cssKeyframesName) { CTX; std::string q = S(0); char *name = css_keyframes_name_parse(q.c_str()); if (!name) { RET(v8::Null(iso)); return; } RET(nstr(iso, name)); free(name); }
+FN(cssKeyframesNameText) { CTX; std::string q = S(0); char *text = css_keyframes_name_serialize(q.data(), q.size()); RET(nstr(iso, text)); free(text); }
+FN(cssAnimationNames) {
+    CTX; std::string q = S(0); size_t count = 0;
+    char **names = css_animation_names_parse(q.c_str(), &count);
+    if (!names) { RET(v8::Null(iso)); return; }
+    auto result = v8::Array::New(iso, (int)count);
+    for (size_t i = 0; i < count; i++) {
+        v8::Local<v8::Value> name = names[i] ? v8::Local<v8::Value>(nstr(iso, names[i])) : v8::Local<v8::Value>(v8::Null(iso));
+        (void)result->CreateDataProperty(ctx, (uint32_t)i, name);
+    }
+    css_animation_names_free(names, count); RET(result);
+}
 /* the computed serialization of a CSS colour (currentcolor as black), or null when it doesn't parse */
 FN(cssColor) { CTX; (void)c; std::string q = S(0); CssColor col; if (!css_color_parse(q.c_str(), &col, NULL)) { RET(v8::Null(iso)); return; } char b[200]; css_color_serialize(&col, b, sizeof b); RET(nstr(iso, b)); }
 extern "C" void css_register_property_full(const char *name,const char *initial,const char *syntax,bool inherits);
@@ -1981,7 +2000,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(errPos); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(caret); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
-    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssPropertyIdentifier); REG(cssPropertyRule); REG(cssMinSize); REG(cssAnimationRange); REG(cssMathText); REG(cssNumericDimension); REG(cssTransitionProperty); REG(cssEasing); REG(cssBoxShadow); REG(cssBorder); REG(cssImageLonghand); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
+    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssPropertyIdentifier); REG(cssPropertyRule); REG(cssMinSize); REG(cssAnimationRange); REG(cssMathText); REG(cssNumericDimension); REG(cssTransitionProperty); REG(cssEasing); REG(cssBoxShadow); REG(cssBorder); REG(cssImageLonghand); REG(cssAnimationLonghand); REG(cssKeyframesName); REG(cssKeyframesNameText); REG(cssAnimationNames); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
     REG(heap); REG(imgWatch); REG(imgSize); REG(imgDone); REG(imgRequest); REG(imgSrc); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);

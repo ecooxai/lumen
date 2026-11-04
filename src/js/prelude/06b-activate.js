@@ -625,6 +625,10 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             if (!cssEasingSet(m, p, v, priority)) return;
             this._w(m); return;
         }
+        if (type !== 5 && CSS_ANIMATION_LONGHAND.test(p)) {
+            if (!cssAnimationLonghandSet(m, p, v, pri)) return;
+            this._w(m); return;
+        }
         if (CSS_IMAGE_LONGHAND.test(p)) {
             const priority = pri == null ? '' : String(pri);
             if (!cssImageLonghandSet(m, p, v, priority)) return;
@@ -974,7 +978,7 @@ class CSSKeyframesRule extends CSSRule {
         const index = cssKeyframeIndex(this._list, selector);
         return index < 0 ? null : this._list[index];
     }
-    get cssText() { return `@keyframes ${this._name} ${CSSGroupingRule.prototype._inner.call(this)}`; }
+    get cssText() { return `@keyframes ${N.cssKeyframesNameText(this._name)} ${CSSGroupingRule.prototype._inner.call(this)}`; }
 }
 function cssMk(C, props) {
     const r = Object.create(C.prototype), parent = props._parent;
@@ -1025,7 +1029,7 @@ function cssMkRule(it, sheet, parent, namespaces = cssSheetNamespaces(sheet)) {
         if (selector === null) return null;
         return cssMk(CSSPageRule, { ...base, _sel: selector, _body: it.body, _style: null });
     }
-    else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { r = cssMk(CSSKeyframesRule, { ...base, _name: rest, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body, true)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
+    else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { const name = N.cssKeyframesName(rest); if (name === null) return null; r = cssMk(CSSKeyframesRule, { ...base, _name: name, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body, true)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
     else return null;
     def(r, '_list', cssParseList(it.body, sheet, r, namespaces));
     return r;
