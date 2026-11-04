@@ -1,12 +1,12 @@
 {
-  "candidate": 2006,
-  "tested_source_commit": "0f3d179e295da31945a461e06e0a7ff2221529db",
-  "tested_binary_sha256": "107c2e580e23961b050dface5b7d2e94f154695276ac16fdb98c17cb15547398",
-  "recorded_input_digest": "f3a2a36d8a38024f3bc82950c099b97a149fe2167e85eb25eee20a67b3725dcf",
+  "candidate": 2007,
+  "tested_source_commit": "2de18b314abacd5a027496b715bb28b91d676191",
+  "tested_binary_sha256": "2751690036083f7ba162d8caea6bdbe383f48e183245c828f2f0d58c4d22a586",
+  "recorded_input_digest": "c6585dae7b98c840cb7d94962ab62f83d81608cc7c6d6f0ca2230ecadfcf2c8f",
   "recorded_input_count": 743,
-  "source_manifest_file_sha256": "923b510db3620435290c2bbf4031ecd9c3a52b657ab02ac4f0e69e95f9c87299",
-  "public_parent": "66beee3ec44d8751d8756ecdd65fb6d56fbcd5ac",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2006-20261104",
+  "source_manifest_file_sha256": "99f9bfe28b151d40af48d0f51e32c871d219047348b442860a1ed9d30d31f463",
+  "public_parent": "17a324530cc3d819474e8a2a54a0948d3ef40bac",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2007-20261104",
   "recorded_inputs": {
     "CMakeLists.txt": {
       "sha256": "39135ade2090484ca003089b98004a8e28ed3aad5bc244c0921df7cc8798190b",
@@ -233,7 +233,7 @@
       "mode": "100644"
     },
     "src/css/style.c": {
-      "sha256": "40fa1fdb2718d964afbfe98b22674af7d416e8b8ac9a00dba97eadf3501fea7a",
+      "sha256": "5873db0a579cb86c1b0764d24a335c3398da64dcd0c672d00e66ce5302660f9b",
       "mode": "100644"
     },
     "src/css/ua.c": {
@@ -369,7 +369,7 @@
       "mode": "100644"
     },
     "src/js/prelude/03-element.js": {
-      "sha256": "a3ee709f2b39f0a97a940a859d2bdc2a03a46af1dd9e83837615a4d149016cd3",
+      "sha256": "1176be78410fd36c46438ba8f27493d6c39f076cccdd2f5566a0379bbe62b128",
       "mode": "100644"
     },
     "src/js/prelude/03c-svg.js": {
@@ -413,7 +413,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06b-activate.js": {
-      "sha256": "2756b94ebcf76705f17021610f2babf2d81095bff9456efce5d58f416844e6a7",
+      "sha256": "3ac3aa2a09becac9dea1421ee76761d41da038302732bbafc0bbf7ce798d432f",
       "mode": "100644"
     },
     "src/js/prelude/06c-traversal.js": {

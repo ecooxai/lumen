@@ -1,9 +1,9 @@
-# Recover Lumen source checkpoint 2006
+# Recover Lumen source checkpoint 2007
 
 The source archive includes `PUBLIC-HISTORY.bundle`, `RESTORE-GIT.md` and `ARCHIVE-PROVENANCE.json` in addition to this tracked public tree. Follow `RESTORE-GIT.md` from the extracted archive. It identifies the exact public commit and tree checked by a fresh offline clone.
 
 ```sh
-git clone --branch gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2006-20261104 PUBLIC-HISTORY.bundle lumen-source
+git clone --branch gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2007-20261104 PUBLIC-HISTORY.bundle lumen-source
 git -C lumen-source fsck --full
 git -C lumen-source status --porcelain
 git -C lumen-source rev-parse HEAD

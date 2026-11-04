@@ -1,3 +1,11 @@
+# Lumen Linux checkpoint 2007
+
+Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
+
+## Historical repository documentation
+
+The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
+
 # Lumen Linux checkpoint 2006
 
 Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.

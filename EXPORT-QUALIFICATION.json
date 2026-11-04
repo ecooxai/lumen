@@ -1,140 +1,155 @@
 {
-  "candidate": 2006,
+  "candidate": 2007,
   "status": "REVIEWED COMPLETE SELECTED1248 DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
-  "tested_source_commit": "0f3d179e295da31945a461e06e0a7ff2221529db",
-  "tested_binary_sha256": "107c2e580e23961b050dface5b7d2e94f154695276ac16fdb98c17cb15547398",
-  "source_manifest_digest": "f3a2a36d8a38024f3bc82950c099b97a149fe2167e85eb25eee20a67b3725dcf",
-  "public_parent": "66beee3ec44d8751d8756ecdd65fb6d56fbcd5ac",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2006-20261104",
+  "tested_source_commit": "2de18b314abacd5a027496b715bb28b91d676191",
+  "tested_binary_sha256": "2751690036083f7ba162d8caea6bdbe383f48e183245c828f2f0d58c4d22a586",
+  "source_manifest_digest": "c6585dae7b98c840cb7d94962ab62f83d81608cc7c6d6f0ca2230ecadfcf2c8f",
+  "public_parent": "17a324530cc3d819474e8a2a54a0948d3ef40bac",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2007-20261104",
   "all_recorded_inputs_exact": true,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
   "private_history_included": false,
   "publication_performed": false,
   "validation_summary": {
-    "qualification": "Accepted production/test baseline2006 after exact native218, full selected1248, all unchanged retained animation/messaging/auth companions, CSS26 and staged transfer106. Normal display0 remains2003; Android remains1915 until final delivery.",
+    "qualification": "Accepted source2007 after one separately preregistered unchanged full reliability replay, exact native218 and all retained direct/companion gates. Original first full HOLD remains preserved and disclosed. This source checkpoint alone is not a device delivery claim.",
     "selected_cohort_scope": "1248 HTTP/default-timeout DOM/CSS testharness URLs; not all WPT",
     "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
     "selected_urls": {
-      "lumen_passed": 810,
+      "lumen_passed": 813,
       "total": 1248,
-      "previous2005_passed": 808,
-      "pass_percent": 64.90384615384616
+      "previous2006_passed": 810,
+      "pass_percent": 65.14423076923077
     },
     "selected_assertions": {
-      "lumen_passed": 23225,
+      "lumen_passed": 23329,
       "total": 26245,
-      "previous2005_passed": 23222,
-      "pass_percent": 88.49304629453229
+      "previous2006_passed": 23225,
+      "pass_percent": 88.88931224995237
+    },
+    "harness_ok": 1238,
+    "assertion_statuses": {
+      "PASS": 23329,
+      "FAIL": 2888,
+      "TIMEOUT": 7,
+      "NOTRUN": 21
+    },
+    "required_union": {
+      "passing_assertions": 23329,
+      "fully_passing_urls": 813,
+      "harness_ok_urls": 1238
     },
     "lost_preregistered_pass_identities": 0,
     "lost_required_fully_passing_urls": 0,
     "harness_regressions": 0,
     "registered_identities_and_per_url_counts_unchanged": true,
-    "required_and_retained_previous_passing_assertions": 23222,
-    "next_required_passing_assertions": 23225,
-    "harness_statuses": {
-      "OK": 1238,
-      "ERROR": 1,
-      "TIMEOUT": 9
+    "full_started_utc": "2026-11-04T18:09:55.354047+00:00",
+    "full_finished_utc": "2026-11-04T18:31:32.450990+00:00",
+    "full_wrapper_seconds": 1298.253738046973,
+    "raw_results_sha256": "469fd3462044c970502780075fa37299b4bb55256c4bcf66caa020ffd89b58ca",
+    "runtime_receipt_sha256": "1e66ed2556eccafefa2d22b03698f624fa5c673aeb21566e9b051f032c450827",
+    "independent_retention_audit_sha256": "e2522a2a4f09c39aee293fc56a0995d03ac92eb7777523b6a777d580919cc8c1",
+    "next_prior_union_registry_sha256": "67a899b5502ded418a7e55c4fc678c86cf5850cc2e9ebf89e68ff93601bfc54d",
+    "original_full_hold": {
+      "fully_passing_urls": 812,
+      "passing_assertions": 23329,
+      "registered_assertions": 26245,
+      "harness_ok": 1237,
+      "raw_sha256": "e868a979629a6dbe5ed99adb56bd1d494a9b7c0e2ea09a3dc49cc8e5cff3ea26",
+      "reason": "Document-createElement-namespace harness TIMEOUT after51/51 assertions PASS; no assertion/registration loss.",
+      "not_overwritten_or_relabelled": true
     },
-    "cleanup_complete": true,
-    "full_wrapper_seconds": 1145.316793605918,
-    "full_started_utc": "2026-11-04T16:38:26.912113+00:00",
-    "full_finished_utc": "2026-11-04T16:57:32.228999+00:00",
-    "full1248_replay_performed": true,
-    "source_and_binary_identity_valid": true,
-    "raw_results_sha256": "2bdcd95b832117e1dcd95e33b8c7571a00269a76b20b3df5fcd95cab7b3cd7b6",
-    "runtime_receipt_sha256": "a25f95ce4994cd2f16d73bdf3bdcce7ff404974d58f3028bb190f4eae0fd545d",
-    "independent_retention_audit_sha256": "bd1704c5e8c87dcc30a3e77f54c911392a463a91ddb0be738bbe861149d9562b",
-    "registered_count_audit_sha256": "1c2e8945e912e8333ff896daf9dbcfc1217e87027fe41f34cc730331ed195aae",
-    "next_prior_union_registry_sha256": "aaf64c93d46a199cf442e3a9720402ffccc1cd214c3f76d28a7c527b3f2d5b8e",
+    "reliability_policy": {
+      "maximum_full_replays": 1,
+      "source_binary_framework_manifest_unchanged": true,
+      "workers": 2,
+      "native_deadline_seconds": 15,
+      "strict_predeclared_passes": 23329,
+      "strict_predeclared_full_urls": 813,
+      "strict_predeclared_harness_ok": 1238,
+      "four_alternating_diagnostic_pairs_passed": true,
+      "timing_cause_not_established": true
+    },
     "historical_pinned_reference": {
       "version": "150.0.7871.114",
       "passed_urls": 1062,
       "total_urls": 1248,
       "passed_assertions": 24541,
       "total_assertions": 26064,
-      "source": "Retained exact-manifest full reference; no fresh full Chromium run claimed"
+      "fresh_full_reference_claimed": false
     },
-    "build_and_startup_passed": true,
-    "native_coverage": {
-      "actual_candidate": 2006,
-      "accepted_native_contracts": 218,
-      "report_sha256": "7fd0468ec903dec688c2ea5c56f130a7f573f013449e06a273dc0781aadc480e"
-    },
-    "one_second_resource_samples": {
-      "samples": 1145,
-      "cpu_median_one_core_equals100_pct": 85.979,
-      "cpu_sampled_max_pct": 233.125,
-      "rss_peak_mb": 654.95,
-      "pss_peak_mb": 393.143,
-      "shared_cgroup_weighted_cpu_pct": 98.7824261815595,
-      "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
-    },
-    "separate_upstream_messaging": {
+    "native_contracts_passed": 218,
+    "separate_messaging": {
       "urls": 18,
+      "fully_passing_urls": 15,
+      "passing_assertions": 34,
       "registered_assertions": 39,
-      "passed_urls": 15,
-      "passed_assertions": 34,
       "harness_ok": 18,
-      "previous2005_passed_assertions": 33,
-      "prior_pass_losses": 0,
-      "registered_identities_and_counts_unchanged": true,
-      "separate_registry_sha256": "5e27274b8bb093faa2c0869c17c8c9642b2c36221f035930d7dcbcf9394962b2",
-      "not_added_to_selected1248_denominator": true
+      "registry": "agent/ops/session20/platform-qa/messaging2007-required-prior-pass-v1.json",
+      "registry_sha256": "5fc2e1c374641c94a0c85ae04dd3308837fea0f3046d4fc5650ed36c9bd1df11",
+      "not_added_to_main_denominator": true
     },
-    "authored_runtime_controls": {
+    "authored_controls": {
+      "native": 218,
       "authored_messaging": 80,
       "original_popup_post": 19,
-      "animation_grammar_effects": 53,
-      "animation_reconciliation": 7,
+      "authored_animation_grammar_effects": 53,
+      "authored_animation_reconciliation": 7,
       "csskeyframes_indexed": 26,
-      "transfer_required_passed": 106,
-      "transfer_registered": 109,
-      "transfer_total_passed": 107,
-      "transfer_late_observations": [
-        true,
-        false,
-        false
-      ],
-      "transfer_prior_passes_retained": 35,
-      "not_counted_as_upstream_wpt": true
+      "transfer_conversion_required": 106,
+      "transfer_conversion_registered": 109,
+      "transfer_late_observations": 3,
+      "transfer_required_prior_observation_passes": 1,
+      "object_position_authored": 75,
+      "object_position_upstream_urls": 3,
+      "object_position_upstream_registered": 123,
+      "object_position": 75,
+      "not_counted_as_upstream_WPT": true
     },
-    "reference_disagreements_retained": {
-      "css26": 5,
-      "cluster": "Reflect.set/Reflect.defineProperty rejection return values; unchanged oracles follow WebIDL indexed getter/no setter rules. Boundary row proves only return disagreement, not incorrect index classification.",
-      "transfer109": 4,
-      "transfer_cluster": "PinnedChromium rereads iterator.next in four controls; frozen WebIDL single-iterator snapshot expectations retained.",
-      "authored_scope_not_upstream": true
+    "object_position_upstream": {
+      "urls": 3,
+      "registered": 123,
+      "passed": 123,
+      "scope": "Grammar, specified serialization and computed storage only; no image/video placement consumer added."
     },
-    "new_passing_urls_vs2005": 2,
-    "new_assertion_passes_vs2005": 3,
+    "object_authored_reference_disagreements": {
+      "original62": 24,
+      "units9": 0,
+      "order2": 0,
+      "empty2": 2,
+      "unchanged_controls_and_oracles": true,
+      "explanation": "23 logical-form reference disagreements, one background layer serialization disagreement, and two empty-value invalid-priority ordering disagreements remain explicit."
+    },
+    "new_assertion_gains_vs2006": {
+      "total": 104,
+      "pinned_chromium_pass": 44,
+      "pinned_chromium_fail_logical_reference_disagreements": 60,
+      "unmatched": 0
+    },
     "real_x_google_login_fixed": false,
-    "normal_runtime_candidate": 2003,
-    "android_runtime_candidate": 1915,
     "temporary_diagnostic2004_excluded": true,
-    "overall_assessment": 66,
+    "parked_background_patch_integrated": false,
+    "overall_assessment": 67,
     "overall_assessment_is_subjective": true,
     "goal95_achieved": false
   },
   "limitations": [
-    "Selected1248 HTTP/default-timeout DOM/CSS testharness URLs only; not all upstream WPT, visual/reftest/manual/network coverage, Android WPT parity or Chromium parity.",
-    "One harness ERROR and nine TIMEOUTs remain. Pinned Chromium150 full selected reference is historical and has a different assertion denominator.",
-    "Separate upstream messaging18 registers39 assertions and now passes34; it never enlarges the1248 denominator. Five inherited failures remain: three unsupported transfer-kind checks and two nested-worker availability cases.",
-    "Staged transfer argument conversion covers106 required authored identities, with three separately reported late-transfer observations. It does not claim universal transfer failure rollback or trusted-brand validation.",
-    "CSS26, transfer109, animation60 and auth99 are authored controls. Reference disagreements are retained explicitly and are not upstream pass counts.",
-    "Normal display0 Google sign-in still returns the generic X error. Browser standards repairs have not established a causal X-login fix.",
-    "Temporary diagnostic2004 is excluded from production source and exported ancestry. Private captures, account/profile data, inbox data and guarded validation machinery are excluded.",
-    "Connected Android still has prior1915; this accepted Linux source checkpoint is not a completed Android delivery claim.",
-    "Source archive and offline Git recovery do not constitute an independent rebuild. External dependencies are not bundled.",
-    "Overall66/100 is a subjective project assessment, distinct from the64.90% selected-URL pass rate; goal95 remains unmet."
+    "Selected1248 HTTP/default-timeout URLs only; not all WPT, visual/manual/network coverage, Android WPT or Chromium parity.",
+    "Original2007 full HOLD remains immutable; one separately preregistered unchanged full replay was required. Four short comparisons do not prove the cause of the original timeout or repair its timing sensitivity.",
+    "Object-position work covers values/computed storage only; image/video placement remains unimplemented in this stage.",
+    "Separate messaging18 and authored CSS/transfer/animation/auth/object controls do not inflate the1248 denominator; five inherited upstream messaging failures and stated reference disagreements remain.",
+    "Real X Google sign-in remains unresolved; platform repairs have not established a causal login fix.",
+    "Reviewed two-line background number-math patch remains parked and unqualified, separate from this production source.",
+    "Private Git ancestry, browser profiles, account/auth captures, credentials, inbox data and guarded validation machinery are excluded. Diagnostic2004 source is excluded.",
+    "Source and offline Git recovery are not an independent rebuild; external dependencies are not bundled.",
+    "Device installation/restart is recorded separately after exact-source delivery; this package itself does not claim Android WPT parity.",
+    "Overall67/100 is a subjective project assessment, separate from any measured selected-cohort pass percentage;95goal remains unmet."
   ],
   "public_inventory_review": {
     "agent": "project_steward",
     "review_kind": "mechanical exact-inventory audit following root publication authorization",
-    "review_receipt_sha256": "965f6cad14804f2f241541f0c4931c0f5469eca2233fd54d970645ab2e6293a6",
-    "preparation_receipt_sha256": "ae9d5dd7f086476618abea6c4d5bef466fbc32d6657cbe106b78ad5ff866e450",
+    "review_receipt_sha256": "6dfecbfbc363ccca5a7f3cde564fc14e7a65e1e92bfa184a0f9c798e297432d8",
+    "preparation_receipt_sha256": "34b5d49931627764f9000c16d27c8db703b40a47ebc68031ee4fe936ba26ed8b",
     "all843_public_inventory_hashes_verified": true,
     "all743_recorded_inputs_verified_against_tested_source": true,
     "private_history_excluded": true
