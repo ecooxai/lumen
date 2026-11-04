@@ -250,13 +250,51 @@ for (const k of ['url', 'readyState', 'bufferedAmount', 'onopen', 'onerror', 'on
 }
 for (const k of ['wasClean', 'code', 'reason']) { const d = Object.getOwnPropertyDescriptor(CloseEvent.prototype, k); d.enumerable = true; Object.defineProperty(CloseEvent.prototype, k, d); }
 for (const [k, v] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })) { Object.defineProperty(WebSocket, k, { value: v, enumerable: true }); Object.defineProperty(WebSocket.prototype, k, { value: v, enumerable: true }); }
-const portList = t => {
-    const ports = (t && typeof t[Symbol.iterator] === 'function' ? [...t] : t && t.transfer ? [...t.transfer] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function');
-    const seen = new SSet();
-    for (const p of ports) {
-        if (seen.has(p)) throw new DOMException('A MessagePort cannot be transferred twice.', 'DataCloneError');
-        seen.add(p); p._assertTransferable();
+// Finish WebIDL sequence<object> conversion before HTML transfer-list checks.
+const transferApply = Reflect.apply, transferIterator = Symbol.iterator, transferDefine = Reflect.defineProperty;
+const transferSet = SSet, transferHas = transferSet.prototype.has, transferAdd = transferSet.prototype.add;
+const transferObject = value => value !== null && (typeof value === 'object' || typeof value === 'function');
+const transferSequence = (value, method) => {
+    if (!transferObject(value)) throw new TypeError('Transfer must be a sequence of objects.');
+    if (method === undefined) method = value[transferIterator];
+    if (typeof method !== 'function') throw new TypeError('Transfer must be iterable.');
+    const iterator = transferApply(method, value, []);
+    if (!transferObject(iterator)) throw new TypeError('Iterator must be an object.');
+    const next = iterator.next, out = [];
+    // WebIDL uses IteratorStepValue, with no IteratorClose on element conversion failure.
+    for (;;) {
+        const step = transferApply(next, iterator, []);
+        if (!transferObject(step)) throw new TypeError('Iterator result must be an object.');
+        if (step.done) return out;
+        const item = step.value;
+        if (!transferObject(item)) throw new TypeError('Transfer entries must be objects.');
+        transferDefine(out, out.length, { value: item, writable: true, enumerable: true, configurable: true });
     }
+};
+const transferOptions = value => {
+    if (value === undefined || value === null) return [];
+    if (!transferObject(value)) throw new TypeError('Transfer options must be an object.');
+    const method = value[transferIterator];
+    if (method !== undefined && method !== null) return transferSequence(value, method);
+    const list = value.transfer;
+    return list === undefined ? [] : transferSequence(list);
+};
+const transferDuplicates = list => {
+    const seen = new transferSet();
+    for (let i = 0; i < list.length; i++) {
+        const item = list[i];
+        if (transferApply(transferHas, seen, [item])) throw new DOMException('An object cannot be transferred twice.', 'DataCloneError');
+        transferApply(transferAdd, seen, [item]);
+    }
+};
+const portList = list => {
+    transferDuplicates(list);
+    const ports = [];
+    for (let i = 0; i < list.length; i++) {
+        const p = list[i];
+        if (p && typeof p.postMessage === 'function' && typeof p.start === 'function') apush(ports, p);
+    }
+    for (let i = 0; i < ports.length; i++) ports[i]._assertTransferable();
     return ports;
 };
 class MessagePort extends EventTarget {
@@ -278,7 +316,7 @@ class MessagePort extends EventTarget {
         return state;
     }
     postMessage(data, transfer) {
-        const ports = portList(transfer);
+        const ports = portList(transferOptions(transfer));
         if (this.#detached) return;
         const route = this._xt || this._wk || (this._other && (this._other._xt || this._other._wk));
         if (route) { route.send(data, ports); return; }
@@ -388,7 +426,16 @@ class Worker extends EventTarget {
         def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : '', !!opts && opts.type === 'module', !!opts && opts[SHARED_WORKER] === true, false, sourceType));
         workers.set(this._id, this);
     }
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const transfer = Array.isArray(t) ? t : t && t.transfer || []; for (const item of transfer) if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); const ps = portList(transfer); if (!ps.length) return N.workerPost(this._id, m); const data = structuredClone(m), ports = portList(ps); N.workerPost(this._id, { __lumenXfer: ports.map(p => exportWorkerPort(p, this._id)), data }); }
+    postMessage(m, t) {
+        if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present.");
+        const transfer = transferOptions(t);
+        if (!this._id) { transferDuplicates(transfer); return; }
+        for (let i = 0; i < transfer.length; i++) if (N.isWasmModule(transfer[i])) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError');
+        const ps = portList(transfer);
+        if (!ps.length) return N.workerPost(this._id, m);
+        const data = structuredClone(m), ports = portList(ps);
+        N.workerPost(this._id, { __lumenXfer: ports.map(p => exportWorkerPort(p, this._id)), data });
+    }
     terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
 }
 /* A SharedWorker: one worker per script URL and name in this document; each SharedWorker object connects to it
@@ -521,9 +568,9 @@ class ServiceWorker extends EventTarget {
     get state() { return this.#state; }
     postMessage(message, transfer = undefined) {
         if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'ServiceWorker': 1 argument required, but only 0 present.");
+        const t = transferOptions(transfer);
         if (this.#state === 'redundant') throw new DOMException("Failed to execute 'postMessage' on 'ServiceWorker': The ServiceWorker is in redundant state.", 'InvalidStateError');
-        const t = Array.isArray(transfer) ? transfer : transfer && typeof transfer === 'object' && transfer.transfer || [];
-        for (const item of t) if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError');
+        for (let i = 0; i < t.length; i++) if (N.isWasmModule(t[i])) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError');
         swSend(this.#rec, { __lumenSW: 'msg', data: message, client: swClient() }, portList(t));
     }
     static {

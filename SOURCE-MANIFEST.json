@@ -1,12 +1,12 @@
 {
-  "candidate": 2005,
-  "tested_source_commit": "befa6178b4cfe1725b6efee5e9116e4c6b1b8dc4",
-  "tested_binary_sha256": "326a84137257f00e7444a04bd02ef3fdf9c12a6cf3ade42a7c3908c11074aaa2",
-  "recorded_input_digest": "f0a5790f3cb05d23cd64298cca9ec805b43073a672fd56575fa80a11a5d8d1c2",
+  "candidate": 2006,
+  "tested_source_commit": "0f3d179e295da31945a461e06e0a7ff2221529db",
+  "tested_binary_sha256": "107c2e580e23961b050dface5b7d2e94f154695276ac16fdb98c17cb15547398",
+  "recorded_input_digest": "f3a2a36d8a38024f3bc82950c099b97a149fe2167e85eb25eee20a67b3725dcf",
   "recorded_input_count": 743,
-  "source_manifest_file_sha256": "d55da0d5a0945c34ad6de193cd04da8261d849012ea9a026cd703a62a4b2891b",
-  "public_parent": "39d12f941dcd00ea6e0abe7750bdb0cddb5f8275",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2005-20261104",
+  "source_manifest_file_sha256": "923b510db3620435290c2bbf4031ecd9c3a52b657ab02ac4f0e69e95f9c87299",
+  "public_parent": "66beee3ec44d8751d8756ecdd65fb6d56fbcd5ac",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2006-20261104",
   "recorded_inputs": {
     "CMakeLists.txt": {
       "sha256": "39135ade2090484ca003089b98004a8e28ed3aad5bc244c0921df7cc8798190b",
@@ -413,7 +413,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06b-activate.js": {
-      "sha256": "fa58ea9d5b9c36fa15d9f4651d72267c319653e551ede9af9691f6a9f282a56a",
+      "sha256": "2756b94ebcf76705f17021610f2babf2d81095bff9456efce5d58f416844e6a7",
       "mode": "100644"
     },
     "src/js/prelude/06c-traversal.js": {
@@ -429,7 +429,7 @@
       "mode": "100644"
     },
     "src/js/prelude/07b-net.js": {
-      "sha256": "9c5e9341e26a82c22b4a8619c6254ac9b9ebed158d278e540a34a77258ba21fc",
+      "sha256": "c042a6364ba0aa31ac40fb2883a64c269ae8f0a61f239ff6584653e5fc09fe14",
       "mode": "100644"
     },
     "src/js/prelude/07g-webgl.js": {
@@ -485,7 +485,7 @@
       "mode": "100644"
     },
     "src/js/prelude/08-window.js": {
-      "sha256": "2b5860d060781ea36b2426a3907d09d249b4d4c58c6710a2eacee2f1e3d10fe5",
+      "sha256": "61e14b55802900e5dd86439b0a1e6a160c74f876ab5eed4e233767756fe888d0",
       "mode": "100644"
     },
     "src/js/rtc.cc": {
@@ -625,7 +625,7 @@
       "mode": "100644"
     },
     "src/js/worker.cc": {
-      "sha256": "61f3c77ebf5c5252a214c5cb6dcb087d8a6766fd2e389f69bd62f893f94c51a1",
+      "sha256": "0c0b0d3fb85c674b2d0fec8100e2942232ecb7f69ecde4b6b33a386791fbc8e7",
       "mode": "100644"
     },
     "src/layout/affine.h": {
