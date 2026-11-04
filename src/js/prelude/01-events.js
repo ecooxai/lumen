@@ -235,6 +235,7 @@ let curEvent;
 const REALM = Object.freeze({
     isEvent: e => evIs(e),
     styleSheetListGetter: receiver => cssStyleSheetListLocalGetter(receiver),
+    cssStyleDeclarationState: receiver => cssDeclarationLocalState(receiver),
     compileEventHandler: (el, name, source) => compileHandler(el, name, source),
     resetOpenedHandlers: target => resetOpenedHandlers(target),
     dispatch(t, ev) {

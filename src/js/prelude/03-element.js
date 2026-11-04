@@ -1654,8 +1654,138 @@ function cssOverflowSet(m, value, priority) {
     return true;
 }
 
+/* CSS declaration receivers and their original operations stay private. Foreign
+ * borrowing uses the existing same-origin REALM bridge, never a public marker. */
+const cssDeclarationStates = new WeakMap();
+const cssDeclarationWeakGet = Function.prototype.call.bind(WeakMap.prototype.get);
+const cssDeclarationWeakSet = Function.prototype.call.bind(WeakMap.prototype.set);
+const cssDeclarationApply = Reflect.apply, cssDeclarationString = String;
+const cssDeclarationTypeError = TypeError, cssDeclarationProxy = Proxy;
+const cssDeclarationGet = Reflect.get, cssDeclarationSet = Reflect.set;
+const cssDeclarationHas = Reflect.has, cssDeclarationOwnKeys = Reflect.ownKeys;
+const cssDeclarationDescriptor = Reflect.getOwnPropertyDescriptor;
+const cssDeclarationDefine = Reflect.defineProperty, cssDeclarationDelete = Reflect.deleteProperty;
+const cssDeclarationArrayValues = Array.prototype.values;
+let cssDeclarationInlineOperations, cssDeclarationComputedOperations;
+function cssDeclarationLocalState(receiver) { return cssDeclarationWeakGet(cssDeclarationStates, receiver); }
+function cssDeclarationState(receiver) {
+    let state = cssDeclarationLocalState(receiver);
+    if (state) return state;
+    if (receiver !== null && (typeof receiver === 'object' || typeof receiver === 'function')) {
+        const realm = N.realmOf(receiver);
+        if (realm && realm !== REALM && typeof realm.cssStyleDeclarationState === 'function') {
+            state = realm.cssStyleDeclarationState(receiver);
+            if (state) return state;
+        }
+    }
+    throw new cssDeclarationTypeError('Illegal invocation');
+}
+function cssDeclarationWrap(target, handler) {
+    const proxy = new cssDeclarationProxy(target, handler);
+    cssDeclarationWeakSet(cssDeclarationStates, proxy, cssDeclarationLocalState(target));
+    return proxy;
+}
+function cssDeclarationText(value, nullToEmpty = false) {
+    if (typeof value === 'symbol') throw new cssDeclarationTypeError('Cannot convert a Symbol value to a string');
+    return value === null && nullToEmpty ? '' : cssDeclarationString(value);
+}
+function cssDeclarationReadonly() {
+    throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError');
+}
+function cssDeclarationInvoke(state, operation, args) {
+    return cssDeclarationApply(state.operations[operation], state.target, args);
+}
+function cssDeclarationIndex(key) {
+    if (typeof key !== 'string' || key === '') return -1;
+    const index = +key;
+    return index >= 0 && index < 4294967295 && index % 1 === 0 && '' + index === key ? index : -1;
+}
+function cssDeclarationIndexedValue(target, index) {
+    const state = cssDeclarationLocalState(target);
+    return index < cssDeclarationInvoke(state, 'length', []) ? cssDeclarationInvoke(state, 'item', [index]) : undefined;
+}
+function cssDeclarationIndexedKeys(target) {
+    const state = cssDeclarationLocalState(target), keys = [];
+    const length = cssDeclarationInvoke(state, 'length', []);
+    for (let i = 0; i < length; i++) apush(keys, '' + i);
+    const own = cssDeclarationOwnKeys(target);
+    for (let i = 0; i < own.length; i++) if (cssDeclarationIndex(own[i]) < 0) apush(keys, own[i]);
+    return keys;
+}
+const cssDeclarationAPI = {
+    item(index) {
+        const state = cssDeclarationState(this);
+        if (!arguments.length) throw new cssDeclarationTypeError('1 argument required');
+        index = index >>> 0;
+        return cssDeclarationInvoke(state, 'item', [index]);
+    },
+    getPropertyValue(property) {
+        const state = cssDeclarationState(this);
+        if (!arguments.length) throw new cssDeclarationTypeError('1 argument required');
+        property = cssDeclarationText(property);
+        return cssDeclarationInvoke(state, 'getPropertyValue', [property]);
+    },
+    getPropertyPriority(property) {
+        const state = cssDeclarationState(this);
+        if (!arguments.length) throw new cssDeclarationTypeError('1 argument required');
+        property = cssDeclarationText(property);
+        return state.readonly ? '' : cssDeclarationInvoke(state, 'getPropertyPriority', [property]);
+    },
+    setProperty(property, value, priority = '') {
+        const state = cssDeclarationState(this);
+        if (arguments.length < 2) throw new cssDeclarationTypeError('2 arguments required');
+        property = cssDeclarationText(property);
+        value = cssDeclarationText(value, true);
+        priority = cssDeclarationText(priority, true);
+        if (state.readonly) cssDeclarationReadonly();
+        return cssDeclarationInvoke(state, 'setProperty', [property, value, priority]);
+    },
+    removeProperty(property) {
+        const state = cssDeclarationState(this);
+        if (!arguments.length) throw new cssDeclarationTypeError('1 argument required');
+        property = cssDeclarationText(property);
+        if (state.readonly) cssDeclarationReadonly();
+        return cssDeclarationInvoke(state, 'removeProperty', [property]);
+    }
+};
+function cssDeclarationCssTextGet() { return cssDeclarationInvoke(cssDeclarationState(this), 'cssTextGet', []); }
+function cssDeclarationCssTextSet(value) {
+    const state = cssDeclarationState(this);
+    value = cssDeclarationText(value);
+    if (state.readonly) cssDeclarationReadonly();
+    cssDeclarationInvoke(state, 'cssTextSet', [value]);
+}
+function cssDeclarationLength() { return cssDeclarationInvoke(cssDeclarationState(this), 'length', []); }
+Object.defineProperty(cssDeclarationCssTextGet, 'name', {value: 'get cssText', configurable: true});
+Object.defineProperty(cssDeclarationCssTextSet, 'name', {value: 'set cssText', configurable: true});
+Object.defineProperty(cssDeclarationLength, 'name', {value: 'get length', configurable: true});
+function cssDeclarationCaptureOperations(proto, parent) {
+    const operations = Object.assign({}, parent);
+    for (const name of Object.keys(cssDeclarationAPI)) {
+        const descriptor = Object.getOwnPropertyDescriptor(proto, name);
+        if (descriptor) operations[name] = descriptor.value;
+    }
+    const text = Object.getOwnPropertyDescriptor(proto, 'cssText');
+    if (text && text.get) operations.cssTextGet = text.get;
+    if (text && text.set) operations.cssTextSet = text.set;
+    const length = Object.getOwnPropertyDescriptor(proto, 'length');
+    if (length) operations.length = length.get;
+    return operations;
+}
+function cssDeclarationInstall(proto) {
+    for (const name of Object.keys(cssDeclarationAPI)) {
+        if (proto === CSSStyleDeclaration.prototype || Object.getOwnPropertyDescriptor(proto, name))
+            Object.defineProperty(proto, name, {value: cssDeclarationAPI[name], writable: true, configurable: true});
+    }
+    if (Object.getOwnPropertyDescriptor(proto, 'cssText'))
+        Object.defineProperty(proto, 'cssText', {get: cssDeclarationCssTextGet, set: cssDeclarationCssTextSet, configurable: true});
+    if (Object.getOwnPropertyDescriptor(proto, 'length'))
+        Object.defineProperty(proto, 'length', {get: cssDeclarationLength, configurable: true});
+}
+
 class CSSStyleDeclaration {
-    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); }
+    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); cssDeclarationWeakSet(cssDeclarationStates, this, {target: this, parent: null, readonly: !!ro, operations: ro ? cssDeclarationComputedOperations : cssDeclarationInlineOperations}); }
+    get parentRule() { return cssDeclarationState(this).parent; }
     /* parsed declarations of the current style attribute; callers that modify take a copy */
     _m() {
         const s = this._el ? N.attr(this._el, 'style') : '';
@@ -1763,10 +1893,34 @@ class CSSStyleDeclaration {
         if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
     removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
+cssDeclarationInlineOperations = cssDeclarationCaptureOperations(CSSStyleDeclaration.prototype);
+cssDeclarationInstall(CSSStyleDeclaration.prototype);
+Object.defineProperty(CSSStyleDeclaration.prototype, Symbol.iterator,
+    {value: cssDeclarationArrayValues, writable: true, configurable: true});
+function cssDeclarationProperty(target, key) {
+    return typeof key === 'string' && (cssPropKnown(key) || key.startsWith('--') || cssDescriptorStyleHas(target));
+}
 const styleHandler = {
-    get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },
-    set(t, p, v) { if (typeof p !== 'string' || p in t) Reflect.set(t, p, v, t); else t.setProperty(p, v); return true; },
-    has(t, p) { return p in t || cssPropKnown(p); },
+    get(t, p, receiver) {
+        const index = cssDeclarationIndex(p);
+        if (index >= 0) { const value = cssDeclarationIndexedValue(t, index); return value === undefined ? cssDeclarationGet(t, p, receiver) : value; }
+        if (typeof p !== 'string' || cssDeclarationHas(t, p) || !cssDeclarationProperty(t, p)) return cssDeclarationGet(t, p, receiver);
+        return cssDeclarationApply(cssDeclarationAPI.getPropertyValue, t, [p]);
+    },
+    set(t, p, v, receiver) {
+        if (cssDeclarationIndex(p) >= 0) return false;
+        if (typeof p !== 'string' || cssDeclarationHas(t, p) || !cssDeclarationProperty(t, p)) return cssDeclarationSet(t, p, v, receiver);
+        cssDeclarationApply(cssDeclarationAPI.setProperty, t, [p, v]); return true;
+    },
+    has(t, p) { const index = cssDeclarationIndex(p); return index >= 0 ? cssDeclarationIndexedValue(t, index) !== undefined || cssDeclarationHas(t, p) : cssDeclarationHas(t, p) || cssPropKnown(p); },
+    ownKeys(t) { return cssDeclarationIndexedKeys(t); },
+    getOwnPropertyDescriptor(t, p) {
+        const index = cssDeclarationIndex(p), value = index < 0 ? undefined : cssDeclarationIndexedValue(t, index);
+        return value === undefined ? cssDeclarationDescriptor(t, p) : {value, writable: false, enumerable: true, configurable: true};
+    },
+    defineProperty(t, p, d) { return cssDeclarationIndex(p) >= 0 ? false : cssDeclarationDefine(t, p, d); },
+    deleteProperty(t, p) { const index = cssDeclarationIndex(p); return index >= 0 ? cssDeclarationIndexedValue(t, index) === undefined : cssDeclarationDelete(t, p); },
+    preventExtensions() { return false; }
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
     getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = cssStylePropertyName(this, String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [this.getPropertyValue(p), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if (k === 'transition' && v) v = cssTransitionParse(v) ?? v; if (k === 'animation-range' && v) v = cssAnimationRangeParse(v) ?? v; if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
@@ -1774,9 +1928,10 @@ class ComputedStyleDeclaration extends CSSStyleDeclaration {
     /* an invalid pseudo-element or an element outside the document has an empty style */
     _names() { return this._none || !this._el.isConnected || !N.computed(this._el, 'display') || mediaChild(this._el) ? [] : computedNames(); }   /* no style: outside the flat tree */
     item(i) { if (!arguments.length) throw new TypeError("Failed to execute 'item' on 'CSSStyleDeclaration': 1 argument required, but only 0 present."); return this._names()[i >>> 0] ?? ''; }
-    *[Symbol.iterator]() { yield* this._names(); }
     setProperty() { throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError'); }
 }
+cssDeclarationComputedOperations = cssDeclarationCaptureOperations(ComputedStyleDeclaration.prototype, cssDeclarationInlineOperations);
+cssDeclarationInstall(ComputedStyleDeclaration.prototype);
 /* inside <video>/<audio>, whose shadow trees have no slots */
 const mediaChild = el => { for (let p = el.parentNode; p && p.nodeType === 1; p = p.parentNode) if (p.namespaceURI === 'http://www.w3.org/1999/xhtml' && (p.localName === 'video' || p.localName === 'audio')) return true; return false; };
 /* the longhands a computed style lists (length / item / iteration), sorted like Chrome's */
@@ -1790,8 +1945,16 @@ for (const name of ["size", "min-size", "max-size"]) CSS_PROP_NAMES.add(name);
 const cssPropName = p => typeof p !== 'string' ? null : p.includes('-') ? p : p.replace(/^webkit(?=[A-Z])/, '-webkit').replace(/[A-Z]/g, c => '-' + c.toLowerCase());
 /* one notion of a supported property for `in style`, `in getComputedStyle()` and CSS.supports(): dashed, camelCase, webkitCase */
 const cssPropKnown = p => typeof p === 'string' && (p.startsWith('--') ? false : p === 'cssFloat' || (p.includes('-') ? p === p.toLowerCase() && CSS_PROP_NAMES.has(p) : !/^-/.test(cssPropName(p)) || /^-webkit-/.test(cssPropName(p)) ? CSS_PROP_NAMES.has(cssPropName(p)) : false));
-const computedHandler = { get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t._names()[+p]; return t.getPropertyValue(p); }, set() { return true; },
-    has(t, p) { return p in t || (/^\d+$/.test(p) ? +p < t._names().length : cssPropKnown(p)); } };
+const computedHandler = {
+    ...styleHandler,
+    set(t, p, v, receiver) {
+        if (cssDeclarationIndex(p) >= 0) return false;
+        if (typeof p === 'string' && !cssDeclarationHas(t, p) && cssPropKnown(p)) {
+            cssDeclarationApply(cssDeclarationAPI.setProperty, t, [p, v]); return true;
+        }
+        return cssDeclarationSet(t, p, v, receiver);
+    }
+};
 
 class Element extends Node {}
 methods(Element.prototype, ParentNode); methods(Element.prototype, ChildNode);
@@ -2186,7 +2349,7 @@ unscopable(Element, ['after', 'append', 'before', 'prepend', 'remove', 'replaceC
 unscopable(CharacterData, ['after', 'before', 'remove', 'replaceWith']);
 unscopable(DocumentType, ['after', 'before', 'remove', 'replaceWith']);
 unscopable(DocumentFragment, ['append', 'prepend', 'replaceChildren']);
-const makeStyle = (el) => new Proxy(new CSSStyleDeclaration(el), styleHandler);
+const makeStyle = (el) => cssDeclarationWrap(new CSSStyleDeclaration(el), styleHandler);
 class HTMLElement extends Element { constructor() { return ceConstruct(new.target, HTMLElement); } }
 reflectStr(HTMLElement.prototype, 'title', 'lang', 'accessKey', 'nonce', 'dir');
 reflectBool(HTMLElement.prototype, 'hidden', 'inert', 'autofocus');

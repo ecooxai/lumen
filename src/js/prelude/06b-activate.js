@@ -549,7 +549,7 @@ function cssRuleDeclarations(rule, text) {
     return parseDecls(text, type === 5, type === 8, type === 1 || type === 8);
 }
 class CSSRuleStyle extends CSSStyleDeclaration {
-    constructor(rule, text) { super(null); if (cssOwnerGet(rule).type === 5) cssDescriptorStyleAdd(this); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
+    constructor(rule, text) { super(null); const state = cssDeclarationLocalState(this); state.parent = rule; state.operations = cssRuleDeclarationOperations; if (cssOwnerGet(rule).type === 5) cssDescriptorStyleAdd(this); def(this, '_rule', rule); def(this, '_map', cssRuleDeclarations(rule, text || '')); }
     _m() { return new SMap(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(cssRuleDeclarations(this._rule, String(v))); }
@@ -557,6 +557,7 @@ class CSSRuleStyle extends CSSStyleDeclaration {
         v = v == null ? '' : String(v);
         pri = pri == null ? '' : String(pri);
         const type = cssOwnerGet(this._rule).type;
+        if (type !== 5 && v !== '' && !p.startsWith('--') && SPEC_COLOR_PROPS.has(p)) { v = specColor(v, p); if (v === null) return; }
         if ((type === 1 || type === 8) && !p.startsWith('--') && !cssPropKnown(p)) return;
         if (type === 8) {
             if (!cssKeyframePropertyAllowed(p)) return;
@@ -656,6 +657,8 @@ class CSSRuleStyle extends CSSStyleDeclaration {
     }
     removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
 }
+const cssRuleDeclarationOperations = cssDeclarationCaptureOperations(CSSRuleStyle.prototype, cssDeclarationInlineOperations);
+cssDeclarationInstall(CSSRuleStyle.prototype);
 class CSSRule {
     constructor() { illegal(); }
     get parentRule() { return cssOwnerGet(this).parent; } get parentStyleSheet() { return cssRuleSheet(this); }
@@ -666,7 +669,7 @@ class CSSRule {
 for (const [k, v] of Object.entries({ STYLE_RULE: 1, CHARSET_RULE: 2, IMPORT_RULE: 3, MEDIA_RULE: 4, FONT_FACE_RULE: 5, PAGE_RULE: 6, KEYFRAMES_RULE: 7, KEYFRAME_RULE: 8, MARGIN_RULE: 9, NAMESPACE_RULE: 10, COUNTER_STYLE_RULE: 11, SUPPORTS_RULE: 12, FONT_FEATURE_VALUES_RULE: 14 })) { Object.defineProperty(CSSRule, k, { value: v, enumerable: true }); Object.defineProperty(CSSRule.prototype, k, { value: v, enumerable: true }); }
 const ruleStyle = r => {
     if (r._style) return r._style;
-    const target = new CSSRuleStyle(r, r._body), style = new Proxy(target, styleHandler);
+    const target = new CSSRuleStyle(r, r._body), style = cssDeclarationWrap(target, styleHandler);
     if (cssDescriptorStyleHas(target)) cssDescriptorStyleAdd(style);
     return r._style = style;
 };
@@ -751,14 +754,16 @@ class CSSFontFaceRule extends CSSRule { get type() { return 5; } get style() { r
 /* @position-try: only insets, margins, sizes, self-alignment, position-anchor and position-area */
 const PT_ALLOWED = /^(top|right|bottom|left|inset(-block|-inline)?(-start|-end)?|margin(-top|-right|-bottom|-left|-block|-inline)?(-start|-end)?|(min-|max-)?(width|height|block-size|inline-size)|align-self|justify-self|place-self|position-anchor|position-area)$/;
 class CSSPositionTryDescriptors extends CSSRuleStyle {
-    constructor(rule, text) { super(rule, text); for (const k of [...this._map.keys()]) if (!PT_ALLOWED.test(k)) this._map.delete(k); }
+    constructor(rule, text) { super(rule, text); cssDeclarationLocalState(this).operations = cssPositionTryDeclarationOperations; for (const k of [...this._map.keys()]) if (!PT_ALLOWED.test(k)) this._map.delete(k); }
     set cssText(v) { const m = parseDecls(String(v), false, false, false); for (const k of [...m.keys()]) if (!PT_ALLOWED.test(k)) m.delete(k); this._w(m); }
-    get cssText() { return super.cssText; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (PT_ALLOWED.test(p)) super.setProperty(p, v, pri); }
+    get cssText() { return cssDeclarationApply(cssRuleDeclarationOperations.cssTextGet, this, []); }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (PT_ALLOWED.test(p)) cssDeclarationApply(cssRuleDeclarationOperations.setProperty, this, [p, v, pri]); }
 }
+const cssPositionTryDeclarationOperations = cssDeclarationCaptureOperations(CSSPositionTryDescriptors.prototype, cssRuleDeclarationOperations);
+cssDeclarationInstall(CSSPositionTryDescriptors.prototype);
 class CSSPositionTryRule extends CSSRule {
     get type() { return 0; } get name() { return this._name; }
-    get style() { return this._style || (this._style = new Proxy(new CSSPositionTryDescriptors(this, this._body), styleHandler)); }
+    get style() { return this._style || (this._style = cssDeclarationWrap(new CSSPositionTryDescriptors(this, this._body), styleHandler)); }
     get cssText() { const d = this.style.cssText; return `@position-try ${this._name} ${d ? `{ ${d} }` : '{ }'}`; }
 }
 /* CSS Paged Media3 page-selector-list. This is deliberately separate from
