@@ -1,17 +1,15 @@
 {
-  "candidate": 1906,
-  "status": "INDEPENDENTLY REVIEWED COMPLETE SELECTED1248 DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
-  "tested_source_commit": "f454cf2097ab4742064664643c3b0447c71137eb",
-  "tested_binary_sha256": "cba377366b0992b81a27c5a3108c0d1ec24053f6750459c2ebda051d707b6cb4",
-  "source_manifest_digest": "897f43e0d475d3104410b7b088d54ff18e7cfcbc1a500cc9415bc611a1cdeaa1",
-  "public_parent": "28cdeb590fafa03b04363755245638f2d673290d",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1906-20261104",
-  "all_recorded_inputs_exact": true,
-  "full_wpt_conformance_claimed": false,
-  "chromium_parity_claimed": false,
-  "private_history_included": false,
-  "publication_performed": false,
-  "validation_summary": {
+  "status": "WORK CHECKPOINT — NOT A QUALIFIED RELEASE",
+  "iteration": 20,
+  "source_snapshot_commit": "31dbb594ee8ca772c01b5b566225fd2497a445bf",
+  "source_snapshot_built": false,
+  "source_snapshot_tested": false,
+  "pending_candidate": 1910,
+  "snapshot_scope": "Reviewed1908 DOM/range functional source plus diagnostic profiling and isolated descriptor batching;1910 build/performance acceptance pending",
+  "qualified_functional_candidate": 1906,
+  "qualified_functional_source_commit": "f454cf2097ab4742064664643c3b0447c71137eb",
+  "qualified_functional_binary_sha256": "cba377366b0992b81a27c5a3108c0d1ec24053f6750459c2ebda051d707b6cb4",
+  "qualified1906_full_selected_result": {
     "qualification": "Qualified complete unchanged selected1248-URL development checkpoint; not all upstream WPT or a device delivery claim",
     "selected_urls": {
       "lumen_passed": 772,
@@ -58,22 +56,23 @@
     "build_and_startup_passed": true,
     "namespace_reliability": "This full run completed the namespace harness; intermittent earlier failure remains retained and no source-level reliability fix is claimed"
   },
+  "newer1908_full1248_replay": "PENDING at preparation; no newer full-selected-suite rate claimed",
+  "native1908_gate": "218/218 passed; separate immutable1908 browser/full qualification pending",
+  "public_parent": "0d76bf0aeefb3c975b94b550f831681c41e3beda",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-work-iteration20-20261104",
+  "private_history_included": false,
+  "independent_rebuild_performed": false,
+  "external_dependencies_included": false,
+  "full_wpt_conformance_claimed": false,
+  "chromium_parity_claimed": false,
+  "live_source_download_remains": "Qualified complete selected1248 source1906; this work checkpoint does not replace it",
   "limitations": [
-    "The complete measured scope is the frozen selected1248 HTTP/default-timeout DOM/CSS testharness URLs from1247 source files, not all upstream WPT.",
-    "772/1248=61.86% is a selected-test pass rate, not overall product quality, full Chromium parity, visual/rendering coverage or a95-quality claim.",
-    "One harnessERROR and nineTIMEOUT outcomes remain; all original failures and earlier held runs are retained.",
-    "The Chromium150 full reference is historical and has a different assertion registration denominator; no unsupported aggregate assertion parity is claimed.",
-    "This exact source includes already-tested capped diagnostic tracing, normally disabled; later phase instrumentation and pending range/DOM drafts are excluded.",
-    "No new1906 Linux display0 or Android installation is claimed by this source publication.",
-    "The export includes approved public ancestry and exact recorded source inputs, not private task history, profiles, credentials, message queues or guarded validation machinery.",
-    "Source archive recovery is not an independent browser rebuild; external dependencies remain external."
-  ],
-  "independent_review": {
-    "agent": "source_steward",
-    "review_receipt_sha256": "42f54dbfa2b0067782f65e2aad9696409c23151edc8d93c5b5bed91dd3f27d6d",
-    "preparation_receipt_sha256": "bb72d602eb7526d7290a5d120938351c799cc25c504e6b6482c564f1c5b48158",
-    "all843_public_inventory_hashes_verified": true,
-    "all743_recorded_inputs_verified_against_tested_source": true,
-    "private_history_excluded": true
-  }
+    "The exact1910 snapshot is unbuilt and unqualified at checkpoint preparation; it is preserved for continuation, not installation.",
+    "Candidate1908 full1248 replay and isolated1910 startup performance comparisons remain pending.",
+    "The accepted1906 fullselected result is772/1248 URLs and23024/26245 assertions;13URLs/198assertions gained without required pass losses.",
+    "The selected1248 manifest covers DOM/CSS testharness cases, not all WPT, Chromium parity or95 product quality.",
+    "Earlier intermittent namespace harness outcomes remain retained; diagnostic instrumentation and unmeasured optimization are not reliability repairs.",
+    "No new Linux display0 or Android installation is claimed.",
+    "Only approved public ancestry and reviewed source paths are exported; private histories, profiles, credentials, messages and guarded validation machinery are excluded."
+  ]
 }

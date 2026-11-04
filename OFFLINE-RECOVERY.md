@@ -1,13 +1,5 @@
-# Recover Lumen source checkpoint 1906
+# Recover the iteration20 work checkpoint
 
-The source archive includes `PUBLIC-HISTORY.bundle`, `RESTORE-GIT.md` and `ARCHIVE-PROVENANCE.json` in addition to this tracked public tree. Follow `RESTORE-GIT.md` from the extracted archive. It identifies the exact public commit and tree checked by a fresh offline clone.
+This checkpoint is preserved as a public Git branch. No new downloadable source archive is claimed. The live /src.tar.gz remains qualified1906.
 
-```sh
-git clone --branch gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1906-20261104 PUBLIC-HISTORY.bundle lumen-source
-git -C lumen-source fsck --full
-git -C lumen-source status --porcelain
-git -C lumen-source rev-parse HEAD
-git -C lumen-source rev-parse 'HEAD^{tree}'
-```
-
-Compare the resulting commit and tree with `ARCHIVE-PROVENANCE.json`. This verifies recovery of public source and history. It does not rebuild the browser or reproduce the private validation environment.
+Clone the branch shown in SOURCE-MANIFEST.json and verify the public commit against the independent publication receipt. Working source commit identifiers are provenance labels; private working history is intentionally excluded.

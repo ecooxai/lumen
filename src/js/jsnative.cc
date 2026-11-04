@@ -359,14 +359,16 @@ FN(adopt) { CTX; ARGN(n, 0); ARGN(d, 1); adopt_tree(n, d->doc); }
 FN(newDoc) {
     CTX;
     Document *nd = doc_new("about:blank");
-    std::string h = "<!doctype html><html><head>";
+    const char h[] = "<!doctype html><html><head></head><body></body></html>";
+    html_parse(nd, h, sizeof h - 1);
     if (!a[0]->IsNullOrUndefined()) {
-        h += "<title>";
-        for (char ch : S(0)) h += ch == '<' ? std::string("&lt;") : ch == '&' ? std::string("&amp;") : std::string(1, ch);
-        h += "</title>";
+        Node *title = node_new_element(nd, atom("title"), NS_HTML);
+        node_append(nd->head, title);
+        // DOM construction preserves every code unit, including CR and an empty Text node.
+        std::string text = wtf8(iso, a[0]);
+        node_append(title, node_new_text(nd, text.data(), text.size()));
+        nd->title = node_text_content(title);
     }
-    h += "</head><body></body></html>";
-    html_parse(nd, h.data(), h.size());
     c->docs.push_back(nd);
     RET(jwrap(c, &nd->node));
 }
@@ -1530,6 +1532,8 @@ FN(cssPropertyRule) {
     (void)value->Set(ctx, 3, nstr(iso, initial));
     free(name); free(initial); RET(value);
 }
+extern "C" char *css_animation_range_parse(const char *property, const char *value);
+FN(cssAnimationRange) { CTX; std::string p = S(0), q = S(1); char *value = css_animation_range_parse(p.c_str(), q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
 extern "C" char *css_min_size_parse(const char *value);
 FN(cssMinSize) { CTX; std::string q = S(0); char *value = css_min_size_parse(q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
 extern "C" char *css_math_value_text(const char *value);
@@ -1977,7 +1981,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(errPos); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(caret); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
-    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssPropertyIdentifier); REG(cssPropertyRule); REG(cssMinSize); REG(cssMathText); REG(cssNumericDimension); REG(cssTransitionProperty); REG(cssEasing); REG(cssBoxShadow); REG(cssBorder); REG(cssImageLonghand); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
+    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssPropertyIdentifier); REG(cssPropertyRule); REG(cssMinSize); REG(cssAnimationRange); REG(cssMathText); REG(cssNumericDimension); REG(cssTransitionProperty); REG(cssEasing); REG(cssBoxShadow); REG(cssBorder); REG(cssImageLonghand); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
     REG(heap); REG(imgWatch); REG(imgSize); REG(imgDone); REG(imgRequest); REG(imgSrc); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);

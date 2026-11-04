@@ -115,7 +115,7 @@ function parseDecls(s, fontFace = false, keyframe = false, supportedNames = true
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && lk === 'animation-range') { cssAnimationRangeSet(m, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
     return m;
 }
 /* The native enum parser owns acceptance; authored pending tokens remain opaque. */
@@ -494,17 +494,24 @@ function serDecls(m) {
     /* Coalescing longhands must not move a declaration across all: it is
        itself cascaded at its original position and can reset flex components. */
     let flexSeen = false, allAfterFlex = false, mergeFlex = true;
+    let rangeSeen = false, allAfterRange = false, mergeRange = true;
     for (const name of m.keys()) {
         if (CSS_FLEX_PARTS.includes(name)) { if (allAfterFlex) mergeFlex = false; flexSeen = true; }
         else if (name === 'all' && flexSeen) allAfterFlex = true;
+        if (CSS_ANIMATION_RANGE_PARTS.includes(name)) { if (allAfterRange) mergeRange = false; rangeSeen = true; }
+        else if (name === 'all' && rangeSeen) allAfterRange = true;
     }
     const out = [], flex = mergeFlex ? cssFlexValue(m, 'flex') : '';
-    let flexWritten = false;
+    let flexWritten = false, rangeWritten = false;
+    const range = mergeRange ? cssAnimationRangePack(m) : '';
     const borderPacks = cssBorderPacks(m);
     for (const [k, [v, i]] of m) {
         const packed = borderPacks.get(k);
         if (packed) {
             if (k === packed.first) out.push(packed.name + ': ' + packed.value + (packed.priority ? ' !important' : '') + ';');
+        } else if (CSS_ANIMATION_RANGE_PARTS.includes(k) && range && !m.has('animation-range')) {
+            if (!rangeWritten) out.push('animation-range: ' + range + (i ? ' !important' : '') + ';');
+            rangeWritten = true;
         } else if (CSS_FLEX_PARTS.includes(k) && flex && !m.has('flex')) {
             if (!flexWritten) out.push('flex: ' + flex + (i ? ' !important' : '') + ';');
             flexWritten = true;
@@ -526,7 +533,9 @@ const SHORTHAND_OF = { 'align-items': 'place-items', 'justify-items': 'place-ite
  * Shorthand reads may omit that end, while longhand reads must keep it.
  * calc() retains its authored kind until computed-value resolution. */
 function cssAnimationRangeParse(value, preserveEndpoints = false) {
-    const text = String(value).trim();
+    const native = N.cssAnimationRange('animation-range', String(value));
+    if (native === null) return null;
+    const text = native.trim();
     if (!text || !cssVarSyntax(text)) return null;
     if (cssBorderPending(text) && text.includes('(')) return text;
     const tokens = cssGridTokens(text);
@@ -586,19 +595,101 @@ function cssAnimationRangeParse(value, preserveEndpoints = false) {
         if (!end || index !== parts.length) return null;
         const omitEnd = start.name ? end.name === start.name && (end.offset === null || end.offset === '100%') :
             end.normal || !end.name && end.offset === '100%';
-        result.push(serialize(start, false) + (preserveEndpoints || !omitEnd ? ' ' + serialize(end, true) : ''));
+        const disambiguate = start.name && (start.offset === null || start.offset === '0%') && !end.name && !end.normal;
+        result.push(serialize(start, false) + (disambiguate ? ' 0%' : '') +
+            (preserveEndpoints || !omitEnd ? ' ' + serialize(end, true) : ''));
     }
     return result.join(', ');
 }
-function cssAnimationRangeSet(map, value, priority, cascade = false) {
-    if (value === '') { if (cascade) return false; map.delete('animation-range'); return true; }
-    if (priority && !/^important$/i.test(priority)) return false;
+const CSS_ANIMATION_RANGE_PARTS = ['animation-range-start', 'animation-range-end'];
+function cssAnimationRangeRelevant(property) {
+    return property === 'animation-range' || CSS_ANIMATION_RANGE_PARTS.includes(property);
+}
+function cssAnimationRangeLonghandParse(property, value) {
+    const parsed = N.cssAnimationRange(property, String(value));
+    if (parsed === null) return null;
+    if (cssGridWide(parsed) || cssBorderPending(parsed)) return parsed;
+    const end = property === 'animation-range-end';
+    return tomSplitTop(parsed, ',').map(layer => {
+        const tokens = tomSplitTop(layer, ' ').filter(Boolean);
+        const named = /^(cover|contain|entry|exit|entry-crossing|exit-crossing)$/.test(tokens[0]);
+        if (tokens[0] === 'normal' || named && tokens.length === 1) return tokens[0];
+        const offset = specNormalize(property, named ? tokens[1] : tokens[0]);
+        return named ? tokens[0] + (offset === (end ? '100%' : '0%') ? '' : ' ' + offset) : offset;
+    }).join(', ');
+}
+function cssAnimationRangePairs(value) {
     const parsed = cssAnimationRangeParse(value, true);
-    if (parsed === null) return false;
-    const old = map.get('animation-range');
-    if (cascade && old && old[1] && !priority) return true;
-    map.delete('animation-range'); map.set('animation-range', [parsed, priority ? 'important' : '']);
+    if (parsed === null) return null;
+    if (cssGridWide(parsed)) return {values: [parsed, parsed]};
+    if (cssBorderPending(parsed)) return {value: parsed};
+    const layers = tomSplitTop(parsed, ',');
+    return {values: CSS_ANIMATION_RANGE_PARTS.map(property =>
+        layers.map(layer => animRangePart(layer.trim(), property === 'animation-range-end')).join(', '))};
+}
+function cssAnimationRangeJoin(start, end) {
+    const a = tomSplitTop(start, ',').map(part => part.trim()), z = tomSplitTop(end, ',').map(part => part.trim());
+    if (a.length !== z.length) return '';
+    return a.map((part, index) => {
+        // A named start with an omitted0% followed by an unnamed end offset
+        // needs that0% to keep the second offset from becoming the first.
+        const named = /^(cover|contain|entry|exit|entry-crossing|exit-crossing)$/.test(part);
+        const endNamed = /^(normal|cover|contain|entry|exit|entry-crossing|exit-crossing)(?: |$)/.test(z[index]);
+        return part + (named && !endNamed ? ' 0%' : '') + ' ' + z[index];
+    }).join(', ');
+}
+function cssAnimationRangeValue(map, property, priority = false) {
+    const direct = map.get(property);
+    if (property !== 'animation-range') return direct ? direct[priority ? 1 : 0] :
+        priority ? map.get('animation-range')?.[1] || '' : '';
+    if (direct) return CSS_ANIMATION_RANGE_PARTS.some(name => map.has(name)) ? '' :
+        priority ? direct[1] : cssAnimationRangeParse(direct[0]) ?? direct[0];
+    const entries = CSS_ANIMATION_RANGE_PARTS.map(name => map.get(name));
+    if (entries.some(entry => !entry) || entries[0][1] !== entries[1][1]) return '';
+    if (priority) return entries[0][1];
+    const values = entries.map(entry => entry[0]);
+    if (values.some(cssGridWide)) return values[0] === values[1] ? values[0] : '';
+    if (values.some(cssBorderPending)) return '';
+    const joined = cssAnimationRangeJoin(values[0], values[1]);
+    return joined ? cssAnimationRangeParse(joined) ?? '' : '';
+}
+function cssAnimationRangePack(map) {
+    if (map.has('animation-range')) return '';
+    const value = cssAnimationRangeValue(map, 'animation-range');
+    if (!value) return '';
+    const parsed = cssAnimationRangePairs(value);
+    // Getter compression of an unnamed explicit100% end is intentionally
+    // lossy. Attribute/rule text must retain the genuine longhand semantics.
+    return parsed?.values && parsed.values.every((part, index) =>
+        part === map.get(CSS_ANIMATION_RANGE_PARTS[index])?.[0]) ? value : '';
+}
+function cssAnimationRangeSet(map, property, value, priority, cascade = false) {
+    if (value === '') { if (cascade) return false; cssAnimationRangeRemove(map, property); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
+    const parsed = property === 'animation-range' ? cssAnimationRangePairs(value) :
+        {value: cssAnimationRangeLonghandParse(property, value)};
+    if (!parsed || parsed.value === null) return false;
+    const important = priority ? 'important' : '';
+    if (property === 'animation-range') {
+        if (cascade && map.get(property)?.[1] && !important) return true;
+        map.delete(property);
+        if (!parsed.values) for (const name of CSS_ANIMATION_RANGE_PARTS) {
+            if (!cascade || !map.get(name)?.[1] || important) map.delete(name);
+        }
+    }
+    const names = parsed.values ? CSS_ANIMATION_RANGE_PARTS : [property];
+    const values = parsed.values || [parsed.value];
+    for (let index = 0; index < names.length; index++) {
+        if (cascade && map.get(names[index])?.[1] && !important) continue;
+        map.set(names[index], [values[index], important]);
+    }
     return true;
+}
+function cssAnimationRangeRemove(map, property) {
+    const value = cssAnimationRangeValue(map, property);
+    map.delete(property);
+    if (property === 'animation-range') for (const name of CSS_ANIMATION_RANGE_PARTS) map.delete(name);
+    return value;
 }
 
 function animRangePart(v, end) {
@@ -1123,7 +1214,7 @@ function mathValid(p, v) {
     if (CSS_IMAGE_LONGHAND.test(p)) return N.cssImageLonghand(p, v) !== null;
     if (CSS_EASING_LONGHAND.test(p)) return N.cssEasing(v) !== null;
     if (p === 'transition') return cssTransitionParse(v) !== null;
-    if (p === 'animation-range') return cssAnimationRangeParse(v) !== null;
+    if (cssAnimationRangeRelevant(p)) return N.cssAnimationRange(p, v) !== null;
     if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
     if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
     if (cssBorderRelevant(p)) return cssBorderParse(p, v) !== null;
@@ -1574,8 +1665,8 @@ class CSSStyleDeclaration {
     get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
-    getPropertyValue(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); if (p === 'animation-range' && e && !cssDescriptorStyleHas(this)) return cssAnimationRangeParse(e[0]) ?? e[0]; return e ? e[0] : shorthandPart(m, p); }
-    getPropertyPriority(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
+    getPropertyValue(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p); return e ? e[0] : shorthandPart(m, p); }
+    getPropertyPriority(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p, true); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = cssStylePropertyName(this, p);
         v = v == null ? '' : String(v);
         pri = pri == null ? '' : String(pri);
@@ -1601,9 +1692,9 @@ class CSSStyleDeclaration {
             if (!cssTransitionSet(m, v, pri)) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
-        if (p === 'animation-range') {
+        if (cssAnimationRangeRelevant(p)) {
             const m = new SMap(this._m());
-            if (!cssAnimationRangeSet(m, v, pri)) return;
+            if (!cssAnimationRangeSet(m, p, v, pri)) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
         if (CSS_IMAGE_LONGHAND.test(p)) {
@@ -1670,7 +1761,7 @@ class CSSStyleDeclaration {
         }
         if (v !== '' && !p.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null) return; }
         if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },

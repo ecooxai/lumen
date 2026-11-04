@@ -1317,6 +1317,94 @@ static unsigned viewport_changes(JsCtx *context, bool commit = true) {
                   : context->viewport_state.changes(width, height, dpr, scroll_x, scroll_y);
 }
 
+/* Opt-in Linux diagnostic for the owned prelude factory, not page code.
+ * Each thread samples at most eight initializations; profiles are disposed
+ * immediately. No context, prototype, or mutable JS state is shared. */
+#if defined(__linux__) && !defined(__ANDROID__)
+class PreludeCpuSample {
+    v8::Isolate *iso_ = nullptr;
+    v8::CpuProfiler *profiler_ = nullptr;
+    uint32_t realm_ = 0;
+    unsigned ordinal_ = 0;
+public:
+    explicit PreludeCpuSample(JsCtx *c) {
+        static const bool enabled = [] {
+            const char *value = getenv("LUMEN_PROFILE_PRELUDE");
+            return value && !strcmp(value, "1");
+        }();
+        static thread_local unsigned started = 0;
+        if (!enabled || started >= 8) return;
+        ordinal_ = ++started;
+        iso_ = c->iso; realm_ = c->id;
+        profiler_ = v8::CpuProfiler::New(iso_);
+        profiler_->SetSamplingInterval(500);
+        if (profiler_->StartProfiling(jstr(iso_, "lumen:prelude-init"),
+                v8::CpuProfilingOptions(v8::kLeafNodeLineNumbers, 16384)) != v8::CpuProfilingStatus::kStarted) {
+            fprintf(stderr, "lumen-prelude-prof realm=%u status=start-failed\n", realm_);
+            profiler_->Dispose(); profiler_ = nullptr;
+        }
+    }
+    ~PreludeCpuSample() { finish(); }
+    void finish() {
+        if (!profiler_) return;
+        v8::CpuProfile *profile = profiler_->StopProfiling(jstr(iso_, "lumen:prelude-init"));
+        if (profile) {
+            using Counts = std::unordered_map<std::string, unsigned long long>;
+            Counts self, inclusive, lines;
+            std::vector<std::string> stack;
+            unsigned long long total = 0;
+            std::function<void(const v8::CpuProfileNode *)> walk = [&](const v8::CpuProfileNode *node) {
+                const bool owned = jcstr(iso_, node->GetScriptResourceName()) == "lumen:prelude";
+                std::string key = "<other-script-or-vm>";
+                if (owned) {
+                    const char *raw = node->GetFunctionNameStr();
+                    std::string name = raw && *raw ? raw : "(anonymous)";
+                    if (name.size() > 64) name.resize(64);
+                    for (char &ch : name) if ((unsigned char)ch < 32 || ch == 127) ch = '_';
+                    key = std::to_string(node->GetLineNumber()) + ":" +
+                        std::to_string(node->GetColumnNumber()) + ":" + name;
+                    const unsigned count = node->GetHitLineCount();
+                    if (count && count <= 16384) {
+                        std::vector<v8::CpuProfileNode::LineTick> ticks(count);
+                        if (node->GetLineTicks(ticks.data(), count)) for (const auto &tick : ticks)
+                            lines[std::to_string(tick.line) + ":" + std::to_string(tick.column)] += tick.hit_count;
+                    }
+                }
+                const unsigned long long hits = node->GetHitCount();
+                self[key] += hits; total += hits;
+                const bool fresh = std::find(stack.begin(), stack.end(), key) == stack.end();
+                if (fresh) stack.push_back(key);
+                const unsigned long long before = total;
+                for (int i = 0; i < node->GetChildrenCount(); ++i) walk(node->GetChild(i));
+                if (fresh) { inclusive[key] += hits + total - before; stack.pop_back(); }
+            };
+            walk(profile->GetTopDownRoot());
+            const int samples = profile->GetSamplesCount();
+            fprintf(stderr, "lumen-prelude-prof realm=%u ordinal=%u kind=total ticks=%llu samples=%d sample_cap=%d keys_self=%zu keys_inclusive=%zu keys_line=%zu row_limit=20 wall_ms=%.3f\n",
+                realm_, ordinal_, total, samples, samples >= 16384 || total >= 16384,
+                self.size(), inclusive.size(), lines.size(), (profile->GetEndTime() - profile->GetStartTime()) / 1000.0);
+            auto top = [&](const Counts &counts, const char *kind) {
+                std::vector<std::pair<unsigned long long, std::string>> rows;
+                for (const auto &entry : counts) if (entry.second) rows.push_back({entry.second, entry.first});
+                std::sort(rows.rbegin(), rows.rend());
+                for (size_t i = 0; i < rows.size() && i < 20; ++i)
+                    fprintf(stderr, "lumen-prelude-prof realm=%u kind=%s ticks=%llu key=%s\n",
+                        realm_, kind, rows[i].first, rows[i].second.c_str());
+            };
+            top(self, "self"); top(inclusive, "inclusive"); top(lines, "line");
+            profile->Delete();
+        } else fprintf(stderr, "lumen-prelude-prof realm=%u status=no-profile\n", realm_);
+        profiler_->Dispose(); profiler_ = nullptr;
+    }
+};
+#else
+class PreludeCpuSample {
+public:
+    explicit PreludeCpuSample(JsCtx *) {}
+    void finish() {}
+};
+#endif
+
 JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     JsCtx *c = new JsCtx();
     c->id = g_next_ctx_id++;
@@ -1329,6 +1417,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->t0 = now_ms();
     c->thread = std::this_thread::get_id();
     g_ctxs.push_back(c);
+    js_trace_load_phase(c, "realm-bootstrap-begin");
     jsg_install_hooks();
     if (parent) c->iso = parent->iso;
     else {
@@ -1361,6 +1450,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     if (!parent) jsprof_start(c);
     ctx->SetSecurityToken(v8::String::NewFromUtf8(iso, ctx_origin_key(c).c_str(), v8::NewStringType::kInternalized).ToLocalChecked());
     v8::Context::Scope cs(ctx);
+    js_trace_load_phase(c, "realm-context-ready");
     v8::Local<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(iso);
     tmpl->SetInternalFieldCount(2);
     c->node_tmpl.Reset(iso, tmpl);
@@ -1374,6 +1464,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
                                       [c] { return js_context_fully_active(c); });
     js_url_install(ctx, N);
     js_crypto_install(ctx, N); js_encoding_install(ctx, N); js_compress_install(ctx, N);
+    js_trace_load_phase(c, "realm-native-ready");
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, "lumen:prelude"));
     v8::Local<v8::Script> s;
@@ -1401,8 +1492,12 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
             refresh_code = !code || psrc.GetCachedData()->rejected;
         }
     }
+    js_trace_load_phase(c, "realm-code-ready");
+    PreludeCpuSample prelude_cpu(c);
     if (compiled && s->Run(ctx).ToLocal(&fv) && fv->IsFunction() &&
         fv.As<v8::Function>()->Call(ctx, v8::Undefined(iso), 2, argv).ToLocal(&api) && api->IsObject()) {
+        js_trace_load_phase(c, "realm-prelude-ready");
+        prelude_cpu.finish();
         if (refresh_code) {
             std::unique_ptr<v8::ScriptCompiler::CachedData> cd(v8::ScriptCompiler::CreateCodeCache(s->GetUnboundScript()));
             if (cd) { std::lock_guard<std::mutex> lk(prelude_mu); prelude_code = std::make_shared<std::string>((const char *)cd->data, (size_t)cd->length); }
@@ -1424,6 +1519,8 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
         v8::Local<v8::Value> ti;
         if (ao->Get(ctx, jstr(iso, "ttInit")).ToLocal(&ti) && ti->IsFunction()) (void)ti.As<v8::Function>()->Call(ctx, v8::Undefined(iso), 0, nullptr);
     }
+    prelude_cpu.finish();
+    js_trace_load_phase(c, "realm-api-ready");
     if (tc.HasCaught()) {
         std::string m = jcstr(iso, tc.Exception());
         v8::Local<v8::Value> st;
@@ -1432,6 +1529,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
         fprintf(stderr, "lumen: JS prelude failed (line %d): %s\n", line, m.c_str());
     }
     iso->PerformMicrotaskCheckpoint();
+    js_trace_load_phase(c, "realm-microtasks-ready");
     if (const char *to = getenv("LUMEN_JS_TIMEOUT_MS")) g_js_timeout_ms = atof(to);
     if (g_js_timeout_ms > 0 && !parent) c->watchdog = std::thread(watchdog_run, c);
     return c;

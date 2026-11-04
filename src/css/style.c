@@ -4423,6 +4423,250 @@ static bool custom_defer;
 static _Thread_local const CustomProps *custom_origin_base;
 static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop);
 static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc, const ComputedStyle *basis, bool *used);
+/* Animation range declarations retain two genuine longhand slots. Their
+ * offsets are computed in this declaration's font context, before inheritance. */
+static int animation_range_kind(const char *property) {
+    if (!strcmp(property, "animation-range")) return 1;
+    if (!strcmp(property, "animation-range-start")) return 2;
+    if (!strcmp(property, "animation-range-end")) return 3;
+    return 0;
+}
+static bool animation_range_name(const char *text) {
+    return str_ieq(text, "cover") || str_ieq(text, "contain") ||
+        str_ieq(text, "entry") || str_ieq(text, "exit") ||
+        str_ieq(text, "entry-crossing") || str_ieq(text, "exit-crossing");
+}
+/* Decoding an escaped identifier must never turn it into a numeric token.
+ * Dimension units retain their independent token boundary in the normalizer. */
+static bool animation_range_token_kinds(const char *value) {
+    CLexer lexer; clex_init(&lexer, value, strlen(value)); unsigned depth = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type; bool valid = true;
+        if (type == CT_IDENT) {
+            if (!token.str) valid = false;
+            else if (!depth) valid = animation_range_name(token.str) ||
+                str_ieq(token.str, "normal") || var_wide_keyword(token.str);
+            else valid = isalpha((unsigned char)token.str[0]) ||
+                token.str[0] == '_' || (token.str[0] == '-' &&
+                (isalpha((unsigned char)token.str[1]) || token.str[1] == '-'));
+        }
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) { if (!depth) valid = false; else depth--; }
+        free(token.str);
+        if (!valid || depth > 256) return false;
+        if (type == CT_EOF) return true; /* CSS Syntax closes open functions at EOF. */
+    }
+}
+static bool animation_range_zero_token(const char *text) {
+    const char *p = text; if (*p == '+' || *p == '-') p++;
+    bool digit = false;
+    for (; *p && *p != 'e' && *p != 'E'; p++) {
+        if (*p == '.') continue;
+        if (*p != '0') return false;
+        digit = true;
+    }
+    return digit;
+}
+static bool animation_range_offset(const char *text) {
+    const char *open = strchr(text, '('); bool math = open != NULL;
+    if (math) {
+        unsigned depth = 1; const char *p = open + 1;
+        for (; *p && depth; p++) { if (*p == '(') depth++; else if (*p == ')') depth--; }
+        if (depth || *p) return false;
+    } else {
+        CLexer lexer; clex_init(&lexer, text, strlen(text));
+        CTok first = clex_next(&lexer), last;
+        do { last = clex_next(&lexer); if (last.type == CT_WS) free(last.str); } while (last.type == CT_WS);
+        bool valid = last.type == CT_EOF && (first.type == CT_DIM || first.type == CT_PERCENT ||
+            (first.type == CT_NUMBER && animation_range_zero_token(text)));
+        free(first.str); free(last.str); if (!valid) return false;
+    }
+    CssNumber number;
+    if (!css_number_parse_context(text, 16, 16, NULL, true, NULL, true, &number)) return false;
+    bool length = number.power[CN_LENGTH] == 1;
+    for (int i = 1; i < CN_DIMS; i++) if (number.power[i]) length = false;
+    /* Unlike min-size, range offsets allow negative lengths and percentages. */
+    return length || (!math && css_number_scalar(&number) && number.value == 0 &&
+                      animation_range_zero_token(text));
+}
+typedef struct { const char *name, *offset; bool normal; } AnimationRangePart;
+typedef struct { char *start, *end; } AnimationRangePair;
+static void animation_range_pair_free(AnimationRangePair *pair) {
+    free(pair->start); free(pair->end); pair->start = pair->end = NULL;
+}
+static bool animation_range_take(char **tokens, int count, int *index, AnimationRangePart *part) {
+    memset(part, 0, sizeof *part);
+    if (*index >= count) return false;
+    const char *text = tokens[(*index)++];
+    if (str_ieq(text, "normal")) { part->normal = true; return true; }
+    if (animation_range_name(text)) {
+        part->name = text;
+        if (*index < count && animation_range_offset(tokens[*index])) part->offset = tokens[(*index)++];
+        return true;
+    }
+    if (!animation_range_offset(text)) return false;
+    part->offset = text; return true;
+}
+static bool animation_range_default_offset(const char *text, bool end) {
+    if (!text) return true;
+    CLexer lexer; clex_init(&lexer, text, strlen(text));
+    CTok first = clex_next(&lexer), last = clex_next(&lexer);
+    bool match = first.type == CT_PERCENT && last.type == CT_EOF && first.num == (end ? 100 : 0);
+    free(first.str); free(last.str); return match;
+}
+static char *animation_range_part_text(const AnimationRangePart *part, bool end, ACtx *context) {
+    if (part->normal) return xstrdup("normal");
+    char *offset = NULL;
+    if (part->offset) {
+        if (context) {
+            Length length;
+            bool parsed = alen(context, part->offset, &length) && length.kind == LK_LEN;
+            bool finite = parsed && isfinite(length.px) && isfinite(length.pct) &&
+                (!length.mm || (isfinite(length.px2) && isfinite(length.pct2) &&
+                                isfinite(length.px3) && isfinite(length.pct3)));
+            if (finite) {
+                SB value = {0}; bg_length_str(&value, length); offset = sb_take(&value);
+            } else {
+                /* Retain unresolved percentage/nonfinite math as valid tokens.
+                 * Do not emit nanpx/infinitypx or invent a percentage basis.
+                 * This converts relative
+                 * length tokens in their native font context without inventing
+                 * a timeline percentage basis or using raw inline text. */
+                offset = grid_computed_tokens(part->offset, context->em, context->rem,
+                    context->mc, context->st, context->e ? &context->e->uses_font_units : NULL);
+            }
+        } else {
+            CLexer lexer; clex_init(&lexer, part->offset, strlen(part->offset));
+            CTok first = clex_next(&lexer);
+            offset = first.type == CT_NUMBER ? xstrdup("0px") : xstrdup(part->offset);
+            free(first.str);
+        }
+    }
+    SB result = {0};
+    if (part->name) {
+        sb_puts(&result, part->name);
+        if (offset && !animation_range_default_offset(offset, end)) {
+            sb_putc(&result, ' '); sb_puts(&result, offset);
+        }
+    } else if (offset) sb_puts(&result, offset);
+    free(offset); return sb_take(&result);
+}
+/* Return one list item and advance, preserving function commas. No arbitrary
+ * animation-list count limit is introduced. Empty items remain invalid. */
+static char *animation_range_layer(char **cursor) {
+    if (!*cursor) return NULL;
+    char *start = *cursor, *p = start; unsigned depth = 0;
+    for (; *p; p++) {
+        if (*p == '(') depth++;
+        else if (*p == ')' && depth) depth--;
+        else if (*p == ',' && !depth) break;
+    }
+    if (*p) { *p = 0; *cursor = p + 1; } else *cursor = NULL;
+    return str_trim(start);
+}
+static bool animation_range_pair_parse(int kind, const char *value, ACtx *context, AnimationRangePair *out) {
+    memset(out, 0, sizeof *out);
+    if (!kind || !css_var_syntax_valid(value) || !css_math_spacing_valid(value) ||
+        min_size_deferred(value) || !animation_range_token_kinds(value)) return false;
+    char *buffer = min_size_parser_text(value);
+    if (!buffer) return false;
+    SB starts = {0}, ends = {0}; char *cursor = buffer, *layer; bool valid = true, first = true;
+    while ((layer = animation_range_layer(&cursor))) {
+        char *tokens[5]; int count = split_ws(layer, tokens, 5), index = 0;
+        AnimationRangePart start = {0}, end = {0}; char *a = NULL, *z = NULL;
+        if (!count || count > (kind == 1 ? 4 : 2)) valid = false;
+        else if (kind == 3) valid = animation_range_take(tokens, count, &index, &end);
+        else valid = animation_range_take(tokens, count, &index, &start);
+        if (valid && kind == 1) {
+            if (index < count) valid = animation_range_take(tokens, count, &index, &end);
+            else if (start.name) end.name = start.name;
+            else end.normal = true;
+        }
+        valid = valid && index == count;
+        if (valid) {
+            if (kind != 3) a = animation_range_part_text(&start, false, context);
+            if (kind != 2) z = animation_range_part_text(&end, true, context);
+            if (a) { if (!first) sb_puts(&starts, ", "); sb_puts(&starts, a); }
+            if (z) { if (!first) sb_puts(&ends, ", "); sb_puts(&ends, z); }
+            first = false;
+        }
+        free(a); free(z); free_toks(tokens, count);
+        if (!valid) break;
+    }
+    free(buffer);
+    if (!valid || first) { sb_free(&starts); sb_free(&ends); return false; }
+    if (kind != 3) out->start = sb_take(&starts); else sb_free(&starts);
+    if (kind != 2) out->end = sb_take(&ends); else sb_free(&ends);
+    return true;
+}
+static char *animation_range_join(const char *starts, const char *ends, bool compact) {
+    char *a_buffer = xstrdup(starts), *z_buffer = xstrdup(ends), *a_cursor = a_buffer, *z_cursor = z_buffer;
+    SB out = {0}; bool first = true, valid = true;
+    while (a_cursor && z_cursor) {
+        char *a = animation_range_layer(&a_cursor), *z = animation_range_layer(&z_cursor);
+        char *at[3], *zt[3]; int an = split_ws(a, at, 3), zn = split_ws(z, zt, 3), ai = 0, zi = 0;
+        AnimationRangePart start = {0}, end = {0};
+        valid = an && an <= 2 && zn && zn <= 2 &&
+            animation_range_take(at, an, &ai, &start) && ai == an &&
+            animation_range_take(zt, zn, &zi, &end) && zi == zn;
+        if (valid) {
+            bool omit = compact && (start.name ? end.name && !strcmp(start.name, end.name) &&
+                animation_range_default_offset(end.offset, true) :
+                end.normal || (!end.name && animation_range_default_offset(end.offset, true)));
+            if (!first) sb_puts(&out, ", "); sb_puts(&out, a);
+            if (start.name && !start.offset && !end.name && !end.normal) sb_puts(&out, " 0%");
+            if (!omit) { sb_putc(&out, ' '); sb_puts(&out, z); }
+            first = false;
+        }
+        free_toks(at, an); free_toks(zt, zn); if (!valid) break;
+    }
+    valid = valid && !a_cursor && !z_cursor && !first;
+    free(a_buffer); free(z_buffer);
+    if (!valid) { sb_free(&out); return xstrdup(""); }
+    return sb_take(&out);
+}
+char *css_animation_range_parse(const char *property, const char *value) {
+    int kind = animation_range_kind(property);
+    if (!kind || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    char *normalized = min_size_parser_text(value);
+    if (!normalized) return NULL;
+    const char *wide = var_wide_keyword(str_trim(normalized));
+    if (wide) { char *result = xstrdup(wide); free(normalized); return result; }
+    free(normalized);
+    AnimationRangePair pair;
+    if (!animation_range_pair_parse(kind, value, NULL, &pair)) return NULL;
+    char *result = kind == 1 ? animation_range_join(pair.start, pair.end, false) :
+        xstrdup(kind == 2 ? pair.start : pair.end);
+    animation_range_pair_free(&pair); return result;
+}
+bool css_animation_range_valid(const char *property, const char *value) {
+    if (!animation_range_kind(property)) return true;
+    char *parsed = css_animation_range_parse(property, value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+static char *animation_range_computed(const ComputedStyle *style, const char *property) {
+    const char *start = gen_value(style, gen_prop("animation-range-start"));
+    const char *end = gen_value(style, gen_prop("animation-range-end"));
+    if (!start) start = "normal";
+    if (!end) end = "normal";
+    int kind = animation_range_kind(property);
+    return kind == 1 ? animation_range_join(start, end, true) : xstrdup(kind == 2 ? start : end);
+}
+/* Only children that explicitly inherited a non-inherited property consume
+ * INH_UNCOMPARED. Compare this family's two computed slots when their shared
+ * maps differ; unrelated generic properties do not force a new dynamic style. */
+static bool animation_range_differ(const ComputedStyle *a, const ComputedStyle *b) {
+    if (a->gen_n == b->gen_n) return false;
+    static const char *const names[] = { "animation-range-start", "animation-range-end" };
+    for (unsigned i = 0; i < sizeof names / sizeof names[0]; i++) {
+        const GenProp *property = gen_prop(names[i]);
+        const char *av = gen_value(a, property), *bv = gen_value(b, property);
+        if (strcmp(av ? av : "normal", bv ? bv : "normal")) return true;
+    }
+    return false;
+}
+
 /* The late containment cascade projects all only onto its intrinsic-size
  * slots. Scope the projection to the same style so recursive substitution
  * retains normal all validation and nested other-style work is unaffected. */
@@ -4537,6 +4781,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     if (!css_border_valid(prop, value_in)) return;
     if (!css_image_longhand_valid(prop, value_in)) return;
     if (!css_easing_valid(prop, value_in)) return;
+    if (!css_animation_range_valid(prop, value_in)) return;
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
@@ -4554,7 +4799,8 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     if (!query_apply_dependencies(st, prop, v)) {
         free(subst); css_apply_decl_inner(st, par, prop, "unset", e, el); return;
     }
-    char *vbuf = min_size_property(prop) ? css_min_size_parse(v) :
+    char *vbuf = animation_range_kind(prop) ? css_animation_range_parse(prop, v) :
+        min_size_property(prop) ? css_min_size_parse(v) :
         css_numeric_dimension_property(prop) ? css_numeric_dimension_parse(prop, v) :
         !strcmp(prop, "interpolate-size") ? interpolate_size_parse(v) :
         !strcmp(prop, "transition-property") ? css_transition_property_parse(v) :
@@ -4605,6 +4851,31 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
             if (invalid_substitution) css_apply_decl(st, par, P, "unset", e, el);
             return;
         }
+    }
+    if (animation_range_kind(P)) {
+        int kind = animation_range_kind(P);
+        /* Unlike font-size itself, ordinary root lengths use the root's final
+         * computed font size for rem. Share this basis with unresolved math. */
+        if (e && e->doc && el == e->doc->html) c.rem = st->font_size;
+        if (inherit || initial || unset) {
+            if (inherit) st->parent_sensitive = true;
+            if (kind != 3) {
+                const char *value = inherit && par ? gen_value(par, gen_prop("animation-range-start")) : NULL;
+                gen_put(&st->gen_n, "animation-range-start", xstrdup(value ? value : "normal"));
+            }
+            if (kind != 2) {
+                const char *value = inherit && par ? gen_value(par, gen_prop("animation-range-end")) : NULL;
+                gen_put(&st->gen_n, "animation-range-end", xstrdup(value ? value : "normal"));
+            }
+        } else {
+            AnimationRangePair pair;
+            if (animation_range_pair_parse(kind, val, &c, &pair)) {
+                if (pair.start) { gen_put(&st->gen_n, "animation-range-start", pair.start); pair.start = NULL; }
+                if (pair.end) { gen_put(&st->gen_n, "animation-range-end", pair.end); pair.end = NULL; }
+                animation_range_pair_free(&pair);
+            }
+        }
+        free(vbuf); free(subst); return;
     }
     if (easing_property(P) && !inherit && !initial && !unset) {
         char *computed = easing_parse_context(&c, val, true);
@@ -4901,8 +5172,10 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
                 css_apply_decl(st, par, "interpolate-size", val, e, el);
             else {
                 css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
-                if (contain_intrinsic_projection_style != st)
+                if (contain_intrinsic_projection_style != st) {
                     css_apply_decl(st, par, "border", val, e, el);
+                    css_apply_decl(st, par, "animation-range", val, e, el);
+                }
             }
         }
         else if (!inherit && !(unset && gp && gp->inherited) && gp && gp->native && gp->initial && *gp->initial) {
@@ -7569,7 +7842,7 @@ static bool uncompared_differ(const ComputedStyle *a, const ComputedStyle *b) {
         memcmp(a->border_style, b->border_style, sizeof a->border_style) ||
         memcmp(a->border_width, b->border_width, sizeof a->border_width) ||
         memcmp(a->border_color, b->border_color, sizeof a->border_color) || a->position != b->position ||
-        memcmp(a->border_radius, b->border_radius, sizeof a->border_radius);
+        memcmp(a->border_radius, b->border_radius, sizeof a->border_radius) || animation_range_differ(a, b);
 }
 static bool can_rebase(const ComputedStyle *s, const CustomProps *old_parent,
         const CustomProps *new_parent, const CustomMask *changed, unsigned diff) {
@@ -8881,6 +9154,7 @@ static bool computed_inset_native(Node *el, const ComputedStyle *s, int side, fl
 }
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     prop = css_animation_property_name(prop);
+    if (s && animation_range_kind(prop)) return animation_range_computed(s, prop);
     SB b; sb_init(&b);
     if (s && (!strncmp(prop, "transition-", 11) || !strncmp(prop, "animation-", 10))) {
         const GenProp *g = gen_prop(prop); const char *v = g ? gen_value(s, g) : NULL;
