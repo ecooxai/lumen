@@ -4,6 +4,7 @@
 #include "jsglue.h"
 #include "../base/url.h"
 #include <algorithm>
+#include <time.h>
 
 using FCI = v8::FunctionCallbackInfo<v8::Value>;
 
@@ -24,16 +25,23 @@ static bool load_trace_enabled() {
 static double load_trace_now() {
     return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
+static double load_trace_cpu_now() {
+#if defined(CLOCK_THREAD_CPUTIME_ID)
+    struct timespec ts;
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) == 0) return (double)ts.tv_sec * 1000 + (double)ts.tv_nsec / 1000000;
+#endif
+    return -1;
+}
 static thread_local unsigned load_trace_records;
 static thread_local std::unordered_map<uint32_t, std::string> load_trace_states;
 static void load_trace_emit(uint32_t id, uint32_t parent, const char *event, const char *state, double elapsed = -1) {
     if (!load_trace_enabled() || load_trace_records >= 2048) return;
     if (++load_trace_records == 2048) {
-        fprintf(stderr, "lumen:loadtrace t=%.3f context=%u parent=%u event=trace-cap\n", load_trace_now(), id, parent);
+        fprintf(stderr, "lumen:loadtrace t=%.3f thread_cpu_ms=%.3f context=%u parent=%u event=trace-cap\n", load_trace_now(), load_trace_cpu_now(), id, parent);
         return;
     }
-    fprintf(stderr, "lumen:loadtrace t=%.3f context=%u parent=%u event=%s %s elapsed_ms=%.3f\n",
-            load_trace_now(), id, parent, event, state, elapsed);
+    fprintf(stderr, "lumen:loadtrace t=%.3f thread_cpu_ms=%.3f context=%u parent=%u event=%s %s elapsed_ms=%.3f\n",
+            load_trace_now(), load_trace_cpu_now(), id, parent, event, state, elapsed);
 }
 static void load_trace(JsCtx *c, const char *event, const char *reason = "none", bool deduplicate = false, double elapsed = -1) {
     if (!load_trace_enabled() || load_trace_records >= 2048 || !c || c->dead) return;
@@ -60,7 +68,7 @@ static void load_trace(JsCtx *c, const char *event, const char *reason = "none",
         auto previous = load_trace_states.find(c->id);
         if (previous != load_trace_states.end() && previous->second == signature) return;
         load_trace_states[c->id] = signature;
-    } else load_trace_states.erase(c->id);
+    } // Unrelated lifecycle milestones must not invalidate blocker-state deduplication.
     load_trace_emit(c->id, c->parent ? c->parent->id : 0, event, state, elapsed);
 }
 
@@ -636,7 +644,6 @@ void js_fire_load(JsCtx *c) {
     const uint64_t generation = c->parser_generation;
     auto live = [&]() { return load_context_active(c, id, document); };
     if (!live()) { load_trace_emit(id, 0, "inactive-entry", "state=inactive"); return; }
-    load_trace(c, "fire-enter");
     if (c->load_phase != DocumentLoadPhase::Pending &&
         c->doc->ready_state == 2 && !c->load_deferred) return;
     c->load_checking = true;

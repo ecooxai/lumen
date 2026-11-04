@@ -19,3 +19,5 @@ Window load from a remaining blocker. A late successful parent load supports tim
 analysis; absence of load with lingering state calls for examining that concrete blocker.
 Neither alone proves candidate1903 source causality. Preserve all original held runs and
 the unchanged six-run alternating1808/1903 diagnostic before any proposed fix.
+
+Independent review revision: removed unconditional fire-entry logging and kept blocker-state deduplication across unrelated milestones. Each emitted record additionally carries cumulative `thread_cpu_ms` from a native thread clock, or -1 when unavailable, to compare CPU work with elapsed monotonic time. No extra clock calls occur with tracing disabled.

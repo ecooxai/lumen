@@ -1,8 +1,16 @@
 diff --git a/src/js/frames.cc b/src/js/frames.cc
-index eba720a..24e8f97 100644
+index eba720a..4f9c32f 100644
 --- a/src/js/frames.cc
 +++ b/src/js/frames.cc
-@@ -15,6 +15,56 @@ struct XMsg { uint32_t to; std::vector<uint8_t> data; std::string origin; double
+@@ -4,6 +4,7 @@
+ #include "jsglue.h"
+ #include "../base/url.h"
+ #include <algorithm>
++#include <time.h>
+ 
+ using FCI = v8::FunctionCallbackInfo<v8::Value>;
+ 
+@@ -15,6 +16,63 @@ struct XMsg { uint32_t to; std::vector<uint8_t> data; std::string origin; double
  static std::vector<XMsg> g_xmsgs;
  static std::vector<FrameLoad *> g_loads;
  
@@ -15,16 +23,23 @@ index eba720a..24e8f97 100644
 +static double load_trace_now() {
 +    return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
 +}
++static double load_trace_cpu_now() {
++#if defined(CLOCK_THREAD_CPUTIME_ID)
++    struct timespec ts;
++    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) == 0) return (double)ts.tv_sec * 1000 + (double)ts.tv_nsec / 1000000;
++#endif
++    return -1;
++}
 +static thread_local unsigned load_trace_records;
 +static thread_local std::unordered_map<uint32_t, std::string> load_trace_states;
 +static void load_trace_emit(uint32_t id, uint32_t parent, const char *event, const char *state, double elapsed = -1) {
 +    if (!load_trace_enabled() || load_trace_records >= 2048) return;
 +    if (++load_trace_records == 2048) {
-+        fprintf(stderr, "lumen:loadtrace t=%.3f context=%u parent=%u event=trace-cap\n", load_trace_now(), id, parent);
++        fprintf(stderr, "lumen:loadtrace t=%.3f thread_cpu_ms=%.3f context=%u parent=%u event=trace-cap\n", load_trace_now(), load_trace_cpu_now(), id, parent);
 +        return;
 +    }
-+    fprintf(stderr, "lumen:loadtrace t=%.3f context=%u parent=%u event=%s %s elapsed_ms=%.3f\n",
-+            load_trace_now(), id, parent, event, state, elapsed);
++    fprintf(stderr, "lumen:loadtrace t=%.3f thread_cpu_ms=%.3f context=%u parent=%u event=%s %s elapsed_ms=%.3f\n",
++            load_trace_now(), load_trace_cpu_now(), id, parent, event, state, elapsed);
 +}
 +static void load_trace(JsCtx *c, const char *event, const char *reason = "none", bool deduplicate = false, double elapsed = -1) {
 +    if (!load_trace_enabled() || load_trace_records >= 2048 || !c || c->dead) return;
@@ -51,7 +66,7 @@ index eba720a..24e8f97 100644
 +        auto previous = load_trace_states.find(c->id);
 +        if (previous != load_trace_states.end() && previous->second == signature) return;
 +        load_trace_states[c->id] = signature;
-+    } else load_trace_states.erase(c->id);
++    } // Unrelated lifecycle milestones must not invalidate blocker-state deduplication.
 +    load_trace_emit(c->id, c->parent ? c->parent->id : 0, event, state, elapsed);
 +}
 +
@@ -59,7 +74,7 @@ index eba720a..24e8f97 100644
  static std::string origin_of(const char *u) {
      URL x{};
      if (u && str_ieqn(u, "blob:", 5) && (str_ieqn(u + 5, "http:", 5) || str_ieqn(u + 5, "https:", 6))) u += 5;   /* a blob URL's origin is its inner URL's */
-@@ -77,6 +127,7 @@ extern "C" Node *js_doc_frame_el(Document *d) { JsCtx *k = owner_ctx(d); return
+@@ -77,6 +135,7 @@ extern "C" Node *js_doc_frame_el(Document *d) { JsCtx *k = owner_ctx(d); return
  
  void frame_kill(JsCtx *k) {
      if (k->dead) return;
@@ -67,7 +82,7 @@ index eba720a..24e8f97 100644
      k->dead = true;
      js_broadcast_deactivate(k->broadcast);
      k->dead_at = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
-@@ -134,7 +185,10 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const std::string &key, const char
+@@ -134,7 +193,10 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const std::string &key, const char
      if (p->host.frame_open) p->host.frame_open(p->host.ud, f, d, &ch);
      if (!ch.frame_open) ch.frame_open = p->host.frame_open;
      ch.frame_close = p->host.frame_close;
@@ -78,7 +93,7 @@ index eba720a..24e8f97 100644
      k->host_ud = ch.ud;
      k->frame_src = key;
      const uint64_t generation = k->parser_generation;
-@@ -554,13 +608,14 @@ void js_doc_close(JsCtx *c) {
+@@ -554,13 +616,14 @@ void js_doc_close(JsCtx *c) {
     parent's load event. A frame removed meanwhile no longer does. */
  bool (*js_load_blocked)(JsCtx *c) = nullptr;
  static bool frames_loading(JsCtx *c) {
@@ -100,7 +115,7 @@ index eba720a..24e8f97 100644
      return false;
  }
  static bool load_context_active(JsCtx *saved, uint32_t id, Document *document) {
-@@ -574,12 +629,14 @@ static bool load_context_active(JsCtx *saved, uint32_t id, Document *document) {
+@@ -574,12 +637,13 @@ static bool load_context_active(JsCtx *saved, uint32_t id, Document *document) {
  }
  
  void js_fire_load(JsCtx *c) {
@@ -113,11 +128,10 @@ index eba720a..24e8f97 100644
      auto live = [&]() { return load_context_active(c, id, document); };
 -    if (!live()) return;
 +    if (!live()) { load_trace_emit(id, 0, "inactive-entry", "state=inactive"); return; }
-+    load_trace(c, "fire-enter");
      if (c->load_phase != DocumentLoadPhase::Pending &&
          c->doc->ready_state == 2 && !c->load_deferred) return;
      c->load_checking = true;
-@@ -591,14 +648,17 @@ void js_fire_load(JsCtx *c) {
+@@ -591,14 +655,17 @@ void js_fire_load(JsCtx *c) {
             a newer context or proceed with this generation's readiness work. */
          c->load_checking = false;
          c->load_deferred = true;
@@ -135,7 +149,7 @@ index eba720a..24e8f97 100644
      }
      if (frames_loading(c)) {
          c->load_deferred = true;
-@@ -607,26 +667,32 @@ void js_fire_load(JsCtx *c) {
+@@ -607,26 +674,32 @@ void js_fire_load(JsCtx *c) {
      }
      if (c->doc->ready_state != 2) js_set_ready_state(c, 2);
      if (!preflight_live()) return;
@@ -170,7 +184,7 @@ index eba720a..24e8f97 100644
      if (parent && load_context_active(parent, parent_id, parent_document))
          frames_load_check(parent);
  }
-@@ -643,6 +709,7 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
+@@ -643,6 +716,7 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
      JsCtx *p = l->p, *blank = nullptr;
      if (p && !p->dead) for (JsCtx *k : p->kids) if (!k->dead && !k->frame_reload_pending && k->id == l->kid && k->frame_el == l->f) blank = k;
      if (blank) {

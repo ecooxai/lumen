@@ -4,10 +4,10 @@
   "base_commit": "4c16629039ee7a6b665ae439adfba15fa3e2ae1c",
   "status": "diagnostic-only source statically reviewed; independent build and fixed trace runs pending",
   "source_before_sha256": "9ccedab9359da92e8ce75c514469341b8103bc54c6e15053a2cf0225953351df",
-  "source_after_sha256": "76e9d2b9e6e288ef26231195aa5fbaf07aedf98e955bee9ee114c601b2db1c60",
+  "source_after_sha256": "a1861000ce55bba85afb112f146845167ac8ae7a448811c0a9173b31c5a01e5f",
   "environment": "LUMEN_TRACE_LOAD=1; unset or0 disables",
   "record_cap_per_thread": 2048,
-  "logs": "monotonic timestamps and numeric context/parent IDs; native lifecycle/blocker counters only; no URL, script, capability or page data",
+  "logs": "Monotonic and thread_cpu_ms timestamps, numeric context/parent IDs, native lifecycle/blocker counters; no URL/script/capability/page data.",
   "planned_scenarios": [
     "OFF",
     "ON",
@@ -17,5 +17,17 @@
   "cohort": "frozen namespace2;15s timeout;2workers; unchanged WPT/oracles/guard",
   "qualification": false,
   "ended_utc": "2026-11-04T07:41:24.249712+00:00",
-  "implementation_and_review_seconds": 127.798328
+  "implementation_and_review_seconds": 127.798328,
+  "review_revision": {
+    "started_utc": "2026-11-04T07:47:17.582077+00:00",
+    "ended_utc": "2026-11-04T07:47:17.592515+00:00",
+    "seconds": 0.010438,
+    "reason": "Independent tester found unconditional fire-enter cleared blocker dedup; root requested thread CPU timestamp.",
+    "source_before_sha256": "76e9d2b9e6e288ef26231195aa5fbaf07aedf98e955bee9ee114c601b2db1c60",
+    "changes": [
+      "Remove unconditional fire-enter event",
+      "Preserve blocker signature across non-deduplicated milestones",
+      "Add enabled-only thread_cpu_ms via CLOCK_THREAD_CPUTIME_ID; -1 if unavailable"
+    ]
+  }
 }

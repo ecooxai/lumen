@@ -700,3 +700,7 @@ environment propagation without runner or guard edits. Fixed OFF/ON/OFF/ON names
 diagnostics are pending. This instrumentation has no compatibility or speed gain claim.
 Source baseline4c166290 and exact patch/hash are retained under load-trace-v1.
 Sample score remains last-qualified60.82/100; candidate1903 originalHOLD remains.
+
+### Iteration 07 review revision — diagnostic observability
+
+Independent test review identified a logging-cap risk before candidate reservation. Removed noisy fire-entry logging, preserved blocker deduplication, and added guarded native thread CPU timestamps. Production behavior and all test inputs remain unchanged. Diagnostic source remains unqualified; sample compatibility score remains 60.8173/100 from the last qualified 1248-URL full baseline. Mutation interval: 2026-11-04T07:47:17.582077+00:00 to 2026-11-04T07:47:17.592515+00:00 (0.010438 seconds); independent build/tests pending.
