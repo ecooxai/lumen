@@ -1402,7 +1402,7 @@ function fontParts(v) {
 /* computed font shorthand from the computed longhands; '' when a longhand can't be written in the shorthand */
 const FONT_STRETCH_PCT = { 50: 'ultra-condensed', 62.5: 'extra-condensed', 75: 'condensed', 87.5: 'semi-condensed', 100: 'normal', 112.5: 'semi-expanded', 125: 'expanded', 150: 'extra-expanded', 200: 'ultra-expanded' };
 function computedFont(cs) {
-    const g = k => cs.getPropertyValue(k);
+    const g = k => cssDeclarationInvoke(cssDeclarationLocalState(cs), 'getPropertyValue', [k]);
     const size = g('font-size'), family = g('font-family');
     if (!size || !family) return '';
     let st = g('font-stretch') || 'normal';
@@ -1661,6 +1661,7 @@ const cssDeclarationWeakGet = Function.prototype.call.bind(WeakMap.prototype.get
 const cssDeclarationWeakSet = Function.prototype.call.bind(WeakMap.prototype.set);
 const cssDeclarationApply = Reflect.apply, cssDeclarationString = String;
 const cssDeclarationTypeError = TypeError, cssDeclarationProxy = Proxy;
+const cssDeclarationFreeze = Object.freeze;
 const cssDeclarationGet = Reflect.get, cssDeclarationSet = Reflect.set;
 const cssDeclarationHas = Reflect.has, cssDeclarationOwnKeys = Reflect.ownKeys;
 const cssDeclarationDescriptor = Reflect.getOwnPropertyDescriptor;
@@ -1681,8 +1682,11 @@ function cssDeclarationState(receiver) {
     throw new cssDeclarationTypeError('Illegal invocation');
 }
 function cssDeclarationWrap(target, handler) {
+    const state = cssDeclarationLocalState(target);
+    if (!cssDeclarationDescriptor(state, 'receiver').writable) return state.receiver;
     const proxy = new cssDeclarationProxy(target, handler);
-    cssDeclarationWeakSet(cssDeclarationStates, proxy, cssDeclarationLocalState(target));
+    state.receiver = proxy; cssDeclarationFreeze(state);
+    cssDeclarationWeakSet(cssDeclarationStates, proxy, state);
     return proxy;
 }
 function cssDeclarationText(value, nullToEmpty = false) {
@@ -1693,7 +1697,7 @@ function cssDeclarationReadonly() {
     throw new DOMException('These styles are computed, and therefore read-only.', 'NoModificationAllowedError');
 }
 function cssDeclarationInvoke(state, operation, args) {
-    return cssDeclarationApply(state.operations[operation], state.target, args);
+    return cssDeclarationApply(state.operations[operation], state.receiver, args);
 }
 function cssDeclarationIndex(key) {
     if (typeof key !== 'string' || key === '') return -1;
@@ -1784,7 +1788,7 @@ function cssDeclarationInstall(proto) {
 }
 
 class CSSStyleDeclaration {
-    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); cssDeclarationWeakSet(cssDeclarationStates, this, {target: this, parent: null, readonly: !!ro, operations: ro ? cssDeclarationComputedOperations : cssDeclarationInlineOperations}); }
+    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); cssDeclarationWeakSet(cssDeclarationStates, this, {receiver: this, parent: null, readonly: !!ro, operations: ro ? cssDeclarationComputedOperations : cssDeclarationInlineOperations}); }
     get parentRule() { return cssDeclarationState(this).parent; }
     /* parsed declarations of the current style attribute; callers that modify take a copy */
     _m() {
@@ -1923,7 +1927,7 @@ const styleHandler = {
     preventExtensions() { return false; }
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = cssStylePropertyName(this, String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [this.getPropertyValue(p), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if (k === 'transition' && v) v = cssTransitionParse(v) ?? v; if (k === 'animation-range' && v) v = cssAnimationRangeParse(v) ?? v; if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
+    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = cssStylePropertyName(this, String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [cssDeclarationInvoke(cssDeclarationLocalState(this), 'getPropertyValue', [p]), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if (k === 'transition' && v) v = cssTransitionParse(v) ?? v; if (k === 'animation-range' && v) v = cssAnimationRangeParse(v) ?? v; if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return this._names().length; }
     /* an invalid pseudo-element or an element outside the document has an empty style */
     _names() { return this._none || !this._el.isConnected || !N.computed(this._el, 'display') || mediaChild(this._el) ? [] : computedNames(); }   /* no style: outside the flat tree */
