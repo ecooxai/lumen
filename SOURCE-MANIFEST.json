@@ -1,12 +1,12 @@
 {
-  "candidate": 2002,
-  "tested_source_commit": "32e13542be0b4eacb801d878231e3e6f51461b40",
-  "tested_binary_sha256": "784c05511d267fa7dc449d0aa0be4f1d5159168ddaf5af1a5abe1ff33e77185c",
-  "recorded_input_digest": "6887ef2d592073540a54a3d2a8ca4a6bd386a8c9bcb8d5b00a345c5a1f6a11dc",
+  "candidate": 2003,
+  "tested_source_commit": "e3640d8014c369f56ec23ba1cadf97f6635668ce",
+  "tested_binary_sha256": "42516d42d3e04f08cd029474d7872bb9ebdbcb6fe4063cb87b87e09cfde4e04b",
+  "recorded_input_digest": "9aeb8d3300db158432facc7b615ab41f9f00e426dcd36fb90ca98c592ec9c66f",
   "recorded_input_count": 743,
-  "source_manifest_file_sha256": "048ee86c4c42764ca7c6c39244acfc41195d99e11e824a5e4b05637c62a740fe",
-  "public_parent": "80fdbe8ccf9c38325c3f0ab16fd75cbc192402c1",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2002-20261104",
+  "source_manifest_file_sha256": "caf5b25e47d728ddb168382a18bd2f55559b2b230a1c48c8df051d15a5f716d4",
+  "public_parent": "86f96cf4382783547b25937b9fc7e439b9f60bfd",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2003-20261104",
   "recorded_inputs": {
     "CMakeLists.txt": {
       "sha256": "39135ade2090484ca003089b98004a8e28ed3aad5bc244c0921df7cc8798190b",
@@ -429,7 +429,7 @@
       "mode": "100644"
     },
     "src/js/prelude/07b-net.js": {
-      "sha256": "e94fe0632330dc1b80d2dcc1ee4383a1833d2dc41f60cb28eee7a4c114b077e2",
+      "sha256": "9c5e9341e26a82c22b4a8619c6254ac9b9ebed158d278e540a34a77258ba21fc",
       "mode": "100644"
     },
     "src/js/prelude/07g-webgl.js": {
@@ -485,7 +485,7 @@
       "mode": "100644"
     },
     "src/js/prelude/08-window.js": {
-      "sha256": "e2f0772ef02609976912f77db84b2b14e212866ad1dd874c7544c48dd40042a5",
+      "sha256": "2b5860d060781ea36b2426a3907d09d249b4d4c58c6710a2eacee2f1e3d10fe5",
       "mode": "100644"
     },
     "src/js/rtc.cc": {
@@ -625,7 +625,7 @@
       "mode": "100644"
     },
     "src/js/worker.cc": {
-      "sha256": "456c716e1fc223fb9ea21e55ce1cbe66833ddc26218255ef0f03df7a6150189c",
+      "sha256": "61f3c77ebf5c5252a214c5cb6dcb087d8a6766fd2e389f69bd62f893f94c51a1",
       "mode": "100644"
     },
     "src/layout/affine.h": {

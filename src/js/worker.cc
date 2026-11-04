@@ -511,10 +511,100 @@ const performance = new Performance(PERF_KEY);
 const fmt = a => a.map(x => typeof x === 'string' ? x : x instanceof Error ? x.stack || String(x) : (() => { try { return JSON.stringify(x); } catch (e) { return String(x); } })()).join(' ');
 const console = { log: (...a) => W.log(1, fmt(a)), info: (...a) => W.log(1, fmt(a)), debug: (...a) => W.log(0, fmt(a)), warn: (...a) => W.log(2, fmt(a)), error: (...a) => W.log(3, fmt(a)), trace() {}, group() {}, groupEnd() {}, time() {}, timeEnd() {}, assert: (c, ...a) => { if (!c) W.log(3, 'Assertion failed: ' + fmt(a)); } };
 const wports = new Map(); let wpseq = 0;
+function workerPortList(transfer) {
+    const ports = (Array.isArray(transfer) ? transfer : transfer && transfer.transfer || []).filter(p => p instanceof MessagePort), seen = new Set();
+    for (const p of ports) {
+        if (seen.has(p)) throw new DOMException('A MessagePort cannot be transferred twice.', 'DataCloneError');
+        seen.add(p); p._assertTransferable();
+    }
+    return ports;
+}
 class MessagePort extends EventTarget {
-    constructor() { super(); this.onmessage = null; this.onmessageerror = null; Object.defineProperty(this, '_other', { value: null, writable: true }); Object.defineProperty(this, '_k', { value: 0, writable: true }); }
-    postMessage(d, t) { const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort), k = this._k || (this._other && this._other._k); if (k) { W.post({ __lumenPort: k, data: d, xfer: ps.map(p => { const j = -(++wpseq); p._k = j; if (p._other) wports.set(j, p._other); return j; }) }); return; } const o = this._other; if (o) { const c = W.clone(d); setTimeout(() => { const e = new MessageEvent('message', { data: c, ports: ps }); evTrusted(e); fireOn(o, e); }); } }
-    start() {} close() { this._other = null; }
+    #queue = []; #enabled = false; #scheduled = false; #detached = false; #onmessage = null;
+    constructor() { super(); this.onmessageerror = null; Object.defineProperty(this, '_other', { value: null, writable: true }); }
+    get onmessage() { return this.#onmessage; }
+    set onmessage(value) { this.#onmessage = typeof value === 'function' ? value : null; this.#enabled = true; this.#schedule(); }
+    _isDetached() { return this.#detached; }
+    _assertTransferable() { if (this.#detached) throw new DOMException('MessagePort is already detached.', 'DataCloneError'); }
+    _takeTransfer() {
+        this._assertTransferable();
+        const other = this._other, peerRoute = other && other._isDetached() && other._route;
+        const route = this._route || peerRoute;
+        const state = { queue: this.#queue, other: route ? null : other, route };
+        if (peerRoute) { if (other._other === this) other._other = null; other._route = null; }
+        this.#queue = []; this.#detached = true; this._other = null;
+        if (this._route) this._route = null;
+        return state;
+    }
+    postMessage(data, transfer) {
+        const ports = workerPortList(transfer);
+        if (this.#detached) return;
+        const route = this._route || (this._other && this._other._route);
+        if (route) { route.send(data, ports); return; }
+        if (this._other) this._other._deliverLocal(data, ports);
+    }
+    _deliverLocal(data, ports) { const copy = W.clone(data), transfer = workerPortList(ports); this._deliver(copy, transfer.map(workerLocalPort)); }
+    _deliver(data, ports) { this.#queue.push([data, ports || []]); this.#schedule(); }
+    #schedule() {
+        if (!this.#enabled || this.#scheduled || !this.#queue.length) return;
+        this.#scheduled = true;
+        setTimeout(() => {
+            this.#scheduled = false;
+            const message = this.#queue.shift();
+            if (!message) return; // Ownership moved while this old task was pending.
+            const [data, ports] = message;
+            try { const event = new MessageEvent('message', { data, ports }); evTrusted(event); fireOn(this, event); }
+            finally { this.#schedule(); }
+        });
+    }
+    start() { this.#enabled = true; this.#schedule(); }
+    close() {
+        if (this.#detached) return;
+        this.#detached = true;
+        const other = this._other, route = this._route || (other && other._route);
+        if (route) route.registry.set(route.key, null);
+        if (this._route) this._route = null;
+        this._other = null;
+        if (other && other._other === this) other._other = null;
+        if (other && other._isDetached() && other._route) other._route = null;
+    }
+}
+Object.defineProperty(MessagePort.prototype, 'onmessage', { ...Object.getOwnPropertyDescriptor(MessagePort.prototype, 'onmessage'), enumerable: true });
+function workerLocalPort(port) {
+    const received = new MessagePort(), state = port._takeTransfer();
+    received._other = state.other;
+    if (state.other && state.other._other === port) state.other._other = received;
+    if (state.route) { received._route = state.route; state.route.registry.set(state.route.key, received); }
+    for (const [data, ports] of state.queue) received._deliverLocal(data, ports);
+    return received;
+}
+function workerPortMessage(key, data, ports) {
+    if (!wports.has(key)) { wports.set(key, [[data, ports]]); return; }
+    const target = wports.get(key);
+    if (Array.isArray(target)) target.push([data, ports]);
+    else if (target && target.relay) target.relay.send(data, ports);
+    else if (target) target._deliver(data, ports);
+}
+function workerPortRoute(key) { return { registry: wports, key, send(data, ports) {
+    const copy = ports.length ? W.clone(data) : data, transfer = workerPortList(ports);
+    W.post({ __lumenPort: key, data: copy, xfer: transfer.map(workerPortExport) });
+} }; }
+function workerPortExport(port) {
+    const key = -(++wpseq), route = workerPortRoute(key), state = port._takeTransfer();
+    port._route = route;
+    if (state.other) { port._other = state.other; wports.set(key, state.other); }
+    else if (state.route) { state.route.registry.set(state.route.key, { relay: route }); wports.set(key, { relay: state.route }); }
+    else wports.set(key, null);
+    for (const [data, ports] of state.queue) route.send(data, ports);
+    return key;
+}
+function workerPortImport(key) {
+    const port = new MessagePort(), route = workerPortRoute(key), pending = wports.get(key);
+    port._route = route;
+    if (pending === null) { port.close(); return port; }
+    wports.set(key, port);
+    if (Array.isArray(pending)) for (const [data, ports] of pending) port._deliver(data, ports);
+    return port;
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const BC_FIRE = (target, event) => { evTrusted(event); fireOn(target, event); };
@@ -527,7 +617,7 @@ R"JS(
 const xferOut = (t, op) => {
     const transfer = Array.isArray(t) ? t : t && typeof t === 'object' && t.transfer || [];
     for (const item of transfer) if (W.isWasmModule(item)) throw new DOMException(`Failed to execute '${op}': WebAssembly.Module is not transferable.`, 'DataCloneError');
-    return transfer.filter(p => p instanceof MessagePort).map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; });
+    return workerPortList(transfer).map(workerPortExport);
 };
 const swPost = (m, keys) => keys.length ? W.post({ __lumenXfer: keys, data: m }) : W.post(m);
 const extPending = new WeakMap();
@@ -586,8 +676,8 @@ class Client {
     get id() { return this.#info.id; } get type() { return this.#info.type || 'window'; }
     postMessage(message, transfer = undefined) {
         if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Client': 1 argument required, but only 0 present.");
-        const keys = xferOut(transfer, 'postMessage');
-        swPost({ __lumenSW: 'cmsg', client: this.#info.id, data: message }, keys);
+        const data = W.clone(message), keys = xferOut(transfer, 'postMessage');
+        swPost({ __lumenSW: 'cmsg', client: this.#info.id, data }, keys);
     }
 }
 class WindowClient extends Client {
@@ -708,7 +798,7 @@ function structuredClone(v, options) { if (options && options.transfer) for (con
 const api = {
     self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: secureContext, crossOriginIsolated: false,
     onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const transfer = Array.isArray(t) ? t : t && t.transfer || []; for (const item of transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); const ps = transfer.filter(p => p instanceof MessagePort); if (!ps.length) return W.post(m); W.post({ __lumenXfer: ps.map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; }), data: m }); },
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const transfer = Array.isArray(t) ? t : t && t.transfer || []; for (const item of transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); const ps = workerPortList(transfer); if (!ps.length) return W.post(m); const data = W.clone(m), ports = workerPortList(ps); W.post({ __lumenXfer: ports.map(workerPortExport), data }); },
     close() { W.close(); },
     reportError(e) { if (!arguments.length) throw new TypeError("Failed to execute 'reportError' on 'WorkerGlobalScope': 1 argument required, but only 0 present."); W.reportErr(e); },
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
@@ -760,8 +850,8 @@ return {
     onmsg(data) {
         let ports = [];
         if (data && typeof data === 'object') {
-            if (data.__lumenPort) { const p = wports.get(data.__lumenPort); if (p) { const e = new MessageEvent('message', { data: data.data, ports: (data.xfer || []).map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }) }); evTrusted(e); fireOn(p, e); } return; }
-            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }); data = data.data; }
+            if (data.__lumenPort) { workerPortMessage(data.__lumenPort, data.data, (data.xfer || []).map(workerPortImport)); return; }
+            if (data.__lumenXfer) { ports = data.__lumenXfer.map(workerPortImport); data = data.data; }
         }
         if (W.service) { if (data && typeof data === 'object' && data.__lumenSW) swHandle(data, ports); return; }
         if (W.shared) {   /* a new SharedWorker object connected: its port */
