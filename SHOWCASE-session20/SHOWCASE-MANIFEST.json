@@ -1,0 +1,33 @@
+{
+  "candidate": 2007,
+  "tested_source_commit": "2de18b314abacd5a027496b715bb28b91d676191",
+  "linux_binary_sha256": "2751690036083f7ba162d8caea6bdbe383f48e183245c828f2f0d58c4d22a586",
+  "android_apk_sha256": "7a523deedbd37f1c95ec0ca4f1c0bad7ae35c94f4ed9d69f15769777c1ebe624",
+  "format": "1280x960,4:3,36seconds,noaudio",
+  "showcase": "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2007_showcase.mp4",
+  "clean_recording": "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2007_clean_recording.mp4",
+  "privacy_scope": "Dedicated clean profile/display and owned public demo; no account/profile UI, private auth capture or credentials.",
+  "credit": "GPT-6 Astra Pro / built-in agents / RubyWebTerm; visible white text on black footer",
+  "checks": "Actual owned-page input, navigation/history and page checks plus prior exact-source qualification; video is not itself WPT evidence.",
+  "selected_urls_pass": 813,
+  "selected_urls_total": 1248,
+  "selected_assertions_pass": 23329,
+  "selected_assertions_total": 26245,
+  "overall_project_assessment": 67,
+  "x_google_login_fixed": false,
+  "private_history_included": false,
+  "media": {
+    "SHOWCASE-session20/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2007_showcase.mp4": {
+      "sha256": "1bed41733cac4f5d171d807360f2f4c79927199b44cdb4ba4c895025f52134a1",
+      "bytes": 345838
+    },
+    "SHOWCASE-session20/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2007_clean_recording.mp4": {
+      "sha256": "c4e080cb9b5b29df561f4b6b379a6eb282ace2b0a3cfa69bc7ef706df4d22cf4",
+      "bytes": 278188
+    },
+    "SHOWCASE-session20/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2007_poster.png": {
+      "sha256": "a1da3179e6189eb1da1257e2200887e0e66743798fa2e54979a184df3cffcf28",
+      "bytes": 297370
+    }
+  }
+}
