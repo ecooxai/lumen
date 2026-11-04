@@ -1,40 +1,34 @@
-# Agent notes for Lumen
+# Lumen Linux project instructions
 
-Read agent/continue.md, agent/devsummary.md, agent/task.md and agent/next-agent-prompt.md first. The canonical repository is /mnt/p3/project/browser/lumen-android/lumen-android; WPT is /mnt/p3/project/browser/wpt. Use the RubyWebTerm MCP with the canonical workspace_id and relative paths. Current branch: gpt-6-astra-pro_builtin-agents_rubywebterm_session20-x-google-20261104. Older standings and device identities in archived handoffs are historical.
+## Current accepted source and delivery — session20
 
-## Active session20 — 2026-11-04T12:52:19Z
+Recorded 2026-11-04T18:51:34.951669+00:00 by GPT-6 Astra Pro, built-in agents and RubyWebTerm. Read `agent/continue.md` and this file before changing the project. The user's exact original request remains in `agent/task.md`. The main agent coordinates; use same-model/high-reasoning built-in agents for source work, reviews, builds, tests and rollout.
 
-User has authorized a new five-hour development window through 17:52:19 UTC, plus up to one hour only for important bug fixes. The latest full request is captured in agent/task.md. The previous session19 stop/deadline remains historical and does not limit this newly requested work. Priority: reproduce and fix X Google sign-in on display :0, then improve measured native web-platform failures. Preserve existing account state and require actual return-error evidence; do not infer success from synthetic GSI controls.
+The accepted tested engine is candidate **2007**, source `2de18b314abacd5a027496b715bb28b91d676191`, immutable Linux SHA256 `2751690036083f7ba162d8caea6bdbe383f48e183245c828f2f0d58c4d22a586`. The later documentation commit is not a new compiled source identity. Canonical engine source/default were frozen and tracked clean through the successful exact-source Android delivery, normal Linux display0 restart and clean-profile showcase; those guards were checked before these documentation updates.
 
-Same-model built-in agents: root is CTO; project_steward owns Git/docs and delivery infrastructure; auth_fix owns sign-in diagnosis/fix and display :0; platform_qa owns independent conformance testing. Coordinate exact file ownership and source freezes before builds. Checkpoint a8910478b3031c16dc0a6d8daf095837a7048321 preserves the prior tracked-clean source and handoff. Old untracked evidence stays in place. Prior continue/task/next-agent files are archived under agent/archive/*-session19-20261104T125219Z.md.
+The selected HTTP/default-timeout cohort passes **813/1248 URLs** and **23329/26245 assertions**, with **1238 harnessOK** and all26245 registered identities preserved. This is not all WPT or Chromium parity. The pinned historical Chromium150.0.7871.114 reference is1062/1248URLs and24541/26064assertions; the different assertion denominator must remain explicit. Overall **67/100** is a subjective project assessment; the95goal remains unmet.
 
-Accepted selected-cohort baseline is candidate2002 from source32e13542be0b4eacb801d878231e3e6f51461b40:800/1248 URLs and23168/26245 assertions, with every inherited assertion/URL/harness pass retained. Exact native gate218/218. Read agent/ops/session20/accepted-baseline2002.json and candidate2002-independent-full-acceptance.json. Display:0 and Android remain candidate1915 during active auth diagnostics; no2002 device installation is claimed. The session20 dashboard and scoped inbox were independently exercised; the private inbox watcher polls15s and an agent must review and respond to queued messages. The qualified2002 source archive is published with remote source hashes, offline Git restoration and complete external HTTPS readback verified; previous1915 bytes are preserved. Final Linux/Android restart requires exact accepted candidate identity and profile preservation.
+Authoritative main obligations: `agent/ops/session20/candidate2007-required-prior-pass-v1.json` (SHA256 `67a899b5502ded418a7e55c4fc678c86cf5850cc2e9ebf89e68ff93601bfc54d`). Separate messaging18: 34/39assertions,15completeURLs,18harnesses, all39registrations, registry `agent/ops/session20/platform-qa/messaging2007-required-prior-pass-v1.json` (SHA256 `5fc2e1c374641c94a0c85ae04dd3308837fea0f3046d4fc5650ed36c9bd1df11`). Separate authored/native companions: native218, auth80+original19, animation53+7, CSSKeyframesRule indexed26, transfer106required/109registered with107priorPASS including one late-transfer observation. Candidate2007 additionally requires object-position75 and original upstream3/123. Do not add authored or separate messaging counts to1248.
 
-## Historical session19 evidence and user priority
+Actual final runtime delivery is bound in `agent/ops/session20/final-delivery-seal.json`: Android APK23+RTC10, exact packaged BuildIDs/APK bytes, install-r and unchanged package UID, one-second monitored restart/foreground/page checks; normal Linux display0 exact executable/hash/environment and preserved profile;36-second1280×9604:3 clean-profile showcase with visible model/tool credit. Source identity is not inferred from a checkout or installed candidate label. Read the actual receipts before any subsequent restart.
 
-Session19 selected and delivered candidate1915. Original frozen1248 replay accepted at2026-11-04T12:23:57.325Z; selection12:23:57.846Z preceded the fixed12:24 cutoff. Result796/1248 URLs (63.782051%) and23158/26245 assertions, +37URLs/+332assertions over1808 and +15/+55 over1908, with zero required assertion/URL/harness losses and all1248 actualprocess exits0. This is a selected-manifest compatibility score, not95/100 overall quality or Chromium parity.
+X Google sign-in remains unresolved. Google credential delivery, server-returned generic error, standards queue repairs, correct synthetic public-client encoding and bounded safe request metadata do not prove a causal login fix. No cross-device same-account reference was completed; the intended identity was not safely established, so do not choose an account by ordinal. Physical phone/display0 account UI evidence stays private.
 
-Tested productionHEAD b63df22ad8b67399a416ac0bc16c6d21613d23aa, src treec90cb233430c82237c7f05076415f2e7c28fac05, Linux binarySHA25671478e23bcfffeead3cbe0edc694a02bfae2b8ce78321f27212a5a656ef9c908. Final docs commits may advance taskbranchHEAD while keeping this source tree unchanged. No fallback checkout occurred. Last exact-source native gate was candidate1913 at238b68ba84881d3d853bb78fcf53202cdd40900a:218/218. Later1914/1915 changes were JavaScript-only; no exact1915 native run is claimed. Narrow1915 gates passed73/73 independent controls and the regression gate over59 URLs (34 fullURLPASS,511/592 assertions,59/59 harnessOK).
+## Qualification and retained failures
 
-Qualified public source commit80fdbe8ccf9c38325c3f0ab16fd75cbc192402c1: https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1915-20261104. Source archive10463864bytes SHA256521185eb206a2671a66dc3d6d80a80e484e6b30667e6f13a690048d11f9f51ab; offline Git restoration and complete external HTTPS readback passed12:31:25.721Z at https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz?checkpoint=1915. Public source uses only approved isolated ancestry, not canonical private history.
+Candidate2007's original full run remains **HOLD** permanently:812/1248URLs,23329/26245assertions,1237harnessOK; the namespace URL produced51PASS but a harnessTIMEOUT. Its original raw SHA256 is `e868a979629a6dbe5ed99adb56bd1d494a9b7c0e2ea09a3dc49cc8e5cff3ea26`. A one-URL diagnostic had an empty second shard and was retained as setup-only. Four separately frozen two-URL alternating2006/2007 comparisons then all passed namespace51+control5 and both real lifecycle/harness gates. A single unchanged full reliability replay was preregistered against23329PASS/813fullURLs/1238harnesses/all26245registrations. Its distinct receipt, audit and accepted registry govern any2007 promotion; never overwrite or relabel the first HOLD. Host contention and costly realm setup are context/hypotheses, not a proven timeout cause.
 
-Display:0 final restart accepted12:27:37. Android build/install/finalrestart accepted, last guards sealed12:33:02.5; installedAPK SHA256b564cb4fc6e7e75d64d47bd70803cc67d809cbaff6cd5d228a81d4e23baf56aa,177615794bytes. Profile/UID preserved, no uninstall/data clear; four own-page checks and six foreground samples passed. Original shutdown/check failures and bounded recovery receipts are retained. The stale unselected CXX-model BuildID check was corrected in a separate operational wrapper; the actual packaged unique3-library identity and unchanged23+10APK gates passed. Two isolated36s1280x960 showcase copies were visually reviewed; no personal pages entered media. Android smoke is not AndroidWPT.
+Object-position work covers grammar, specified serialization and computed storage only. It does not add an image/video placement consumer. Logical-form and CSSOM reference disagreements remain disclosed in unchanged fixtures; invalid values, CSS-wide/var handling and setter order/empty removal are covered separately.
 
-Session began2026-11-04T06:33:55Z. Five-hour deadline11:33:55Z was extended for concrete important bugs to12:33:55Z. Production work ended earlier; already-authorized final delivery/publication/docs receipts continued after that boundary. At this docs capture 2026-11-04T12:40:49.366207+00:00, actual elapsedwall22014.366s. Do not equate overlapping task/stage totals with user elapsed or model compute. Root was CTO; same-model built-in source_steward owned implementation/Git/docs, test_baseline owned immutable evidence, environment_delivery owned monitoring/preview/runtime/public delivery.
+The reviewed background type patch remains parked/unbuilt/unqualified: isolated commit `e2145944f4e20643622a9736102da3d696c2e777`, exactly two added lines in `style.c: bg_length`, based on2de18b3. Original40controls remain: baseline17PASS/reference40PASS,37required rows plus exact position/x/y preservation for3 inherited shorthand-size observations. Its v8draft still has UNSEALED pins and refers to the original2007 fullHOLD; a continuation must explicitly bind any separately accepted reliability provenance, not merely replace registry hashes. No size/repeat or renderer expansion is included.
 
-The earlier authenticated10:52:35UTC X/Google return-error and scrolling-CPU request is preserved in the archived session19 task. The following paragraph describes historical session19 observations, not the current session20 reproduction. No original X-return error or stable authenticated scrolling benchmark was reproduced. User-owned Google identity approval expired after inactivity; this is not proof of the reported engine failure. Account-free GSI3 and two unchanged messaging URLs pass1913/reference, not an auth-fix claim. The old1808 logged-out landing observation was median0%,p951%,max4% of one core, RSSmedian210.8/max279.2decimalMB; hostpressure was measured separately. Preserve profiles/auth state and private evidence; exclude the tool-induced malformed JavaScript-address probe from causality.
+## Public artifacts and private records
 
-## Frozen conformance scope and acceptance
+Accepted source: https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2007-20261104. Public commit `e7569b9a15d4f323c5edb66ee7a79f9f0e85473a` has separate approved public ancestry. Source download: https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz?checkpoint=2007 . Historical1915/2002/2003/2005/2006 archive queries retain their exact hashes. Public export includes743recorded inputs and810approved source paths; no private canonical history, profiles, account/auth captures, credentials, inbox capabilities or diagnostic2004.
 
-The1248 selected HTTP/default-timeout testharness URLs come from1247files/10DOM-CSS families, selected before results.44long-timeout cases and1HTTPS case were already excluded. This is not allWPT, visual/reftest/manual/network coverage, production certification, Chromium parity or95/100 quality. Pinned reference Chromium150.0.7871.114 with matching ChromeDriver is1062/1248 and24541/26064 assertions; compare exact common(URL,name,occurrence) identities, not mismatched assertion denominators.
+Unqualified continuation patches: https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-pending-review-session20-20261104/PENDING-REVIEW-session20 . Their status is explicitly separate from production. Final showcase/public summary receipts are listed in the completion seal; verify their actual remote hashes.
 
-Selected source files match upstream0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb. Pre-existing resources/testdriver-vendor.js and resources/testharnessreport.js adapters and173framework pins are frozen and shared. Selection/manifests live under agent/validation/linux-wpt-20261101-session13/expanded-{selection,urls,manifest}.json. Selected manifestSHA256a97bc7c43083140f02c5f7ae3a46de905c8da6506c6a834928dbaa99d3ae63a6; upstream manifestv9SHA256440d5dc80c78ab184d977a7d58929732ce480522550a11c5664f17c76b5317ca.
-
-Use never-reused positive candidate IDs and build_candidate.py --expected-head with the exact tracked-clean HEAD. Failed builds consume IDs. Historical1807 was accidentally overwritten and quarantined; no reconstruction is its original binary. Preserve the non-overwrite guard, runtime guards, framework/oracle/selection/timeout/worker settings and every retained original result. Source/Git/status freeze spans build and any exact-source native gate; after seal, immutable tests can proceed while later source changes. Prior passing URL/assertion/harness identities are binding; net gains alone do not qualify.
-
-Original1808 first-full,1903,1911full,1912focus and1913full namespace TIMEOUTs after51PASS assertions remain HOLD. One earlier1808 preregistered reliability replay was accepted separately; do not erase its first failure. Matched1908/1912 diagnostics both showed slow completed initialization, prompt final parent completion and no missing-load evidence.40 remote frames create80 full initial/navigated realms; no central lazy-init barrier exists. No timeout fix, mutable-realm sharing, skipped initialization or relaxed deadline is permitted. LUMEN_TRACE_LOAD and LUMEN_PROFILE_PRELUDE are default-off diagnostics and must be explicitly unset for qualification.
-
-Descriptor batching1910 failed fixed CPU/wall thresholds and was fully reverted; no speedup claim.1913 static importance preserves old assembly whenever anim_decls exists. Its larger transition-tier/ownership/private-channel draft is explicitly UNINTEGRATED because logical/physical membership and cancellation could introduce new prior-pass regressions. Retained artifacts are in source-work/session19/transition-tier-deferred-v1 and ops/session19/inline-importance-draft.
+The live dashboard uses2-second CPU/RAM/diskGB and actual WebSocket roundtrip data. The session20 private inbox capability expires2026-11-04T18:52:19Z, without historical access. Never expose `agent/progress/runtime/session20-message-link.txt` or tokens. Git/source-backed artifacts use the authorized sanitized public route; Surge was unauthenticated and FileHarbor returned403, so neither was bypassed.
 
 ## Host compilation CPU budget
 
@@ -104,22 +98,6 @@ Preserve application data: install with `adb install -r`; never `pm clear`, unin
 Do not modify `build/codex-android-deps/SDL`. Physical media tests need explicit permission/isolation;
 ordinary installation/restart does not authorize them. Historical device/UI commands remain in the archived handoff.
 
-## Collaboration and scope
-
-Use built-in agents of the same model/capability when available. The current
-session used GPT-6 Astra for implementation, independent conformance, operations
-review and project management. Agree source-file ownership, index ownership and
-whole-source/build freezes before concurrent changes; preserve and verify exact
-patch restoration for isolated candidates. Do not edit source, generated build
-inputs or Git metadata during a frozen build. Keep tests meaningful and bounded.
-
-Preserve applicable privacy rules: do not enter private third-party page inputs,
-inspect captured physical media, expose profiles/credentials/inbox data, or keep
-screenshots containing personal content. Native Linux physical camera/microphone
-acquisition is refused until real origin-consent UI exists. Do not treat a test
-flag as capture isolation. Android/device media tests require their own explicit
-permission and isolation; do not automatically run capture pages as a Linux gate.
-
 ## Live build on display :0
 
 After finishing each main task, restart this repo's Lumen on the user's display so
@@ -132,7 +110,6 @@ termination only to the verified task-owned process, then launch the final
 accepted default binary on `DISPLAY=:0`, preserving the existing user profile.
 The user authorized relevant X/Google diagnosis on the existing display; preserve that active account flow and do not restart while it is in progress. Keep observations sanitized and private. Use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
-
 
 ### Retained prior architecture and authorization boundaries
 
@@ -156,49 +133,6 @@ EventSource is currently undefined. If it is implemented later, SSE reconnection
 
 Full rule/layer/origin cascade rollback, typed custom-property animation and broader computed/shorthand serialization remain incomplete. Preserve existing native selector validity and realm/lifetime rules; never invoke author-overridden getters inside native style matching. The previous auto-review refusals above concern those specific protected or broad actions; they do not describe the resolved session8 OPS publication-preparation ambiguity.
 
+## Next task starting context
 
-## Persistence, measurements and remaining work
-
-Public exports must use exact tested input blobs and approved public-only ancestry in an isolated repository. Never push canonical private Git history or publish profiles, queues, credentials, screenshots of personal content or private validation machinery. Verify archive offline Git recovery and full external HTTPS bytes; archive recovery is not an independent rebuild. Keep accepted runtime/archive separate from WORK/HOLD source snapshots. Save significant progress and every10implementation iterations. Session19 completed31 implementation/review iterations. WORK10/20/30 were published with honest work-only labels; WORK30 publiccommit264562c7148e1454d094ce1cc4f2a4a454616419 preserves held1914. The corrected1915 source was published as a qualified release; an additional prepared WORK31 publication was superseded and was not executed.
-
-Report per-iteration source mutation/review/build/test intervals honestly; the receipt-derived ledgers and environment worklog are separate from user elapsed wall time. Parallel/nested sums are not model compute or user elapsed time. Resource _mb and dashboardGB are decimal, CPU100% is one core. Investigate abnormal tasks over5minutes; complete1248 campaigns around17–23min are expected.
-
-Concrete remaining priorities: reproduce the actual X/Google return error and measure stable X scrolling; preserve namespace reliability limitations; improve constructed/imported stylesheet lifecycle and native sheet.media semantics; typed attr/calc-size/context-sensitive numeric values; margin/padding storage and full all reset; ordinary animation/transition cascade and cancellation; separately declared rendering/network/real-site coverage. Random syntax acceptance is not sampling/cache runtime. Keep23unsupported tree-context controls visible. Do not infer Android WPT parity from Linux smoke/tests.
-
-## Next agent
-
-Use the final exact source/binary/proof/device/public mapping in agent/continue.md and agent/next-agent-prompt.md. Verify active owner/freeze before editing. Reuse the current task branch only while its session authorization continues; otherwise checkpoint safely and create the requested model/agent/tool-named branch. Preserve all HOLD/rejected/unintegrated distinctions and the architecture/approval boundaries above. Start from the highest-value measured gap rather than repeating historical runs.
-
-
-## Operational dashboard during exact-source delivery
-
-The live dashboard runs from the untracked operational mirror agent/ops/session19/delivery-dashboard/server.mjs with identical server/site bytes. Its runtime symlink points to canonical agent/progress/runtime, preserving current keys/messages; live mutable status is delivery-dashboard/status.json, not canonical agent/progress/status.json during an exact-source checkout. The authorized message deadline remains2026-11-04T12:33:55Z. Coordinate environment_delivery before canonical status synchronization or process restart. These runtime/private paths and key/message contents must never enter public source exports.
-
-At11:50:25 the user-owned Google verification flow displayed a session-expired message after inactivity, with no X return observed and no assistant account action. This is the observed incomplete challenge outcome, not proof of the originally reported X-return failure or an engine fix. The final restart occurred only after fresh private preflight confirmed that expired state and no active flow. Recheck activity before any future restart.
-
-## Final continuity pointers
-
-Read agent/continue.md and the editable489-word agent/next-agent-prompt.md. Final QA and receipt-derived stage timings are agent/source-work/session19/test-baseline/gpt-6-astra-pro_builtin-subagents_rubywebterm_session19_final_qa.json and test-build-timings-v8.json. The latter records231 completed monitorstages (115outer/116nested), explicitly not elapsed/model time. Public final handoff publication receipt is build/codex-session19-tools/final-handoff/publication.json; its exact copied receipt is agent/source-work/session19/final-handoff-publication.json. Preserve original1808/1903/1911/1912/1913 reliability HOLDs,1914 invalid-alias HOLD and rejected/reverted1910. UNINTEGRATED transition research includes portable hash-checked reconstruction and must never be mistaken for production source.
-
-
-## Final public handoff sealed
-
-Published commit 59e3de4a3d0940be75c452851e6c5f94b64c9c86 at 2026-11-04T12:38:26.209329+00:00; exact remote commit verified. Handoff: https://github.com/ecooxai/lumen/tree/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19. Editable continuation: https://github.com/ecooxai/lumen/blob/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19/CONTINUE.md. Selected source: https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1915-20261104. Branded showcase: https://raw.githubusercontent.com/ecooxai/lumen/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1915_showcase.mp4; clean recording: https://raw.githubusercontent.com/ecooxai/lumen/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate1915_clean_recording.mp4. Deferred research: https://github.com/ecooxai/lumen/tree/59e3de4a3d0940be75c452851e6c5f94b64c9c86/handoff/gpt-6-astra-pro_builtin-agents_rubywebterm_session19/research-UNINTEGRATED. The handoff branch's parent source remains historical1908; its selected-source link is authoritative1915.
-
-Complete external receipt/branded-video/preview/source readback passed12:39:22.969903UTC; clean-video/CONTINUE readback passed12:40:28.914502UTC. Actual delivery had completed12:33:02.5UTC. These later operations were posttask publication/readback/docs, not extended production development. Public/private receipt copies are in agent/source-work/session19/final-handoff-*.json. Canonical status was synchronized from the completed operational mirror during this final docs seal; future live state remains in the operational mirror.
-
-## Session20 continuation at accepted candidate2002
-
-Root accepted iteration1 after independent exact-pass and registration audit; overall assessment64/100, selected URL rate64.102564%, goal95 not reached. Full cohort ran13:28:18.233–13:49:17.471UTC (1259.185s); monitored orchestration1261.257s. CPU median69.001/max249.999% of one core, peak RSS615.023MB/PSS317.075MB; cgroup weighted87.06%. All1,248 exits0; harness1ERROR/9TIMEOUT remain. Registration26245 unchanged at every URL.
-
-Preserve candidate2002-required-prior-pass-v1.json for the next candidate:23168 exactPASS identities,800 completeURLs,1238 harnessOK. Authored32 controls passed2002;14 Chromium computed-list disagreements remain outside parity claims. No allWPT or Chromium-parity claim.
-
-Canonical source stays clean for priority auth integration. Edit-only auth worktree:../lumen-auth-session20-gpt6-astra-pro; platform worktree:../lumen-platform-session20-gpt6-astra-pro, both rooted at32e1354. No shared build/codex-native. platform_qa owns seven approved animation parser/name identity files there; root must coordinate canonical integration and one heavy lane. Auth has reproduced the real Google return error: valid server protocol framing contains the generic error; request correctness is under investigation. No production auth fix. Never publish agent/ops/session20/x-login-private, downloaded auth assets, account identifiers, messages or capability links.
-
-Active deadline17:52:19UTC, extension undecided. Read agent/continue.md and latest receipts before acting on any PID or candidate. Do not restart display:0 while auth_fix owns an active diagnostic sequence.
-
-### Accepted2002 public checkpoint
-
-Candidate2002 publication completed:public commit86f96cf4382783547b25937b9fc7e439b9f60bfd, publictreedd6a683369a56c37a771331b58c5095281c05d13, sourceURLhttps://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2002-20261104. Archive10482685bytes SHA25610cb0085be8862232bca2f9a3d115abe20e482958f44df5a551a55ce25720566; offline publicGit restoration and full externalHTTPS readback passed2026-11-04T14:00:10.674286+00:00. Remote twochangedsourcefiles, SOURCE-MANIFEST.json and EXPORT-QUALIFICATION.json hashes independently matched at2026-11-04T14:02:26.200329+00:00. Download:https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz?checkpoint=2002. The prior1915 archive+metadata are preserved under agent/ops/session20/publication1915-before2002. Canonical private history, task docs, auth assets, profiles and messages were excluded.
-
-Auth priority now includes a controlled MessagePort pending-transfer queue failure;07b-net.js and08-window.js only in the auth worktree. The real X-server rejection is not yet linked to this defect. Review/integrate auth before the animation build. Animation scope has eight files: the earlier seven plus only jsglue.c style_change full-list comparison/notification; keep anim_name first-name semantics and legacy event/timer code unchanged.
+Read `agent/continue.md` and `agent/next-agent-prompt.md`. Preserve the final accepted source/device proof and all original HOLD evidence. First resolve the intended Google identity and continue one bounded normal-UI X comparison, then qualify the already reviewed parked background patch through the correct accepted reliability provenance. Do not resume broad CSS all/cascade, image placement or trusted-transfer branding under the small staged patch scope.
