@@ -1,8 +1,16 @@
 # Agent notes for Lumen
 
-Read agent/continue.md, agent/devsummary.md, agent/task.md and agent/next-agent-prompt.md first. The canonical repository is /mnt/p3/project/browser/lumen-android/lumen-android; WPT is /mnt/p3/project/browser/wpt. Use the RubyWebTerm MCP with the canonical workspace_id and relative paths. Current branch: gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104. Older standings and device identities in archived handoffs are historical.
+Read agent/continue.md, agent/devsummary.md, agent/task.md and agent/next-agent-prompt.md first. The canonical repository is /mnt/p3/project/browser/lumen-android/lumen-android; WPT is /mnt/p3/project/browser/wpt. Use the RubyWebTerm MCP with the canonical workspace_id and relative paths. Current branch: gpt-6-astra-pro_builtin-agents_rubywebterm_session20-x-google-20261104. Older standings and device identities in archived handoffs are historical.
 
-## Current evidence and user priority
+## Active session20 — 2026-11-04T12:52:19Z
+
+User has authorized a new five-hour development window through 17:52:19 UTC, plus up to one hour only for important bug fixes. The latest full request is captured in agent/task.md. The previous session19 stop/deadline remains historical and does not limit this newly requested work. Priority: reproduce and fix X Google sign-in on display :0, then improve measured native web-platform failures. Preserve existing account state and require actual return-error evidence; do not infer success from synthetic GSI controls.
+
+Same-model built-in agents: root is CTO; project_steward owns Git/docs and delivery infrastructure; auth_fix owns sign-in diagnosis/fix and display :0; platform_qa owns independent conformance testing. Coordinate exact file ownership and source freezes before builds. Checkpoint a8910478b3031c16dc0a6d8daf095837a7048321 preserves the prior tracked-clean source and handoff. Old untracked evidence stays in place. Prior continue/task/next-agent files are archived under agent/archive/*-session19-20261104T125219Z.md.
+
+Selected baseline remains candidate1915 until a new candidate satisfies unchanged acceptance gates. Session20 receipts live under agent/ops/session20 and worker evidence directories. The session19 operational dashboard must be revalidated before claiming a live session20 message channel. Final Linux and Android restart requires exact accepted candidate identity and profile preservation.
+
+## Historical session19 evidence and user priority
 
 Session19 selected and delivered candidate1915. Original frozen1248 replay accepted at2026-11-04T12:23:57.325Z; selection12:23:57.846Z preceded the fixed12:24 cutoff. Result796/1248 URLs (63.782051%) and23158/26245 assertions, +37URLs/+332assertions over1808 and +15/+55 over1908, with zero required assertion/URL/harness losses and all1248 actualprocess exits0. This is a selected-manifest compatibility score, not95/100 overall quality or Chromium parity.
 
