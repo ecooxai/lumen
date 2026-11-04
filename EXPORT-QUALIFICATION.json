@@ -1,65 +1,59 @@
 {
-  "candidate": 1902,
-  "status": "INDEPENDENTLY REVIEWED FOCUSED DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
-  "tested_source_commit": "565fd239d34dbdaade8b232483fa8aeffba8d767",
-  "tested_binary_sha256": "1c93f3537eec3c9db6f159aec4205843c1a1633c3aa2544e46071d2ad92c765d",
-  "source_manifest_digest": "6564591a09785bec9018d6254f1963ca421b3315e94493da3809ce55e8e944df",
-  "public_parent": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
-  "all_recorded_inputs_exact": true,
+  "status": "WORK CHECKPOINT — NOT A QUALIFIED RELEASE",
+  "iteration": 10,
+  "source_snapshot_commit": "ed1a7624e5aaf9e7661462daac91d5b9d8289f41",
+  "source_snapshot_built": false,
+  "source_snapshot_tested": false,
+  "phase_instrumentation": "Unbuilt diagnostic-only changes in three native files",
+  "sealed_functional_candidate": 1906,
+  "sealed_functional_source_commit": "f454cf2097ab4742064664643c3b0447c71137eb",
+  "sealed_functional_binary_sha256": "cba377366b0992b81a27c5a3108c0d1ec24053f6750459c2ebda051d707b6cb4",
+  "full1248_replay": "PENDING at checkpoint preparation; no newer whole-selected-suite rate claimed",
+  "qualified1904_targeted_union": {
+    "unique_urls": 198,
+    "baseline_passed_urls": 95,
+    "candidate_passed_urls": 106,
+    "baseline_passed_assertions": 1880,
+    "candidate_passed_assertions": 2058,
+    "assertion_total": 2829,
+    "new_passing_urls": 11,
+    "new_passing_assertions": 178,
+    "lost_prior_passes": 0
+  },
+  "qualified1906_numeric": {
+    "unique_urls": 81,
+    "baseline_passed_urls": 37,
+    "candidate_passed_urls": 39,
+    "baseline_passed_assertions": 2820,
+    "candidate_passed_assertions": 2840,
+    "assertion_total": 3462,
+    "new_passing_urls": 2,
+    "new_passing_assertions": 20,
+    "lost_prior_passes": 0,
+    "all_harnesses_ok": true
+  },
+  "historical_full_selected_baseline": {
+    "candidate": 1808,
+    "passed_urls": 759,
+    "total_urls": 1248,
+    "passed_assertions": 22826,
+    "total_assertions": 26245
+  },
+  "public_parent": "28cdeb590fafa03b04363755245638f2d673290d",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-work-iteration10-20261104",
+  "private_history_included": false,
+  "independent_rebuild_performed": false,
+  "external_dependencies_included": false,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
-  "private_history_included": false,
-  "publication_performed": false,
-  "validation_summary": {
-    "qualification": "Focused development checkpoint, not whole-platform acceptance",
-    "focused_selected_urls": {
-      "lumen_passed": 64,
-      "total": 136,
-      "baseline1808_passed": 62,
-      "chromium150_passed": 105
-    },
-    "focused_assertions": {
-      "lumen_passed": 1652,
-      "total": 2455,
-      "baseline1808_passed": 1608,
-      "chromium150_passed": 1970
-    },
-    "new_passing_urls": 2,
-    "new_assertion_passes": 44,
-    "lost_baseline_passes": 0,
-    "harness_regressions": 0,
-    "unchanged_known_harness_timeouts": 3,
-    "all_case_process_exits_zero": true,
-    "focused_wrapper_seconds": 157.108,
-    "focused_audit_sha256": "78dab21540db2907dde935c4c02bcc31775783c03a7c151562881bee629ee943",
-    "historical_full_selected_baseline": {
-      "candidate": 1808,
-      "passed_urls": 759,
-      "total_urls": 1248,
-      "passed_assertions": 22826,
-      "total_assertions": 26245
-    },
-    "new_full1248_replay_performed": false,
-    "chromium_reference_version": "150.0.7871.114",
-    "build_and_startup_passed": true
-  },
+  "live_source_download_remains": "Qualified focused source1902; this work checkpoint does not replace it",
   "limitations": [
-    "The current1902 result is a136-URL focused comparison; the full1248-URL rate remains historical1808 evidence.",
-    "The selected DOM/CSS testharness sample is not all WPT, visual coverage, Chromium parity or an overall95 quality claim.",
-    "Three known focused timeouts remain, and the historical1808 namespace completion timeout remains unexplained.",
-    "No new candidate1902 Linux display0 or Android installation is claimed by this source checkpoint.",
-    "Random syntax/type acceptance has no sampling/cache runtime; broader styling, layout, platform and browser coverage remain incomplete.",
-    "The export contains approved public Git ancestry and exact tested engine inputs only; private task Git history, profiles, credentials, message queues and validation machinery are excluded.",
-    "Source archive recovery is not an independent browser rebuild; external dependencies remain external."
-  ],
-  "independent_review": {
-    "agent": "source_steward",
-    "reviewed_utc": "2026-11-04T07:21:43.782324+00:00",
-    "all843_public_inventory_hashes_verified": true,
-    "all743_recorded_inputs_verified_against_tested_source": true,
-    "private_history_excluded": true,
-    "focused_only_results": true,
-    "preparation_receipt_sha256": "064f31d3420092be6534f2fa60463952a73a7ccc59159695146cc15e57a3c5c2"
-  }
+    "This snapshot includes unbuilt phase instrumentation and is preserved for continuation, not installation.",
+    "Candidate1906 has separate numeric qualification; its full1248 replay is still running.",
+    "Focused198 and numeric81 counts are separate cohorts and must not be summed or extrapolated to an overall rate.",
+    "The historical1248 sample is selected DOM/CSS testharness coverage, not all WPT or Chromium parity.",
+    "Namespace harness completion intermittency remains unresolved; diagnostic instrumentation is not a repair.",
+    "No new Linux display0 or Android installation is claimed.",
+    "Only approved public ancestry and reviewed source paths are exported; private histories, profiles, credentials, messages and guarded validation machinery are excluded."
+  ]
 }

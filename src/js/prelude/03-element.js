@@ -115,7 +115,7 @@ function parseDecls(s, fontFace = false, keyframe = false, supportedNames = true
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && lk === 'animation-range') { cssAnimationRangeSet(m, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
     return m;
 }
 /* The native enum parser owns acceptance; authored pending tokens remain opaque. */
@@ -148,6 +148,76 @@ function cssEasingSet(map, property, value, priority, cascade = false) {
     if (cascade && old && old[1] && !priority) return true;
     if (cascade) map.delete(property);
     map.set(property, [parsed, priority ? 'important' : '']);
+    return true;
+}
+
+/* CSS Transitions 2: classify complete components with the existing native
+ * longhand grammars, then serialize in canonical property/time/easing order.
+ * Pending substitution remains an unparsed value; this does not add a new
+ * transition animation evaluator or change the native longhand store. */
+function cssTransitionParse(value) {
+    const text = String(value).trim();
+    if (!text || !cssVarSyntax(text)) return null;
+    if (cssBorderPending(text) && text.includes('(')) return text;
+    const tokens = cssGridTokens(text);
+    if (!tokens || !tokens.length) return null;
+    if (tokens.length === 1 && cssGridWide(cssGridDecode(tokens[0]))) return cssGridDecode(tokens[0]).toLowerCase();
+    const layers = [[]];
+    for (const token of tokens) {
+        if (token === ',') layers.push([]);
+        else layers[layers.length - 1].push(token);
+    }
+    const result = [], zero = v => /^0(?:s|ms)$/.test(v);
+    for (const parts of layers) {
+        if (!parts.length) return null;
+        let property = null, duration = null, delay = null, easing = null, behavior = null;
+        for (const token of parts) {
+            const low = cssGridDecode(token).toLowerCase();
+            if (cssGridWide(low)) return null;
+            const time = cssNumericDimensionParse('transition-delay', token);
+            if (time !== null) {
+                if (duration === null) {
+                    duration = cssNumericDimensionParse('transition-duration', token);
+                    if (duration === null) return null;
+                } else if (delay === null) delay = time;
+                else return null;
+                continue;
+            }
+            if (easing === null) {
+                const parsed = N.cssEasing(token);
+                if (parsed !== null) { easing = parsed; continue; }
+            }
+            if (behavior === null && /^(normal|allow-discrete)$/.test(low)) { behavior = low; continue; }
+            if (property !== null) return null;
+            property = N.cssTransitionProperty(token);
+            if (property === null) return null;
+        }
+        if (property === 'none' && layers.length !== 1) return null;
+        /* A custom property name can collide with another component keyword.
+         * Preserve that ordering rather than reparse it with a different role. */
+        if (property !== null && (N.cssEasing(property) !== null || /^(normal|allow-discrete)$/i.test(property))) {
+            result.push(parts.join(' ')); continue;
+        }
+        property = property ?? 'all'; duration = duration ?? '0s'; delay = delay ?? '0s';
+        easing = easing ?? 'ease'; behavior = behavior ?? 'normal';
+        const out = [];
+        if (property !== 'all') out.push(property);
+        if (!zero(duration) || !zero(delay)) out.push(duration);
+        if (easing !== 'ease') out.push(easing);
+        if (!zero(delay)) out.push(delay);
+        if (behavior !== 'normal') out.push(behavior);
+        result.push(out.length ? out.join(' ') : 'all');
+    }
+    return result.join(', ');
+}
+function cssTransitionSet(map, value, priority, cascade = false) {
+    if (value === '') { if (cascade) return false; map.delete('transition'); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
+    const parsed = cssTransitionParse(value);
+    if (parsed === null) return false;
+    const old = map.get('transition');
+    if (cascade && old && old[1] && !priority) return true;
+    map.delete('transition'); map.set('transition', [parsed, priority ? 'important' : '']);
     return true;
 }
 
@@ -451,6 +521,86 @@ const SHORTHAND_OF = { 'align-items': 'place-items', 'justify-items': 'place-ite
     'inset-inline-start': 'inset-inline', 'inset-inline-end': 'inset-inline', 'inset-block-start': 'inset-block', 'inset-block-end': 'inset-block',
     'animation-range-start': 'animation-range', 'animation-range-end': 'animation-range' };
 /* one animation-range item: start [end]; an omitted end takes the start's range name at 100%, else normal */
+/* Scroll-driven Animations: shorthand endpoint defaults are asymmetric.
+ * Storage retains both endpoints, including an explicit unnamed 100% end.
+ * Shorthand reads may omit that end, while longhand reads must keep it.
+ * calc() retains its authored kind until computed-value resolution. */
+function cssAnimationRangeParse(value, preserveEndpoints = false) {
+    const text = String(value).trim();
+    if (!text || !cssVarSyntax(text)) return null;
+    if (cssBorderPending(text) && text.includes('(')) return text;
+    const tokens = cssGridTokens(text);
+    if (!tokens || !tokens.length) return null;
+    if (tokens.length === 1 && cssGridWide(cssGridDecode(tokens[0]))) return cssGridDecode(tokens[0]).toLowerCase();
+    const layers = [[]], result = [];
+    for (const token of tokens) {
+        if (token === ',') layers.push([]);
+        else layers[layers.length - 1].push(token);
+    }
+    const isName = text => /^(cover|contain|entry|exit|entry-crossing|exit-crossing)$/.test(text);
+    const offset = token => {
+        // Preserve the number/unit boundary before decoding escaped units.
+        // A dimension such as 1e\\33 px must not become the number 1e3 + px.
+        const number = /^[+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?/i.exec(token);
+        let parsed;
+        if (number) {
+            const rawUnit = token.slice(number[0].length), unit = cssGridDecode(rawUnit).toLowerCase();
+            if (unit === '%' && rawUnit !== '%') return null; // Escaped percent is a dimension identifier.
+            if (!unit) return /^[+-]?(?:0+(?:\.0+)?|\.0+)(?:e[+-]?\d+)?$/i.test(number[0]) ? '0px' : null;
+            if (unit !== '%' && MATH_UNITS.get(unit) !== 'length') return null;
+            parsed = number[0] + unit;
+        } else {
+            const open = token.indexOf('(');
+            if (open < 1 || !MATH_FNS.test(cssGridDecode(token.slice(0, open)).toLowerCase())) return null;
+            // Native token validation handles escaped math tokens and types;
+            // min-size's math grammar allows negative length/percentage values.
+            parsed = N.cssMinSize(token);
+            if (parsed === null) return null;
+        }
+        const math = CSS_MATH_VALUE.test(parsed) ? cssMathValueText(parsed) : parsed;
+        return math === null ? null : specNormalize('animation-range-start', math);
+    };
+    const serialize = (part, end) => {
+        if (part.normal) return 'normal';
+        if (!part.name) return part.offset;
+        return part.name + (part.offset === null || part.offset === (end ? '100%' : '0%') ? '' : ' ' + part.offset);
+    };
+    for (const parts of layers) {
+        let index = 0;
+        const take = () => {
+            if (index === parts.length) return null;
+            const token = parts[index++], low = cssGridDecode(token).toLowerCase();
+            if (low === 'normal') return {normal: true, name: null, offset: null};
+            if (isName(low)) {
+                let next = null;
+                if (index < parts.length) { next = offset(parts[index]); if (next !== null) index++; }
+                return {normal: false, name: low, offset: next};
+            }
+            const length = offset(token);
+            return length === null ? null : {normal: false, name: null, offset: length};
+        };
+        const start = take();
+        if (!start) return null;
+        const end = index < parts.length ? take() : start.name ?
+            {normal: false, name: start.name, offset: null} : {normal: true, name: null, offset: null};
+        if (!end || index !== parts.length) return null;
+        const omitEnd = start.name ? end.name === start.name && (end.offset === null || end.offset === '100%') :
+            end.normal || !end.name && end.offset === '100%';
+        result.push(serialize(start, false) + (preserveEndpoints || !omitEnd ? ' ' + serialize(end, true) : ''));
+    }
+    return result.join(', ');
+}
+function cssAnimationRangeSet(map, value, priority, cascade = false) {
+    if (value === '') { if (cascade) return false; map.delete('animation-range'); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
+    const parsed = cssAnimationRangeParse(value, true);
+    if (parsed === null) return false;
+    const old = map.get('animation-range');
+    if (cascade && old && old[1] && !priority) return true;
+    map.delete('animation-range'); map.set('animation-range', [parsed, priority ? 'important' : '']);
+    return true;
+}
+
 function animRangePart(v, end) {
     const t = tomSplitTop(v, ' ').filter(Boolean), isName = w => /^[a-z][\w-]*$/i.test(w) && w !== 'normal';
     const take = () => { if (!t.length) return null; const w = t.shift(); return isName(w) && t.length && !isName(t[0]) && t[0] !== 'normal' ? w + ' ' + t.shift() : w; };
@@ -518,6 +668,10 @@ function mathEval(src) {
         if (name === 'progress') progressDepth--;
         const n = a => { if (a.u) fail(); return a.v; }, ang = a => a.u === 'deg' ? a.v * Math.PI / 180 : n(a), D = r => ({ v: r * 180 / Math.PI, u: 'deg' });
         const F = {
+            // Percentages remain unresolved until their destination basis is known.
+            abs: () => { if (args[0].u === '%') fail(); return { v: Math.abs(args[0].v), u: args[0].u }; },
+            sign: () => { if (args[0].u === '%') fail(); return { v: Math.sign(args[0].v), u: '' }; },
+            hypot: () => { for (const a of args) { same(args[0], a); if (a.u === '%') fail(); } return { v: Math.hypot(...args.map(a => a.v)), u: args[0].u }; },
             min: () => { for (const a of args) same(args[0], a); return { v: Math.min(...args.map(a => a.v)), u: args[0].u }; },
             max: () => { for (const a of args) same(args[0], a); return { v: Math.max(...args.map(a => a.v)), u: args[0].u }; },
             clamp: () => { if (args.length !== 3) fail(); same(args[0], args[1]); same(args[1], args[2]); return { v: Math.max(args[0].v, Math.min(args[1].v, args[2].v)), u: args[0].u }; },
@@ -563,7 +717,7 @@ function mathEval(src) {
                 return { v, u: '' };
             },
         };
-        if (!F[name] || !['min', 'max', 'clamp', 'atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
+        if (!F[name] || !['min', 'max', 'hypot', 'clamp', 'atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
         const r = F[name](); if (args.some(a => Number.isNaN(a.v))) r.v = NaN; r.v *= neg; return r;
     }
     function prod() {
@@ -584,9 +738,11 @@ const mathSer = r => {
     return `calc(${String(+r.v.toPrecision(6)).replace(/^-0$/, '0')}${u})`;
 };
 function specFoldMath(t) {
+    // Pending substitution keeps an unparsed token stream, including nested math.
+    if (cssBorderPending(t)) return t;
     /* Evaluate an outer calculation before its children so a nested signed
        zero or NaN is not clamped before division/multiplication consumes it. */
-    const re = /\b(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/gi;
+    const re = /\b(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|abs|sign|hypot|round|mod|rem|progress)\(/gi;
     let out = '', previous = 0, match;
     while ((match = re.exec(t))) {
         let end = re.lastIndex, depth = 1;
@@ -863,6 +1019,12 @@ function cssBoxShadowParse(value) {
 /* Recognized concrete math uses native component-token completion before
  * declaration serialization. Pending substitution retains its original text. */
 const CSS_MATH_VALUE = /(?:^|[^a-z0-9_-])(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan2?|sqrt|exp|pow|log|hypot|abs|sign|round|mod|rem|progress)\(/i;
+function cssRandomSizeRelevant(property, value) {
+    if (!/^(width|height|inline-size|block-size)$/.test(property)) return false;
+    const random = /(?:^|[^a-z0-9_-])random\(/i;
+    return random.test(value) || value.includes('\\') && random.test(cssGridDecode(value));
+}
+
 function cssMathValueText(value) {
     return /(?:^|[^a-z0-9_-])(?:var|env|attr|if)\(|--/i.test(value) ? value : N.cssMathText(value);
 }
@@ -955,10 +1117,13 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 }
 function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
+    if (cssRandomSizeRelevant(p, v)) return N.cssMinSize(v) !== null;
     if (p === 'interpolate-size') return cssInterpolateSizeParse(v) !== null;
     if (p === 'z-index') return N.cssSupports('(z-index:' + v + ')');
     if (CSS_IMAGE_LONGHAND.test(p)) return N.cssImageLonghand(p, v) !== null;
     if (CSS_EASING_LONGHAND.test(p)) return N.cssEasing(v) !== null;
+    if (p === 'transition') return cssTransitionParse(v) !== null;
+    if (p === 'animation-range') return cssAnimationRangeParse(v) !== null;
     if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
     if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
     if (cssBorderRelevant(p)) return cssBorderParse(p, v) !== null;
@@ -1243,6 +1408,8 @@ function cssScalarSpecified(property, value) {
 }
 
 function specNormalize(p, v) {
+    if (p === 'transition') return cssTransitionParse(v) ?? v;
+    if (p === 'animation-range') return cssAnimationRangeParse(v, true) ?? v;
     if (p === 'z-index') {
         /* Preserve integer token syntax across CSSOM serialization. Converting
          * long decimal integers through Number/String creates exponent tokens,
@@ -1268,7 +1435,7 @@ function specNormalize(p, v) {
         });
     if (p === 'position-area') { const n = posArea(v); if (n !== null) return n; }
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
-    const preserveMathZero = /\b(?:min|max|clamp|calc|round|mod|rem|progress)\(/i.test(v);
+    const preserveMathZero = /\b(?:min|max|clamp|calc|abs|sign|hypot|round|mod|rem|progress)\(/i.test(v);
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
         const n = Number(num + (exp || ''));
         if (!isFinite(n)) return m;
@@ -1277,7 +1444,7 @@ function specNormalize(p, v) {
     }).replace(/\s+/g, ' ');
     if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return CSS_POSITION.test(p) ? t.toLowerCase() : t;
     if (CSS_POSITION.test(p)) return cssPositionSpecified(t, cssPositionAxis(p)) || t;
-    if (/\b(min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
+    if (/\b(min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|abs|sign|hypot|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
     if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
     if (p === 'display') { const w = t.toLowerCase().split(' '); if (w.length === 2 && w.includes('list-item') && w.includes('flow')) t = 'list-item'; else if (w.length === 2 && w[1] === 'flow' && /^(block|inline|run-in)$/.test(w[0])) t = w[0]; else if (w.length === 2 && w[0] === 'block' && /^(flex|grid|table|flow-root|math)$/.test(w[1])) t = w[1]; else if (w.length === 2 && w[0] === 'inline' && w[1] === 'flow-root') t = 'inline-block'; else if (w.length === 2 && w[0] === 'inline' && /^(flex|grid|table)$/.test(w[1])) t = 'inline-' + w[1]; }
@@ -1407,7 +1574,7 @@ class CSSStyleDeclaration {
     get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
-    getPropertyValue(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); return e ? e[0] : shorthandPart(m, p); }
+    getPropertyValue(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); if (p === 'animation-range' && e && !cssDescriptorStyleHas(this)) return cssAnimationRangeParse(e[0]) ?? e[0]; return e ? e[0] : shorthandPart(m, p); }
     getPropertyPriority(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = cssStylePropertyName(this, p);
         v = v == null ? '' : String(v);
@@ -1427,6 +1594,16 @@ class CSSStyleDeclaration {
         if (CSS_EASING_LONGHAND.test(p)) {
             const m = new SMap(this._m());
             if (!cssEasingSet(m, p, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (p === 'transition') {
+            const m = new SMap(this._m());
+            if (!cssTransitionSet(m, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (p === 'animation-range') {
+            const m = new SMap(this._m());
+            if (!cssAnimationRangeSet(m, v, pri)) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
         if (CSS_IMAGE_LONGHAND.test(p)) {
@@ -1501,7 +1678,7 @@ const styleHandler = {
     has(t, p) { return p in t || cssPropKnown(p); },
 };
 class ComputedStyleDeclaration extends CSSStyleDeclaration {
-    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = cssStylePropertyName(this, String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [this.getPropertyValue(p), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
+    getPropertyValue(p) { if (this._none || !this._el.isConnected) return ''; if (waDirty) waFlush(); let k = cssStylePropertyName(this, String(p)); if (k === '-webkit-appearance') k = 'appearance'; if (k === 'font') return computedFont(this); const grid = cssGridChildren(k); if (grid) return cssGridValue(new SMap(grid.map(p => [p, [this.getPropertyValue(p), '']])), k); let v = N.computed(this._el, k, this._ps | 0); if (trPoll()) v = N.computed(this._el, k, this._ps | 0); if (k === 'transition' && v) v = cssTransitionParse(v) ?? v; if (k === 'animation-range' && v) v = cssAnimationRangeParse(v) ?? v; if ((k === 'shape-outside' || k === 'clip-path') && v && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, shapeLenPx(this._el)); if ((k === 'shape-outside' || k === 'clip-path') && v && /inset\(/i.test(v)) v = insetNorm(v, shapeLenPx(this._el)); return v == null ? '' : v; }
     get cssText() { return ''; } get length() { return this._names().length; }
     /* an invalid pseudo-element or an element outside the document has an empty style */
     _names() { return this._none || !this._el.isConnected || !N.computed(this._el, 'display') || mediaChild(this._el) ? [] : computedNames(); }   /* no style: outside the flat tree */

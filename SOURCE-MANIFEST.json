@@ -1,15 +1,184 @@
 {
-  "candidate": 1902,
-  "tested_source_commit": "565fd239d34dbdaade8b232483fa8aeffba8d767",
-  "tested_binary_sha256": "1c93f3537eec3c9db6f159aec4205843c1a1633c3aa2544e46071d2ad92c765d",
-  "recorded_input_digest": "6564591a09785bec9018d6254f1963ca421b3315e94493da3809ce55e8e944df",
-  "recorded_input_count": 743,
-  "source_manifest_file_sha256": "a3e00fd5ec9f333d7a82d78b3a18505cfdb0190a3a2c2f719fab31ced9c2bb5f",
-  "public_parent": "c57da5b98ecb52124d04d10964ce62c6793c5e47",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1902-20261104",
-  "recorded_inputs": {
+  "iteration": 10,
+  "source_snapshot_commit": "ed1a7624e5aaf9e7661462daac91d5b9d8289f41",
+  "source_snapshot_built": false,
+  "public_parent": "28cdeb590fafa03b04363755245638f2d673290d",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-work-iteration10-20261104",
+  "source_inputs": {
+    ".gitignore": {
+      "sha256": "1f51a80dd1482d34c0b6a106bf20826dc8c85cc5a464e321c91c8d8ee914af0c",
+      "mode": "100644"
+    },
     "CMakeLists.txt": {
       "sha256": "39135ade2090484ca003089b98004a8e28ed3aad5bc244c0921df7cc8798190b",
+      "mode": "100644"
+    },
+    "LICENSE": {
+      "sha256": "c5bce7a91c67108128a04872d88d3bf640706ba5e4a924a610f2e49e13ce0b7b",
+      "mode": "100644"
+    },
+    "Makefile": {
+      "sha256": "e8dbf1acf62bfe8a253da0e56965b781ea7f4fa8e485e47cebbd9d970f7170b1",
+      "mode": "100644"
+    },
+    "android/app/build.gradle": {
+      "sha256": "6b75524c922d8f5bb36167b78313777f3401c0597852804b017917b993d31fb0",
+      "mode": "100644"
+    },
+    "android/app/src/main/AndroidManifest.xml": {
+      "sha256": "68bd7e8a299a9e50606237499df417df2fab2e5be43a2bee6c61e2bdb5487d74",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserIcons.java": {
+      "sha256": "29dd3ba2d9a38116f67642c5349ddc8356523ab023f454e81f610a3bb3d5159d",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserInsets.java": {
+      "sha256": "8947128b4fdb5f5acf4096c9d42d174174969f0c0ea1d69e9fd65bf7875f5102",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserMenus.java": {
+      "sha256": "b62c96a4befc0865e7d23e8d992dbcc12df8285ac6a49b65e04c449e356d1f1c",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserStats.java": {
+      "sha256": "4ff21dff1c0c571cfa8f3999289d866160292abc81f6c6541fe0fa2ed2fe02da",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserSurface.java": {
+      "sha256": "859e654460a7a5a102d14ace40c7269ab6b96b3be2e02ff1edebc8a9a550b35d",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserToolbar.java": {
+      "sha256": "287ab312e0f28554775529c6903c6a82ed7285ec51e1c2d8550d5df244ebdb33",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/ClipProvider.java": {
+      "sha256": "b376b716f380322b21b674958052f4eccabea4c0bd93259ab4870672005cd695",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/LaunchUrl.java": {
+      "sha256": "f04152aa87ccfbabd6f9b1ace728a06b7cf60971bae57effc3168cdb3960b1ae",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/LumenActivity.java": {
+      "sha256": "169866312f6f268b053930844350ca9a315904c65a48d17c71c68ffaf3053fbb",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/MediaPlayback.java": {
+      "sha256": "97a2421aa2aedbfbcbbd2f9c27990e6ca49631f3e939fe5d702cf7832d0785a9",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/ScreenCapture.java": {
+      "sha256": "df93984447d36145f9046acc09b7806c81e97b226da7920afa6ba3f2f2734468",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/SharedFiles.java": {
+      "sha256": "6a08d88104616b3e378e15c77b44226f131bbfa10372028d67d8e699f7d669ef",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/TouchFeedback.java": {
+      "sha256": "354023d6719d1919931b87187b6ae1861c2aea22292536cf22761aa83cb31755",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml": {
+      "sha256": "a5a6da95b2aba00be9db5dd38dd65cdb14480f206761102e0aa82cb067a0c7ea",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
+      "sha256": "ae16f124e4d85284ede9377d90b10b559b0daacaaa731655115a0c2f6ca2c533",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-hdpi/ic_launcher_background.png": {
+      "sha256": "4bcdf5737437c893db987183b91e076e31394fc03bf0db7d4ee4aff8bfb07de5",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png": {
+      "sha256": "644e3283fcb6860a8cede35dc547cc084e3f9bbdf12bb93b091537a43ad469c6",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
+      "sha256": "9b0976641d389b83edfa6edb2e32f8bc8076295a55a6bee6529fc56a094d4d7b",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-mdpi/ic_launcher_background.png": {
+      "sha256": "a7d559362bff85663f4d8322507bf3cbde3abe0c36316e07221198303b0f6061",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png": {
+      "sha256": "dbb680a10633814c21d9f42a1ca419373a3c241dc434bd587ea96f84fac391a6",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
+      "sha256": "d384e2b70681ce692977cebf111915663011a18e19f18ce38064c6522743c3cf",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.png": {
+      "sha256": "0178676f9f1a5069a7e2070a0898936f983581a34a82e4b967f27f8cf5aaa407",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png": {
+      "sha256": "5082a996409a7fee9871e0a12f02eb2becc319b8969db2951587f451e8b51f77",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
+      "sha256": "3813c6a905835d570492250e6755de69af88c7cc91d7ddbb111196e029e61c11",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png": {
+      "sha256": "3d5da28f12bc106c03341935f49a65611dbb9c89c02b1a558d818e953c472cd4",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png": {
+      "sha256": "b52e5b8d3d4a0b408be738db2cec96fd456c4870ce9dcac23633d3e016d99c89",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+      "sha256": "12cf3cde0c517e933fc0423f8afb4f21337e69dffa0e14a631cd877e15c1ec1b",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png": {
+      "sha256": "9a47fe0859d9b1f5d48d742e3cf8d07e2cbb7a3b56d09ef591867ea0d429dc7a",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png": {
+      "sha256": "ea392a4c759fd37a187faee0aa28519d69972655280f27504782d1f9fdfa5dbb",
+      "mode": "100644"
+    },
+    "android/build.gradle": {
+      "sha256": "d1bd47ceb68955ed5d99760e0b50e0b0fc48077a8c3370651fc4c2ac12a5de66",
+      "mode": "100644"
+    },
+    "android/gradle.properties": {
+      "sha256": "2a65693bf6bc9de8c5b91cdcedb2cf60cbf7675398bc65a2909f511d351e1803",
+      "mode": "100644"
+    },
+    "android/native-deps/patches/v8-15.6.75.8-gc-info-guard.patch": {
+      "sha256": "2181687f36be09767180a5d0e4be3a5fae6143d6b9c3918fa313c8b51fe7f597",
+      "mode": "100644"
+    },
+    "android/native-deps/triplets/arm64-android.cmake": {
+      "sha256": "7dfecc89a14e625f7f4966fbd368b1dc02de45ff466f39d7479c62da477e1c60",
+      "mode": "100644"
+    },
+    "android/native-deps/triplets/x64-android.cmake": {
+      "sha256": "c67847d24f4c405615b1a11d6af6957d9d053ef89957aefb3e286cbfa5aedbb0",
+      "mode": "100644"
+    },
+    "android/native-deps/v8-prebuilt.json": {
+      "sha256": "9a731d0d0ee3e4f7b671af84740a8344758833d553b4924e51f936edcc059d66",
+      "mode": "100644"
+    },
+    "android/native-deps/vcpkg.json": {
+      "sha256": "2d88a441c56e14dec96e60e25736c20a7a594c7690a35266bf152a5319f28f5a",
+      "mode": "100644"
+    },
+    "android/platform/src/main/java/org/lumen/browser/AndroidFontRaster.java": {
+      "sha256": "925f726223964dfd75237eff65d0a18f0788c29f426bd54ab9981a59d4c061b4",
+      "mode": "100644"
+    },
+    "android/settings.gradle": {
+      "sha256": "01508336961e720bc5be80b9eeb6c24b657578713a24a807d7092aa65394cf8e",
       "mode": "100644"
     },
     "assets/data/README.md": {
@@ -26,6 +195,42 @@
     },
     "assets/data/public_suffix_list.metadata.json": {
       "sha256": "6f972291962a7f78822e2c0b2153dad3fd9bcd0bc9b1a4087e1dea83da325d39",
+      "mode": "100644"
+    },
+    "assets/icon/Lumen.icns": {
+      "sha256": "b5709c22b6a812139cb90c9f691729e55645a6dc9c8ee679f9fe73fb4bc6be03",
+      "mode": "100644"
+    },
+    "assets/icon/lumen-1024.png": {
+      "sha256": "74d31e75aa55fab61e0678a49cffd82d95b14dd055f481f710bc6c59ec749346",
+      "mode": "100644"
+    },
+    "assets/icon/lumen-256.png": {
+      "sha256": "713fd1e2e1fff559f3ed1f7129e267fc6766f976ca082de5fa0880471d26cd57",
+      "mode": "100644"
+    },
+    "assets/icon/lumen.svg": {
+      "sha256": "81a65e8ab4d1cc951828b1e15da0aeb87cfbb2506fb8ed3913921e5ce475c2a6",
+      "mode": "100644"
+    },
+    "cmake/AndroidOptimization.cmake": {
+      "sha256": "c15f7e87c14fd93a5ea103aeea583bc57ae5d1c4fe0fd156cadb8efe1ab02d14",
+      "mode": "100644"
+    },
+    "cmake/AndroidSdlWait.cmake": {
+      "sha256": "4a986204b7a072d39fd2b5cae516324fa8a8b42e22922a4fdb12bca6fa01e4b6",
+      "mode": "100644"
+    },
+    "cmake/AndroidV8.cmake": {
+      "sha256": "7ffc2c4edcbe88e463781704e7ca2a8aeb826817f318b5269ac7e917aab789a3",
+      "mode": "100644"
+    },
+    "cmake/AndroidV8Prebuilt.cmake": {
+      "sha256": "9e57ef3aa81ea250c6510c05bfed8fa0c6a6d01f802e57558a0f5e9350b62b00",
+      "mode": "100644"
+    },
+    "cmake/android-v8.toolchain.cmake": {
+      "sha256": "c540cf7b669970bff843edc42711543fb615510afa282804e1243298a529dce7",
       "mode": "100644"
     },
     "src/app/android_back.c": {
@@ -325,11 +530,11 @@
       "mode": "100644"
     },
     "src/js/frames.cc": {
-      "sha256": "9ccedab9359da92e8ce75c514469341b8103bc54c6e15053a2cf0225953351df",
+      "sha256": "074a40e2e114235e038144c3d51aabc89d8375f1b9b981e990b553aee4ed44d2",
       "mode": "100644"
     },
     "src/js/js.cc": {
-      "sha256": "e4de5c23067e0dafa1c7855a8a666e6a2c7eaa695f2d8d8f964d4425fc35dfb2",
+      "sha256": "64fa5bc063a6ffc818ef0a14a1743cd3a215c0738d014fb1f2652b2d86920626",
       "mode": "100644"
     },
     "src/js/js.h": {
@@ -337,7 +542,7 @@
       "mode": "100644"
     },
     "src/js/js_int.h": {
-      "sha256": "792449fc18b19c4f9cc343a6eacfc06630134bb4b40a5a65994c3ddf08f518d1",
+      "sha256": "454f33fa201ec6f651adf3e9d185b1d95eca3d1f0a12b908bac1d1debb99d88c",
       "mode": "100644"
     },
     "src/js/jsglue.c": {
@@ -361,7 +566,7 @@
       "mode": "100644"
     },
     "src/js/prelude/01-events.js": {
-      "sha256": "a074f3ef897176986ab236cc237511623f781716d8ce79f3b0706c5839b26399",
+      "sha256": "46fb1a71378946df4c4cebc3ec63d14a75feeb51b3db3d3894194ed61f41ef3b",
       "mode": "100644"
     },
     "src/js/prelude/02-node.js": {
@@ -369,7 +574,7 @@
       "mode": "100644"
     },
     "src/js/prelude/03-element.js": {
-      "sha256": "2dbcba06ad7f415abc05e980d27ac9c6a2fd71032242502505278284f5442337",
+      "sha256": "afbd7e93740b364c8f5556052d5d7d1ec1f5931bed82abfa210b188a8c3bce43",
       "mode": "100644"
     },
     "src/js/prelude/03c-svg.js": {
@@ -413,7 +618,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06b-activate.js": {
-      "sha256": "1de1e46acfa74e6ba32e382f75f64bf374fd6cf2e997c16a51b744811cdea59d",
+      "sha256": "059d7789c5e8e28a6b714a53077d8c051f4e9671a990c12f1329c458929adf4c",
       "mode": "100644"
     },
     "src/js/prelude/06c-traversal.js": {
@@ -2976,220 +3181,6 @@
       "sha256": "86d305a31822538482ac377bcc1d5004ed637e88da2d96bb065119ce362dd1fb",
       "mode": "100644"
     },
-    "tools/generate_embedded.py": {
-      "sha256": "d230a2a031f0cd65f7bb988beff232d71952a7e412e7001be8061ae6df362bfa",
-      "mode": "100644"
-    }
-  },
-  "previously_public_paths_updated_from_tested_commit": {
-    ".gitignore": {
-      "sha256": "1f51a80dd1482d34c0b6a106bf20826dc8c85cc5a464e321c91c8d8ee914af0c",
-      "mode": "100644"
-    },
-    "LICENSE": {
-      "sha256": "c5bce7a91c67108128a04872d88d3bf640706ba5e4a924a610f2e49e13ce0b7b",
-      "mode": "100644"
-    },
-    "Makefile": {
-      "sha256": "e8dbf1acf62bfe8a253da0e56965b781ea7f4fa8e485e47cebbd9d970f7170b1",
-      "mode": "100644"
-    },
-    "android/app/build.gradle": {
-      "sha256": "6b75524c922d8f5bb36167b78313777f3401c0597852804b017917b993d31fb0",
-      "mode": "100644"
-    },
-    "android/app/src/main/AndroidManifest.xml": {
-      "sha256": "68bd7e8a299a9e50606237499df417df2fab2e5be43a2bee6c61e2bdb5487d74",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/BrowserIcons.java": {
-      "sha256": "29dd3ba2d9a38116f67642c5349ddc8356523ab023f454e81f610a3bb3d5159d",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/BrowserInsets.java": {
-      "sha256": "8947128b4fdb5f5acf4096c9d42d174174969f0c0ea1d69e9fd65bf7875f5102",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/BrowserMenus.java": {
-      "sha256": "b62c96a4befc0865e7d23e8d992dbcc12df8285ac6a49b65e04c449e356d1f1c",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/BrowserStats.java": {
-      "sha256": "4ff21dff1c0c571cfa8f3999289d866160292abc81f6c6541fe0fa2ed2fe02da",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/BrowserSurface.java": {
-      "sha256": "859e654460a7a5a102d14ace40c7269ab6b96b3be2e02ff1edebc8a9a550b35d",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/BrowserToolbar.java": {
-      "sha256": "287ab312e0f28554775529c6903c6a82ed7285ec51e1c2d8550d5df244ebdb33",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/ClipProvider.java": {
-      "sha256": "b376b716f380322b21b674958052f4eccabea4c0bd93259ab4870672005cd695",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/LaunchUrl.java": {
-      "sha256": "f04152aa87ccfbabd6f9b1ace728a06b7cf60971bae57effc3168cdb3960b1ae",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/LumenActivity.java": {
-      "sha256": "169866312f6f268b053930844350ca9a315904c65a48d17c71c68ffaf3053fbb",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/MediaPlayback.java": {
-      "sha256": "97a2421aa2aedbfbcbbd2f9c27990e6ca49631f3e939fe5d702cf7832d0785a9",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/ScreenCapture.java": {
-      "sha256": "df93984447d36145f9046acc09b7806c81e97b226da7920afa6ba3f2f2734468",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/SharedFiles.java": {
-      "sha256": "6a08d88104616b3e378e15c77b44226f131bbfa10372028d67d8e699f7d669ef",
-      "mode": "100644"
-    },
-    "android/app/src/main/java/org/lumen/browser/TouchFeedback.java": {
-      "sha256": "354023d6719d1919931b87187b6ae1861c2aea22292536cf22761aa83cb31755",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml": {
-      "sha256": "a5a6da95b2aba00be9db5dd38dd65cdb14480f206761102e0aa82cb067a0c7ea",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
-      "sha256": "ae16f124e4d85284ede9377d90b10b559b0daacaaa731655115a0c2f6ca2c533",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-hdpi/ic_launcher_background.png": {
-      "sha256": "4bcdf5737437c893db987183b91e076e31394fc03bf0db7d4ee4aff8bfb07de5",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png": {
-      "sha256": "644e3283fcb6860a8cede35dc547cc084e3f9bbdf12bb93b091537a43ad469c6",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
-      "sha256": "9b0976641d389b83edfa6edb2e32f8bc8076295a55a6bee6529fc56a094d4d7b",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-mdpi/ic_launcher_background.png": {
-      "sha256": "a7d559362bff85663f4d8322507bf3cbde3abe0c36316e07221198303b0f6061",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png": {
-      "sha256": "dbb680a10633814c21d9f42a1ca419373a3c241dc434bd587ea96f84fac391a6",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
-      "sha256": "d384e2b70681ce692977cebf111915663011a18e19f18ce38064c6522743c3cf",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.png": {
-      "sha256": "0178676f9f1a5069a7e2070a0898936f983581a34a82e4b967f27f8cf5aaa407",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png": {
-      "sha256": "5082a996409a7fee9871e0a12f02eb2becc319b8969db2951587f451e8b51f77",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
-      "sha256": "3813c6a905835d570492250e6755de69af88c7cc91d7ddbb111196e029e61c11",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png": {
-      "sha256": "3d5da28f12bc106c03341935f49a65611dbb9c89c02b1a558d818e953c472cd4",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png": {
-      "sha256": "b52e5b8d3d4a0b408be738db2cec96fd456c4870ce9dcac23633d3e016d99c89",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
-      "sha256": "12cf3cde0c517e933fc0423f8afb4f21337e69dffa0e14a631cd877e15c1ec1b",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png": {
-      "sha256": "9a47fe0859d9b1f5d48d742e3cf8d07e2cbb7a3b56d09ef591867ea0d429dc7a",
-      "mode": "100644"
-    },
-    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png": {
-      "sha256": "ea392a4c759fd37a187faee0aa28519d69972655280f27504782d1f9fdfa5dbb",
-      "mode": "100644"
-    },
-    "android/build.gradle": {
-      "sha256": "d1bd47ceb68955ed5d99760e0b50e0b0fc48077a8c3370651fc4c2ac12a5de66",
-      "mode": "100644"
-    },
-    "android/gradle.properties": {
-      "sha256": "2a65693bf6bc9de8c5b91cdcedb2cf60cbf7675398bc65a2909f511d351e1803",
-      "mode": "100644"
-    },
-    "android/native-deps/patches/v8-15.6.75.8-gc-info-guard.patch": {
-      "sha256": "2181687f36be09767180a5d0e4be3a5fae6143d6b9c3918fa313c8b51fe7f597",
-      "mode": "100644"
-    },
-    "android/native-deps/triplets/arm64-android.cmake": {
-      "sha256": "7dfecc89a14e625f7f4966fbd368b1dc02de45ff466f39d7479c62da477e1c60",
-      "mode": "100644"
-    },
-    "android/native-deps/triplets/x64-android.cmake": {
-      "sha256": "c67847d24f4c405615b1a11d6af6957d9d053ef89957aefb3e286cbfa5aedbb0",
-      "mode": "100644"
-    },
-    "android/native-deps/v8-prebuilt.json": {
-      "sha256": "9a731d0d0ee3e4f7b671af84740a8344758833d553b4924e51f936edcc059d66",
-      "mode": "100644"
-    },
-    "android/native-deps/vcpkg.json": {
-      "sha256": "2d88a441c56e14dec96e60e25736c20a7a594c7690a35266bf152a5319f28f5a",
-      "mode": "100644"
-    },
-    "android/platform/src/main/java/org/lumen/browser/AndroidFontRaster.java": {
-      "sha256": "925f726223964dfd75237eff65d0a18f0788c29f426bd54ab9981a59d4c061b4",
-      "mode": "100644"
-    },
-    "android/settings.gradle": {
-      "sha256": "01508336961e720bc5be80b9eeb6c24b657578713a24a807d7092aa65394cf8e",
-      "mode": "100644"
-    },
-    "assets/icon/Lumen.icns": {
-      "sha256": "b5709c22b6a812139cb90c9f691729e55645a6dc9c8ee679f9fe73fb4bc6be03",
-      "mode": "100644"
-    },
-    "assets/icon/lumen-1024.png": {
-      "sha256": "74d31e75aa55fab61e0678a49cffd82d95b14dd055f481f710bc6c59ec749346",
-      "mode": "100644"
-    },
-    "assets/icon/lumen-256.png": {
-      "sha256": "713fd1e2e1fff559f3ed1f7129e267fc6766f976ca082de5fa0880471d26cd57",
-      "mode": "100644"
-    },
-    "assets/icon/lumen.svg": {
-      "sha256": "81a65e8ab4d1cc951828b1e15da0aeb87cfbb2506fb8ed3913921e5ce475c2a6",
-      "mode": "100644"
-    },
-    "cmake/AndroidOptimization.cmake": {
-      "sha256": "c15f7e87c14fd93a5ea103aeea583bc57ae5d1c4fe0fd156cadb8efe1ab02d14",
-      "mode": "100644"
-    },
-    "cmake/AndroidSdlWait.cmake": {
-      "sha256": "4a986204b7a072d39fd2b5cae516324fa8a8b42e22922a4fdb12bca6fa01e4b6",
-      "mode": "100644"
-    },
-    "cmake/AndroidV8.cmake": {
-      "sha256": "7ffc2c4edcbe88e463781704e7ca2a8aeb826817f318b5269ac7e917aab789a3",
-      "mode": "100644"
-    },
-    "cmake/AndroidV8Prebuilt.cmake": {
-      "sha256": "9e57ef3aa81ea250c6510c05bfed8fa0c6a6d01f802e57558a0f5e9350b62b00",
-      "mode": "100644"
-    },
-    "cmake/android-v8.toolchain.cmake": {
-      "sha256": "c540cf7b669970bff843edc42711543fb615510afa282804e1243298a529dce7",
-      "mode": "100644"
-    },
     "tools/android/build_deps.py": {
       "sha256": "8e1ef7af3717eacdb81568a0f92bbc7089ae1bc29a2ead6a277778498a5e33f0",
       "mode": "100644"
@@ -3238,6 +3229,10 @@
       "sha256": "761f4065dd5192bc6e0b6a536f19e41c8d6e9d66acfc35febf7729bc88b0a35f",
       "mode": "100644"
     },
+    "tools/generate_embedded.py": {
+      "sha256": "d230a2a031f0cd65f7bb988beff232d71952a7e412e7001be8061ae6df362bfa",
+      "mode": "100644"
+    },
     "tools/linux_ui_test.sh": {
       "sha256": "5f9a7e4efbcbdb294c6ac5c649dcc5a16d94b0c38d06efd350c4fd3edd1c2101",
       "mode": "100755"
@@ -3251,6 +3246,14 @@
       "mode": "100644"
     }
   },
+  "sealed1906_input_digest": "897f43e0d475d3104410b7b088d54ff18e7cfcbc1a500cc9415bc611a1cdeaa1",
+  "sealed1906_recorded_input_count": 743,
+  "phase_changed_paths": [
+    "src/js/frames.cc",
+    "src/js/js.cc",
+    "src/js/js_int.h"
+  ],
+  "private_history_included": false,
   "historical_public_files_preserved": [
     "docs/Linux-candidate200.md",
     "docs/build-dependencies200.json",
@@ -3280,8 +3283,5 @@
     "tests/js/checkvisibility-slot-accessors.html",
     "tests/jsrun-completion/failed-completion.html",
     "tests/jsrun-completion/missing-completion.html"
-  ],
-  "independent_rebuild_performed": false,
-  "external_dependencies_included": false,
-  "private_history_included": false
+  ]
 }
