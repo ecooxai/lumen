@@ -505,6 +505,14 @@ bool css_border_valid(const char *property, const char *value);
 char *css_border_parse(const char *property, const char *value); /* caller owns result */
 bool css_image_longhand_valid(const char *property, const char *value);
 char *css_image_longhand_parse(const char *property, const char *value); /* caller owns result */
+/* Animation enum/name lists: CSS syntax is distinct from decoded identity. */
+bool css_animation_longhand_valid(const char *property, const char *value);
+char *css_animation_longhand_parse(const char *property, const char *value);
+char *css_keyframes_name_parse(const char *value); /* caller owns decoded name */
+char *css_keyframes_name_serialize(const char *name, size_t length); /* string attribute, not a CSS prelude */
+char **css_animation_names_parse(const char *value, size_t *count); /* NULL slots mean unquoted none */
+void css_animation_names_free(char **names, size_t count);
+const char *css_animation_name_list(const ComputedStyle *style); /* borrowed canonical list; NULL if no named slots */
 /* Shared box-shadow list grammar; specified color tokens remain contextual. */
 bool css_box_shadow_valid(const char *property, const char *value);
 char *css_box_shadow_parse(const char *value); /* caller owns result; NULL if invalid */

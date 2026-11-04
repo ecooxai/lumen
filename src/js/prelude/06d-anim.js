@@ -770,6 +770,10 @@ function waEffectValue(eff, prop, under, c) {
 }
 /* ---- timeline and frame loop ---- */
 let waFrameTime = null, waInFrame = false, waSeqN = 0, waLoop = false, waDirty = false;
+/* A retained CSS list keeps its creation-order anchor relative to other
+ * animations. Its original name slots determine ordering within that group. */
+const waOrder = (a, b) => ((a._caGroup ?? a._seq) - (b._caGroup ?? b._seq)) ||
+    ((a._caIndex ?? 0) - (b._caIndex ?? 0)) || (a._seq - b._seq);
 let waFlushing = false, waReading = false;
 const waAll = new SSet(), waApplied = new SMap(), waEvents = [];
 const waNow = () => { if (waInFrame && waFrameTime !== null) return waFrameTime; if (!waLoop) waKick(); return waFrameTime === null ? performance.now() : Math.max(waFrameTime, performance.now() - 1000 / 60); };
@@ -798,7 +802,7 @@ function waFlush() {
     waFlushing = true; waDirty = false;
     try {
     const byEl = new SMap();
-    for (const a of [...waAll].sort((x, y) => x._seq - y._seq)) {
+    for (const a of [...waAll].sort(waOrder)) {
         const e = a._effect;
         if (!e || !(e instanceof KeyframeEffect) || !e._target || e._pseudo || a._replace === 'removed') continue;
         const c = waCompute(e); if (c.progress === null) continue;
@@ -835,7 +839,7 @@ function waSyncRead(afterStyle) {
     } finally { waReading = false; }
 }
 function waRemoveReplaced() {
-    const list = [...waAll].filter(a => a._replaceable()).sort((x, y) => x._seq - y._seq);
+    const list = [...waAll].filter(a => a._replaceable()).sort(waOrder);
     const seen = new SMap();
     for (let i = list.length - 1; i >= 0; i--) {
         const a = list[i], el = a._effect._target, ps = seen.get(el) || new SSet(), mine = new SSet();
@@ -1129,7 +1133,7 @@ const waGetAnims = (pred) => [...waAll].filter(a => {
     const e = a._effect; if (!(e instanceof KeyframeEffect) || !e._target || a._replace === 'removed') return false;
     const st = a.playState; if (!(st === 'running' || st === 'paused' || a._task) && waCompute(e).activeTime === null) return false;
     return pred(e._target);
-}).sort((x, y) => x._seq - y._seq);
+}).sort(waOrder);
 /* CSS transitions: restyle reports changed computed values (N.trTake, or fireAnim 'lumen-transition'), and each
    becomes a CSSTransition animating from the old to the new value. Values the animation layer itself writes are
    suppressed once so animations don't start transitions. */
@@ -1191,7 +1195,7 @@ function trStart(el, packed) {
 function trCancelUnrendered() {
     const gone = el => !el.isConnected || N.computed(el, 'display') === 'none';
     for (const [el, m] of [...trRunning]) if (gone(el)) for (const a of [...m.values()]) a.cancel();
-    for (const [el, l] of [...caRunning]) if (gone(el)) { caRunning.delete(el); for (const a of l) a.cancel(); }
+    for (const [el, l] of [...caRunning]) if (gone(el)) { caRunning.delete(el); for (const a of l) { delete a._caGroup; delete a._caIndex; delete a._caPaused; a.cancel(); } }
 }
 function trPoll() {
     if (trConstructing) return false;
@@ -1215,15 +1219,27 @@ function caFindKeyframes(el, name) {
 }
 const caKey = p => p === 'float' ? 'cssFloat' : p.replace(/^-webkit-/, 'webkit-').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
 function caStart(el, names, origin) {
-    const old = caRunning.get(el) || [];
-    caRunning.delete(el);
-    for (const a of old) a.cancel();
-    const list = names.split(',').map(s => s.trim()).filter(s => s && s !== 'none');
-    if (!list.length) return;
+    const old = caRunning.get(el) || [], list = N.cssAnimationNames(names) || [];
+    const byName = new SMap(), matched = new Array(list.length);
+    for (const animation of old) {
+        let stack = byName.get(animation._caName);
+        if (!stack) byName.set(animation._caName, stack = []);
+        stack.push(animation);
+    }
+    /* Animations 1 matches the new list last-to-first against the last unused
+     * old matching name. In a -> a,a the old object belongs to the second slot. */
+    for (let i = list.length - 1; i >= 0; i--) {
+        const stack = list[i] === null ? null : byName.get(list[i]);
+        if (stack && stack.length) matched[i] = stack.pop();
+    }
     const lists = {}, at = (p, i, d) => { const l = lists[p] || (lists[p] = trList(el, p)); return l.length && l[0] ? l[i % l.length] : d; };
-    const made = [];
+    const made = [], retained = new SSet();
+    let group = old.length ? (old[0]._caGroup ?? old[0]._seq) : null;
     list.forEach((name, i) => {
-        const rule = caFindKeyframes(el, name.replace(/^["']|["']$/g, '')); if (!rule) return;
+        /* A none slot still owns its duration/delay index. Quoted "none" is a
+         * real identity; duplicates retain independent objects and timing. */
+        if (name === null) return;
+        const rule = caFindKeyframes(el, name); if (!rule) return;
         const easing = at('animation-timing-function', i, 'ease');
         const frames = [];
         for (const kr of rule.cssRules) {
@@ -1243,14 +1259,34 @@ function caStart(el, names, origin) {
         let eff;
         try { eff = new KeyframeEffect(el, frames, timing); eff._defaultEase = waEasing(easing).f; }
         catch (e) { try { eff = new KeyframeEffect(el, frames.map(f => Object.assign({}, f, { easing: 'linear' })), Object.assign(timing, { composite: 'replace' })); } catch (e2) { return; } }
-        const a = new CSSAnimation(eff, document.timeline);
-        a._caName = name;
-        a.play();
-        if (at('animation-play-state', i, 'running') === 'paused') a.pause();
-        /* Keep the initial pending play/zero hold until a rendering frame
-           can resolve the native style-generation clock. */
-        else if (Number.isFinite(origin)) a._cssStartOrigin = origin;
+        const paused = at('animation-play-state', i, 'running') === 'paused';
+        let a = matched[i];
+        if (a) {
+            /* Apply validated new-slot effect data without replacing either
+             * object or resetting the Animation's start/hold/pending clocks. */
+            if (a._effect instanceof KeyframeEffect) {
+                const current = a._effect;
+                current._t = eff._t; current._kfs = eff._kfs;
+                current._comp = eff._comp; current._icomp = eff._icomp;
+                current._defaultEase = eff._defaultEase; current._sizeKeywords = null;
+                a._updateFinished(false, false); waInvalidate();
+            } else a.effect = eff;
+            if (paused !== a._caPaused) { if (paused) a.pause(); else a._play(false); }
+            retained.add(a);
+        } else {
+            a = new CSSAnimation(eff, document.timeline);
+            a._caName = name;
+            a.play();
+            if (paused) a.pause();
+            /* Only a newly created object acquires this style-generation clock. */
+            else if (Number.isFinite(origin)) a._cssStartOrigin = origin;
+        }
+        if (group === null) group = a._seq;
+        a._caGroup = group; a._caIndex = i; a._caPaused = paused;
         made.push(a);
     });
-    if (made.length) caRunning.set(el, made);
+    for (const animation of old) if (!retained.has(animation)) {
+        delete animation._caGroup; delete animation._caIndex; delete animation._caPaused; animation.cancel();
+    }
+    if (made.length) caRunning.set(el, made); else caRunning.delete(el);
 }

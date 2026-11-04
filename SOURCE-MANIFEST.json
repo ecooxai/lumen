@@ -1,12 +1,12 @@
 {
-  "candidate": 2003,
-  "tested_source_commit": "e3640d8014c369f56ec23ba1cadf97f6635668ce",
-  "tested_binary_sha256": "42516d42d3e04f08cd029474d7872bb9ebdbcb6fe4063cb87b87e09cfde4e04b",
-  "recorded_input_digest": "9aeb8d3300db158432facc7b615ab41f9f00e426dcd36fb90ca98c592ec9c66f",
+  "candidate": 2005,
+  "tested_source_commit": "befa6178b4cfe1725b6efee5e9116e4c6b1b8dc4",
+  "tested_binary_sha256": "326a84137257f00e7444a04bd02ef3fdf9c12a6cf3ade42a7c3908c11074aaa2",
+  "recorded_input_digest": "f0a5790f3cb05d23cd64298cca9ec805b43073a672fd56575fa80a11a5d8d1c2",
   "recorded_input_count": 743,
-  "source_manifest_file_sha256": "caf5b25e47d728ddb168382a18bd2f55559b2b230a1c48c8df051d15a5f716d4",
-  "public_parent": "86f96cf4382783547b25937b9fc7e439b9f60bfd",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2003-20261104",
+  "source_manifest_file_sha256": "d55da0d5a0945c34ad6de193cd04da8261d849012ea9a026cd703a62a4b2891b",
+  "public_parent": "39d12f941dcd00ea6e0abe7750bdb0cddb5f8275",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2005-20261104",
   "recorded_inputs": {
     "CMakeLists.txt": {
       "sha256": "39135ade2090484ca003089b98004a8e28ed3aad5bc244c0921df7cc8798190b",
@@ -205,7 +205,7 @@
       "mode": "100644"
     },
     "src/css/css.h": {
-      "sha256": "7f45a90cd692d7170a4ce23b885840543fb39ae187bafbbb74e528fb647dedeb",
+      "sha256": "0b73256864d299287191313688a94eb8e62ec7a9208727170522747b0338f234",
       "mode": "100644"
     },
     "src/css/easing.h": {
@@ -217,7 +217,7 @@
       "mode": "100644"
     },
     "src/css/parse.c": {
-      "sha256": "b4798f6b070529e7c00fbfa47d28284654709317aebd9064a51ad833f5cc2b86",
+      "sha256": "1a49ac0767010f42935dbb283e46026c76d55170cd53c70b8b54203461dc7296",
       "mode": "100644"
     },
     "src/css/props_generated.inc": {
@@ -233,7 +233,7 @@
       "mode": "100644"
     },
     "src/css/style.c": {
-      "sha256": "e3c374da54deb1c25736ecc09a88f2d0bf59434af6e524384e0ac6b02e084cfe",
+      "sha256": "40fa1fdb2718d964afbfe98b22674af7d416e8b8ac9a00dba97eadf3501fea7a",
       "mode": "100644"
     },
     "src/css/ua.c": {
@@ -341,7 +341,7 @@
       "mode": "100644"
     },
     "src/js/jsglue.c": {
-      "sha256": "5bfb7c3ebe95b4d6846f8989aa2a7f5ec698ebdfeffe8fcbc64e54039822a6e6",
+      "sha256": "e9c01c43446a5171f66c47b66d33e9b6de5946d0f2d48956741c282c6645d36e",
       "mode": "100644"
     },
     "src/js/jsglue.h": {
@@ -349,7 +349,7 @@
       "mode": "100644"
     },
     "src/js/jsnative.cc": {
-      "sha256": "52d1ddd423e38a41a574d45b5aa497d13d950bf23b5c6c269d6d58daeaa3afb0",
+      "sha256": "be027670fc8050c3087836d16301ad254adf09b0553dfcdbff858295c162caee",
       "mode": "100644"
     },
     "src/js/lazy/editing.js": {
@@ -369,7 +369,7 @@
       "mode": "100644"
     },
     "src/js/prelude/03-element.js": {
-      "sha256": "18f9d0f031cc848c1cba0eba4e69866147585e96611faab942efa4f3b37ee5bb",
+      "sha256": "a3ee709f2b39f0a97a940a859d2bdc2a03a46af1dd9e83837615a4d149016cd3",
       "mode": "100644"
     },
     "src/js/prelude/03c-svg.js": {
@@ -413,7 +413,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06b-activate.js": {
-      "sha256": "538751c28b4931b9188159fcd0d5b06ced9b756737fe9430b5504b6a5c74104f",
+      "sha256": "fa58ea9d5b9c36fa15d9f4651d72267c319653e551ede9af9691f6a9f282a56a",
       "mode": "100644"
     },
     "src/js/prelude/06c-traversal.js": {
@@ -421,7 +421,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06d-anim.js": {
-      "sha256": "7ceb5a821cf6ec7e4571fa463c6dcd7cb87107835eda3f75b5864c88c729759b",
+      "sha256": "84361708fdeb0d92ed2bd460b21e305bae132d2419d747c83f0b2ce0988e883c",
       "mode": "100644"
     },
     "src/js/prelude/07-web.js": {
