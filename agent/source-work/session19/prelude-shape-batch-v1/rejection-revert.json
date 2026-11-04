@@ -1,0 +1,24 @@
+{
+  "status": "isolated descriptor batching reverted after fixed performance rejection",
+  "reverted_commit": "64fd64631b8eae3ea34d61daa4b0e600f6e5d930",
+  "before_head": "6ee883838a8dba9bad203428c62c8a0bec5f6f21",
+  "revert_commit": "051a0d6408ff5c00874fd300fe4d15df964ad2c0",
+  "commit_utc": "2026-11-04T09:34:20+00:00",
+  "source_tree": "680ebea75737d135b4d1fe0416a26405589afe6d",
+  "verification_start_utc": "2026-11-04T09:36:10.510864+00:00",
+  "verification_end_utc": "2026-11-04T09:36:10.529645+00:00",
+  "verification_seconds": 0.02688291802769527,
+  "source_mutation_interval_unavailable": "Original script committed successfully, then an unnecessarily expensive character-level diff check was interrupted; exact mutation duration was not persisted. Retained terminal26967 exit130 records the interruption. Recovery uses a linear exact-source comparison.",
+  "new_source_sha256": "2a8065e34bf7e135df384132b2e32af89ea860dc9a55df36a020845efa7b0c27",
+  "delta_to_immutable1909_08_window": {
+    "only_inserted_token": "StyleSheetList, ",
+    "exact_source_equal_after_token_removal": true
+  },
+  "performance_audit": "agent/validation/linux-wpt-20261104-session19/shape-performance-v2/threshold-audit-v1.json",
+  "performance_audit_sha256": "03579df567196a77b2dab66f640de17a3ff8dd3f0506d3a47ab59f59efaacfe2",
+  "retained_functional_commits": [
+    "2abd7f95c45b12a3bc70bd1e9bd70583798aecb2",
+    "070bf79632a3391960eca1e2fe5553edd0323174",
+    "6ee883838a8dba9bad203428c62c8a0bec5f6f21"
+  ]
+}

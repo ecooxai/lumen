@@ -1,0 +1,34 @@
+{
+  "created_utc": "2026-11-04T09:23:49.931520+00:00",
+  "reviewer": "source_steward",
+  "status": "final static review accepted; browser/native qualification pending",
+  "draft_manifest_sha256": "fce03fe1a21f5d3bbc22011dc0e4c378d328e3b3e9d0e0c7767634f12acff4fc",
+  "production_paths": [
+    "src/js/prelude/01-events.js",
+    "src/js/prelude/06b-activate.js",
+    "src/js/prelude/08-window.js"
+  ],
+  "independent_findings_resolved": [
+    "indexed deletion and array-index boundary",
+    "PreventExtensions and ordinary-property/prototype fallback",
+    "genuine same-origin cross-realm borrowing through private frozen REALM hook",
+    "no shared generic listItems brand leakage into NodeList or HTMLCollection",
+    "captured private map/brand/factory/reflection intrinsics",
+    "same DOM-version liveness with version committed after successful query",
+    "array construction uses existing apush to avoid inherited index setters"
+  ],
+  "preserved_scope": [
+    "existing sheetFor identity and query/tree-order/mirror predicate",
+    "no native bridge changes",
+    "no NodeList/HTMLCollection helper mutations",
+    "isolated1910 performance source untouched"
+  ],
+  "runtime_requirements": [
+    "frozen CSSOM/collection WPT",
+    "same-object and liveness",
+    "reflection/readonly/extensibility",
+    "foreign genuine list and spoof rejection",
+    "foreign interface getters reject list",
+    "prototype override and inherited array setter controls"
+  ]
+}

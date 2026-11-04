@@ -1,0 +1,60 @@
+{
+  "status": "functional commits integrated; next candidate intentionally unsealed pending1910 performance verdict",
+  "interval_scope": "measured mutation/commit scripts, not model compute or tests",
+  "commits": [
+    {
+      "commit": "2abd7f95c45b12a3bc70bd1e9bd70583798aecb2",
+      "draft": "range-priority-draft",
+      "patches": [
+        "style.c.patch"
+      ],
+      "start_utc": "2026-11-04T09:25:54.878553+00:00",
+      "end_utc": "2026-11-04T09:25:54.996192+00:00",
+      "source_mutation_commit_seconds": 0.11762,
+      "before_sha256": {
+        "src/css/style.c": "fb5140ddb729387e2ae4bfc4714476a9270f213a86807679b3e975634b7ff641"
+      },
+      "after_sha256": {
+        "src/css/style.c": "20022cd4e7d184e8783d205040b3768975fae1db39414d0eaf2910fa0410af00"
+      }
+    },
+    {
+      "commit": "070bf79632a3391960eca1e2fe5553edd0323174",
+      "draft": "range-root-pseudo-draft",
+      "patches": [
+        "style.c.patch"
+      ],
+      "start_utc": "2026-11-04T09:25:55.000984+00:00",
+      "end_utc": "2026-11-04T09:25:55.112717+00:00",
+      "source_mutation_commit_seconds": 0.111738,
+      "before_sha256": {
+        "src/css/style.c": "20022cd4e7d184e8783d205040b3768975fae1db39414d0eaf2910fa0410af00"
+      },
+      "after_sha256": {
+        "src/css/style.c": "b2749eddc27e7596d57646702eb03fe954571ec5eb37edd1a8a0490dcfe1e381"
+      }
+    },
+    {
+      "commit": "6ee883838a8dba9bad203428c62c8a0bec5f6f21",
+      "draft": "stylesheet-list-draft",
+      "patches": [
+        "01-events.js.patch",
+        "06b-activate.js.patch",
+        "08-window.js.patch"
+      ],
+      "start_utc": "2026-11-04T09:25:55.123895+00:00",
+      "end_utc": "2026-11-04T09:25:55.239915+00:00",
+      "source_mutation_commit_seconds": 0.116024,
+      "before_sha256": {
+        "src/js/prelude/01-events.js": "46fb1a71378946df4c4cebc3ec63d14a75feeb51b3db3d3894194ed61f41ef3b",
+        "src/js/prelude/06b-activate.js": "4476000dd41fe5399fc9e632ba98577a6d5c16c3a06172b803c17b306abe441a",
+        "src/js/prelude/08-window.js": "53cd7d1ebc4fd315daf8418c9d72eb7499758a219e194979d5d156a3f53a6da1"
+      },
+      "after_sha256": {
+        "src/js/prelude/01-events.js": "53aaaf4a2c7ce415abc429c28dc97698aa51678a0cbc952b8e481a1aa4c295b8",
+        "src/js/prelude/06b-activate.js": "e8094a6805f0d991e4a44a2357c69e0ae07f47bc9201885d1f91b9e33119e7a6",
+        "src/js/prelude/08-window.js": "5dde69ec805dcb53e01db07f837cbc0f9dd08d2c5ff013bbe4297fabded302d0"
+      }
+    }
+  ]
+}

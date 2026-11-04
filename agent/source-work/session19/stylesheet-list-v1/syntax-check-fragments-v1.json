@@ -1,0 +1,35 @@
+{
+  "scope": "syntax only; native browser controls pending",
+  "rows": [
+    {
+      "file": "02-node.js.candidate",
+      "sha256": "a4e7591d5fa2567557bba8c1d74d624256863dc513dd3bba357e488b0a74c234",
+      "started_utc": "2026-11-04T08:52:17.311252+00:00",
+      "finished_utc": "2026-11-04T08:52:17.532890+00:00",
+      "seconds": 0.22164323000470176,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "file": "06b-activate.js.candidate",
+      "sha256": "09001e619d740ffdc6aa49e31f2ce6dc30cf20459be17eabd753d12fbd07f29a",
+      "started_utc": "2026-11-04T08:52:17.532934+00:00",
+      "finished_utc": "2026-11-04T08:52:17.742535+00:00",
+      "seconds": 0.20962246000999585,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "file": "08-window.js.candidate",
+      "sha256": "2a8065e34bf7e135df384132b2e32af89ea860dc9a55df36a020845efa7b0c27",
+      "started_utc": "2026-11-04T08:52:17.742569+00:00",
+      "finished_utc": "2026-11-04T08:52:17.954572+00:00",
+      "seconds": 0.2120145499939099,
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "[stdin]:1095\n})\n^\n\nSyntaxError: Unexpected token '}'\n    at wrapSafe (node:internal/modules/cjs/loader:1637:18)\n    at checkSyntax (node:internal/main/check_syntax:78:3)\n    at node:internal/main/check_syntax:45:5\n    at ReadStream.<anonymous> (node:internal/process/execution:201:5)\n    at ReadStream.emit (node:events:519:28)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)\n\nNode.js v22.22.2\n"
+    }
+  ]
+}

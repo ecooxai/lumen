@@ -5,16 +5,26 @@ Start with `agent/continue.md` and `agent/devsummary.md`. The original user requ
 ## Active session19 coordination — 2026-11-04
 
 Current task branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104`.
-Session started06:33:55UTC with a five-hour development budget. Root is CTO; source_steward
-owns canonical engine/Git edits, test_baseline owns tests, environment_delivery owns
-preview/monitors/runtime delivery. Read current agent/continue.md for live state and
-agent/archive/continue-session18-20261104T063800Z.md for the exact previous handoff.
-The full task text in agent/task.md already matches the current user request and was
-rewritten unchanged. Previous tracked state was clean; historical untracked evidence was
-preserved. Preflight source/binary fingerprints are in agent/source-work/session19/preflight.json.
-New candidates must use never-used1901+IDs and exact expected HEAD. Coordinate source and
-Git freezes before builds; keep one heavy job at a time under the480%shared quota.
-The historical metrics below remain the starting evidence until fresh qualified results.
+The five-hour session started06:33:55UTC and remains active through11:33:55UTC, with an
+optional additional hour only for important fixes. Root is CTO; source_steward owns source,
+Git/index and continuity; test_baseline owns independent immutable builds/tests;
+environment_delivery owns preview/monitors/status and runtime/public delivery.
+
+Latest qualified full candidate1908 is781/1248 URLs (62.580128/100 selected-manifest
+compatibility) and23103/26245 assertions, +22 URLs/+277 assertions over1808, with zero
+prior passing URL/assertion/harness losses. Exact source/binary/proof identities and current
+unsealed follow-ups are in agent/continue.md. This selected DOM/CSS manifest is not all WPT,
+current latest Chromium parity or a95/100 product-quality claim. Historical details below
+are retained background, not the current runtime or qualification state.
+
+Candidate1910 descriptor batching failed the frozen CPU/wall thresholds and was reverted
+without removing the later range-priority, root-pseudo and StyleSheetList commits. Candidate1911
+seals those functional fixes plus the unchanged default-off sampler; specified-calc remains separate.
+Coordinate exact tracked source/Git/status freezes before builds and native gates; immutable
+sealed binaries may be tested while subsequent source is prepared. Use never-reused IDs
+and one heavy job under the existing480% shared quota. Preserve all old HOLDs and private
+historical evidence. The full unchanged user request is agent/task.md; old handoffs are
+under agent/archive and initial fingerprints under agent/source-work/session19/preflight.json.
 
 ## Host compilation CPU budget
 
@@ -233,7 +243,10 @@ Full rule/layer/origin cascade rollback, typed custom-property animation and bro
 
 ## Next agent
 
-Use the exact source/runtime and validation mapping above. Read agent/continue.md and the final session18 entry in agent/devsummary.md before creating a new branch. The measured selected-URL benchmark does not establish whole-platform parity; preserve the documented first-full timeout and all historical evidence.
-
-
-Final delivery seal: development, test and device work finished 2026-11-03T12:56:33.126372+00:00; all four saved artifacts completed 2026-11-03T13:08:18+00:00; documentation sealed 2026-11-03T13:10:09.155650+00:00. The canonical progress session is complete and inactive. Historical untracked evidence remains preserved.
+Read the current agent/continue.md and latest session19 entries in agent/devsummary.md
+before acting. Reuse the active task branch while this authorized session continues; do not
+mistake the retained historical session18 final seal for the present session state. Verify the
+latest exact source/binary/proof mapping, pending freeze and test owner before editing or
+building. The source archive, live desktop executable and Android package have separate
+identities and must each be verified when delivered. Preserve the selected-manifest scope,
+all historical timeouts/HOLDs and bounded architecture/authorization rules documented above.

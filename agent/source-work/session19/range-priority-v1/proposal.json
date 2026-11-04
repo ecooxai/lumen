@@ -1,0 +1,26 @@
+{
+  "created_utc": "2026-11-04T09:00:13.877446+00:00",
+  "status": "draft only; no canonical mutation",
+  "base_sha256": "fb5140ddb729387e2ae4bfc4714476a9270f213a86807679b3e975634b7ff641",
+  "result_sha256": "20022cd4e7d184e8783d205040b3768975fae1db39414d0eaf2910fa0410af00",
+  "patch_sha256": "6c9bb45ae1311f656abe5cee35e982bf597de94cca7c96850976e0a5f7ff5779",
+  "evidence": "range24 parsed declaration sequence important shorthand10%90% then normal start20% produces20%90%; CSSOM getter retainsimportant; Chromium10%90%; no priorPASS loss",
+  "scope": [
+    "native range-family priority replay only",
+    "same three existing importance/origin tiers as intrinsic-size and interpolate-size",
+    "source order preserved inside each tier",
+    "all retains normal substitution and CSS-wide validation, projects only range during replay",
+    "explicit CSSOM setProperty and parseDecls unchanged",
+    "no global cascade sort/rewrite",
+    "root-pseudo rem fix kept separate"
+  ],
+  "required_controls": [
+    "both shorthand/longhand orders and importance combinations",
+    "sheet important versus inline normal/important",
+    "all normal/important ordering and invalid all",
+    "nonrange fields unchanged by range replay",
+    "explicit API setProperty can replace important with normal",
+    "existing frozen range24 and WPT/native gates"
+  ],
+  "integration": "hold outside isolated sampler/performance baseline"
+}

@@ -1,0 +1,39 @@
+{
+  "scope": "syntax only; independent native browser controls pending",
+  "rows": [
+    {
+      "file": "01-events.js.candidate",
+      "sha256": "53aaaf4a2c7ce415abc429c28dc97698aa51678a0cbc952b8e481a1aa4c295b8",
+      "context": "outer wrapper closure supplied",
+      "started_utc": "2026-11-04T09:21:05.047437+00:00",
+      "finished_utc": "2026-11-04T09:21:05.247929+00:00",
+      "seconds": 0.20048791001318023,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "file": "06b-activate.js.candidate",
+      "sha256": "e8094a6805f0d991e4a44a2357c69e0ae07f47bc9201885d1f91b9e33119e7a6",
+      "context": "final append correction only; other fragment bytes unchanged",
+      "started_utc": "2026-11-04T09:22:52.287263+00:00",
+      "finished_utc": "2026-11-04T09:22:52.514291+00:00",
+      "seconds": 0.22702483501052484,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "file": "08-window.js.candidate",
+      "sha256": "5dde69ec805dcb53e01db07f837cbc0f9dd08d2c5ff013bbe4297fabded302d0",
+      "context": "exact01 opening wrapper supplied",
+      "started_utc": "2026-11-04T09:21:05.434602+00:00",
+      "finished_utc": "2026-11-04T09:21:05.622773+00:00",
+      "seconds": 0.18819038401125,
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "prior_receipts": "versions/before-local-factory-review/syntax-check.json"
+}

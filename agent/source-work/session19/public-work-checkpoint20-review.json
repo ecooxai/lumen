@@ -1,0 +1,32 @@
+{
+  "created_utc": "2026-11-04T09:18:59.205802+00:00",
+  "seconds": 0.528064,
+  "status": "independently reviewed; approved as work checkpoint only, not qualified release",
+  "preparation_sha256": "8f7eb917abbaf20bb3f04227155abeb2bb163cc59314bb0ae253b19d9d10d796",
+  "source_commit": "31dbb594ee8ca772c01b5b566225fd2497a445bf",
+  "public_parent": "0d76bf0aeefb3c975b94b550f831681c41e3beda",
+  "inventory_hashes_and_modes_verified": 843,
+  "canonical_source_blobs_verified": 810,
+  "recorded1906_input_paths_verified": 743,
+  "changed_source_paths_verified": [
+    "src/css/css.h",
+    "src/css/style.c",
+    "src/js/frames.cc",
+    "src/js/js.cc",
+    "src/js/js_int.h",
+    "src/js/jsnative.cc",
+    "src/js/prelude/02-node.js",
+    "src/js/prelude/03-element.js",
+    "src/js/prelude/06-document.js",
+    "src/js/prelude/06b-activate.js",
+    "src/js/prelude/08-window.js"
+  ],
+  "preserved_public_files_verified": 28,
+  "public_ancestry_commits_verified": 222,
+  "private_current_and_tested_commits_absent": true,
+  "private_history_alternates_absent": true,
+  "source_unbuilt_unqualified_labels_verified": true,
+  "qualified1906_metrics_exactly_preserved": true,
+  "full1908_and1910_performance_pending_explicit": true,
+  "download_stays_qualified1906": true
+}

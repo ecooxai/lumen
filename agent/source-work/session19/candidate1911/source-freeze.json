@@ -1,0 +1,33 @@
+{
+  "candidate": 1911,
+  "production_commit": "051a0d6408ff5c00874fd300fe4d15df964ad2c0",
+  "source_tree": "680ebea75737d135b4d1fe0416a26405589afe6d",
+  "prepared_utc": "2026-11-04T09:40:33.574060+00:00",
+  "baseline_full_candidate": 1908,
+  "baseline_source_commit": "d995e1a5eb8daebd07ec7b67f0572f40b70fc6e6",
+  "production_delta_paths": [
+    "src/css/style.c",
+    "src/js/js.cc",
+    "src/js/prelude/01-events.js",
+    "src/js/prelude/06b-activate.js",
+    "src/js/prelude/08-window.js"
+  ],
+  "included_diagnostic_commit": "a9d8403dc6d78facfa1976e996af956380e41ff2",
+  "included_functional_commits": [
+    "2abd7f95c45b12a3bc70bd1e9bd70583798aecb2",
+    "070bf79632a3391960eca1e2fe5553edd0323174",
+    "6ee883838a8dba9bad203428c62c8a0bec5f6f21"
+  ],
+  "rejected_optimization_commit": "64fd64631b8eae3ea34d61daa4b0e600f6e5d930",
+  "revert_commit": "051a0d6408ff5c00874fd300fe4d15df964ad2c0",
+  "shape_fully_reverted": true,
+  "excluded_draft": "range specified-calc canonicalization",
+  "required_unset_flags": [
+    "LUMEN_PROFILE_PRELUDE",
+    "LUMEN_TRACE_LOAD"
+  ],
+  "build_native_focused_full_pending": true,
+  "hold_tracked_source_git_status_through_native218": true,
+  "last_qualified_sample_score": 62.580128205128204,
+  "qualified_public1908_review_sha256": "2810e4d8c7f304ee7235ed4826fe5d91ad30693c8d9e03e9c79598c00d1be9f0"
+}

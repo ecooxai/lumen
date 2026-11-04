@@ -1,0 +1,20 @@
+{
+  "status": "DRAFT ONLY; source review, candidate build and independent browser controls pending",
+  "created_utc": "2026-11-04T09:22:36.847368+00:00",
+  "base_head_observed": "31dbb594ee8ca772c01b5b566225fd2497a445bf",
+  "canonical_files_changed": false,
+  "files": {
+    "src/js/prelude/01-events.js": {
+      "base_sha256": "46fb1a71378946df4c4cebc3ec63d14a75feeb51b3db3d3894194ed61f41ef3b",
+      "result_sha256": "53aaaf4a2c7ce415abc429c28dc97698aa51678a0cbc952b8e481a1aa4c295b8"
+    },
+    "src/js/prelude/06b-activate.js": {
+      "base_sha256": "4476000dd41fe5399fc9e632ba98577a6d5c16c3a06172b803c17b306abe441a",
+      "result_sha256": "e8094a6805f0d991e4a44a2357c69e0ae07f47bc9201885d1f91b9e33119e7a6"
+    },
+    "src/js/prelude/08-window.js": {
+      "base_sha256": "53cd7d1ebc4fd315daf8418c9d72eb7499758a219e194979d5d156a3f53a6da1",
+      "result_sha256": "5dde69ec805dcb53e01db07f837cbc0f9dd08d2c5ff013bbe4297fabded302d0"
+    }
+  }
+}

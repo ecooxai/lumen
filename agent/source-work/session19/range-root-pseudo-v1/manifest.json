@@ -1,0 +1,11 @@
+{
+  "status": "DRAFT ONLY; no canonical changes; root-pseudo2 independent controls already demonstrate current gap; native build pending",
+  "created_utc": "2026-11-04T08:59:49.422375+00:00",
+  "base_head_observed": "554b75a7c3798daa7d20d4f58045229480e43dd9",
+  "files": {
+    "src/css/style.c": {
+      "base_sha256": "fb5140ddb729387e2ae4bfc4714476a9270f213a86807679b3e975634b7ff641",
+      "result_sha256": "d9f5662792e1605dfd1ee0ff11f3c7cff6db76566171e558f0827e82cbb02783"
+    }
+  }
+}

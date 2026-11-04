@@ -1,0 +1,5 @@
+# Root pseudo rem correction draft
+
+The independent root-pseudo controls confirm that root-origin ::before/::after range endpoints currently use the pseudo font (40px) for 1rem instead of the originating root font. `compute_pseudo` passes the final originating style as `par` to `apply_decl_ordered(..., is_pseudo=true)`. The range application branch now selects `par->font_size` only when the active resolver belongs to the current style or its projection and is marked pseudo. An ordinary root continues to use its final `st->font_size`. Non-root contexts and font-size computation itself are unchanged. Both direct length resolution and unresolved math fallback use this same local ACtx.
+
+This patch is deliberately separate from native cascade priority repair and the StyleSheetList draft. No canonical source changed and no compilation is claimed. Existing root/dynamic/inheritance controls remain frozen; rerun the separately frozen root-pseudo2 controls on the next functional candidate, preserving their original observations.

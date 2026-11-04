@@ -1,0 +1,70 @@
+{
+  "created_utc": "2026-11-04T09:33:12.984694+00:00",
+  "report_sha256": "13124bfd46704f4f4f00584ba17a546565be0607621e0b32ab3ae769815b9b7f",
+  "protocol_sha256": "564a232dc0db1086a6c221c1c0c3b7bdbd3b4dd270f1bbf21283745c9b07bceb",
+  "all_fixed_scenarios_valid": true,
+  "summaries": {
+    "1909": {
+      "median_owned_cpu_seconds": 15.383061,
+      "median_namespace_wall_seconds": 8.583,
+      "maximum_sampled_peak_rss_mb": 514.515,
+      "median_host_cpu_percent": 70.59049999999999
+    },
+    "1910": {
+      "median_owned_cpu_seconds": 15.431443,
+      "median_namespace_wall_seconds": 8.3747,
+      "maximum_sampled_peak_rss_mb": 507.531,
+      "median_host_cpu_percent": 70.55600000000001
+    }
+  },
+  "median_owned_cpu_reduction_percent": -0.3145147770004952,
+  "median_namespace_wall_reduction_percent": 2.42689036467435,
+  "maximum_sampled_peak_rss_increase_percent": -1.3573948281391175,
+  "thresholds": {
+    "cpu_reduction_at_least5percent": false,
+    "namespacewall_reduction_at_least3percent": false,
+    "rss_increase_no_more5percent": true
+  },
+  "pairs": [
+    {
+      "pair": 1,
+      "baseline_cpu_seconds": 15.383061,
+      "candidate_cpu_seconds": 16.501217,
+      "baseline_wall_seconds": 8.583,
+      "candidate_wall_seconds": 9.4275
+    },
+    {
+      "pair": 2,
+      "baseline_cpu_seconds": 15.597349,
+      "candidate_cpu_seconds": 15.431443,
+      "baseline_wall_seconds": 8.9675,
+      "candidate_wall_seconds": 8.2455
+    },
+    {
+      "pair": 3,
+      "baseline_cpu_seconds": 15.111818,
+      "candidate_cpu_seconds": 14.876138,
+      "baseline_wall_seconds": 8.018,
+      "candidate_wall_seconds": 8.3747
+    }
+  ],
+  "required_server_cpu_seconds_by_run": [
+    0.1,
+    0.09,
+    0.12,
+    0.09,
+    0.09,
+    0.08
+  ],
+  "throttled_usec_by_run": [
+    0,
+    0,
+    2110,
+    0,
+    16490,
+    0
+  ],
+  "reflection_status": "Still pending; performance thresholds already fail, so reflection success cannot rescue this optimization.",
+  "performance_accepted": false,
+  "decision": "Reject descriptor batching: the preregistered useful CPU and wall thresholds both fail. Do not repeat to seek a favorable result or claim a speedup."
+}

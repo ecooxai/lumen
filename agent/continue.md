@@ -1,61 +1,112 @@
 # Continue Lumen Linux — session19 active
 
-Session started 2026-11-04T06:33:55Z. Work through RubyWebTerm in
-`/mnt/p3/project/browser/lumen-android/lumen-android`.
+Updated 2026-11-04T09:40:33.574060+00:00. Session started2026-11-04T06:33:55Z and remains active.
+Work through RubyWebTerm in `/mnt/p3/project/browser/lumen-android/lumen-android`.
 Branch: `gpt-6-astra-pro_builtin-agents_rubywebterm_session19-20261104`.
-The unchanged tracked session18 head was `417fb38808876659415017e90545e8e677fb20cc`;
-checkpoint commit is `63d3c90833175112354df3f4a3a4fb11f1e76cb9`.
-Full prior handoff is preserved in `agent/archive/continue-session18-20261104T063800Z.md`.
-Read AGENTS.md, the complete current user request in agent/task.md, and agent/devsummary.md.
+Read AGENTS.md, the complete user request in agent/task.md, and the latest entries in
+agent/devsummary.md. The previous session handoff remains archived at
+agent/archive/continue-session18-20261104T063800Z.md; intermediate handoffs are archived too.
 
-## Roles and source ownership
+## Roles, freezes and resource policy
 
-Root coordinates. source_steward owns engine changes and canonical Git/index;
-test_baseline owns independent test runs; environment_delivery owns preview, resource
-monitoring, runtime/deployment receipts and agent/progress/status.json. Coordinate explicit
-source/HEAD freezes before builds and reserve new candidate IDs (1901 onward).
-Do not modify trusted guards, WPT assertions, skips, expected outcomes or timeouts.
-Preserve historical untracked evidence. Public exports require reviewed public ancestry.
+Root is CTO. source_steward owns canonical source/Git/index and continuity records;
+test_baseline owns independent builds/tests and immutable candidate reservations;
+environment_delivery owns preview, monitors, public exports, runtime/device delivery and
+agent/progress/status.json. Coordinate explicit tracked source/Git/status freezes before
+builds; native218 also requires the exact tracked-clean HEAD throughout its run. After a
+build seal, immutable tests may continue while new source is edited. Never reuse consumed
+candidate IDs or alter trusted guards, WPT assertions, expected outcomes, timeouts or workers.
+Preserve historical evidence and all HOLDs. Public exports use reviewed approved ancestry,
+exact source blobs and narrow allowlists, never private canonical history or runtime data.
 
-## Verified starting state
+Use project-backed temporary files because /tmp is nearly full. One heavy task at a time,
+under the existing shared480% CPU quota, with one-second CPU/RSS monitoring. Preserve the
+required owned WPT server when reconciling cgroup tasks; inspect identity before any cleanup.
+Test/build task timing is separate from source mutation time and model compute time.
+The five-hour budget runs to2026-11-04T11:33:55Z; an extra hour is only for important fixes.
 
-The src tree remains `905f9cd45711a1730d05807d85d99002b34e31a0`.
-Accepted candidate1808 binary SHA256 is
-`79af7023284551d597ce61ff4a5e3954a7edd2a43b4b8ee2af5d63a1658ff46d`.
-Prior qualified selected-cohort result is759/1248 URLs and22826/26245 assertions;
-pinned Chromium150 historical reference is1062/1248 URLs and24541/26064 assertions.
-This is1248 selected HTTP/default-timeout DOM/CSS testharness URLs from1247files,
-not whole WPT or present-day Chromium parity. First1808 full run remains HOLD due to
-namespace completion timeout after51/51assertions; subsequent reliability replay passed.
-Session19 namespace-only1902 build/startup passed in82.14s. Its independently measured
-focused136 cohort is64/136URLs and1652/2455assertions (+2URLs/+44assertions, zero pass
-losses or harness regressions). Full1248URL sample score has not yet been remeasured.
-Candidate1901 failed compilation in23.13s and is consumed. Candidate1903 combines the
-namespace declaration fix, transition serialization64168e0, and observer semantics314389c.
-Its exact source receipt isagent/source-work/session19/candidate1903/source-freeze.json.
-Candidate1903 native218 and mutation23 gates passed, but its focusedWPT remainsHOLD
-due to namespace test harnessTIMEOUT after51PASSassertions; all original evidence is retained.
-Candidate1904 now includes constructed45f0fa80, randomacb8f552 and range61bf3e0 fixes,
-with source receipt agent/source-work/session19/candidate1904/source-freeze.json.
-The environment has sealed its intentional status update; all tracked source/Git/status
-writes are frozen for candidate1904 build until the test owner explicitly releases them.
-Next priority is bounded diagnostic instrumentation of iframe/parent load completion
-if root approves. Do not change WPT or timeouts, and do not infer source causality from
-intermittent completion failures. StyleSheetList liveness/item proposal remains deferred.
+## Latest fully qualified result — candidate1908
 
-## Next work
+Exact source HEAD: `d995e1a5eb8daebd07ec7b67f0572f40b70fc6e6`.
+Source tree: `487bed118fb7920b8872bd038b575364165f61ad`.
+Binary SHA256: `cf2692999572a09524c11697d76de073ccbba7e3c6fe496b89bb241ccfc9bdc9`.
+Build/startup117.23s; native218 passed218/218 in200.22s at the exact clean HEAD.
+Full unchanged1248 replay completed09:18:50UTC in1040.14s: **781/1248 URLs**
+(62.580128/100 selected-manifest compatibility), **23103/26245 assertions**.
+This is +9 URLs/+79 assertions over1906 and +22/+277 over1808. Every previously passing
+URL, assertion and harness result was retained; all1248 processes exited0, source/binary
+pins and cleanup passed. Full acceptance SHA256:
+`c6c1341edd3feb1171651cebf943bbd65fbac91438f203aa6f94366a31d7c058`.
+Raw receipt SHA256: `f72ea86207eaa207802d86d9ad17d821687a860dbd150dcc1fb77fcf9075bb28`.
+Evidence lives under agent/validation/linux-wpt-20261104-session19 and
+agent/source-work/session19/test-baseline.
 
-Verify baseline evidence and rank remaining shared-reference failures. Select bounded
-CSSOM lifecycle or syntax/typed-value corrections with unchanged valid/invalid cohorts.
-Use project-backed temporary storage because /tmp is nearly full. Every build/test uses
-existing480%shared compilation quota and one-second CPU/RSS monitoring. Inspect jobs over
-five minutes for concrete abnormal slowness. Preserve original data and runtime profiles;
-final verified candidate must restart on display:0 and connected MI8 with install-r.
-Five-hour development budget runs to2026-11-04T11:33:55Z; an extra hour is only for
-important remaining fixes, not a claim of95/100 or automatic qualification.
+The frozen266-URL union passed154/266 and3525/4256. Independent DOM26 and inert9 passed
+26/26 and9/9. Range24 passed23/24, with parsed declaration importance still failing;
+two separate root-pseudo rem controls also failed. These known cases were retained for
+next-candidate fixes. The manifest is1248 selected HTTP/default-timeout DOM/CSS testharness
+URLs from1247 files, not all WPT. Historical pinned Chromium150.0.7871.114 scored1062/1248;
+this is not a current latest-Chromium run or an overall browser quality score.
 
-## Session19 current checkpoint — candidate1906 source ready
+## Current source and next candidate
 
-Updated 2026-11-04T07:53:40.970519+00:00. Candidate1904 independently gained11 URLs and178 assertions over fresh1808 across the deduplicated198-URL focus union (106/198 and2058/2829); no previous PASS loss. This is not a full1248 result. Candidate1903 retains its namespace harness timeout HOLD even though1904 completed that URL once. Diagnostic1905 at22532988 sealed in40.07 seconds and is being used only for the fixed trace sequence, with default-off native load/CPU instrumentation.
+Current functional production HEAD before the next docs freeze:
+`051a0d6408ff5c00874fd300fe4d15df964ad2c0`, source tree
+`680ebea75737d135b4d1fe0416a26405589afe6d`.
+The three separate, statically reviewed follow-ups are not runtime qualified yet:
 
-Next functional source is candidate1906:3397a288 constant abs/sign/hypot folding and6583b898 pending-token preservation, in separate reviewed commits; no DOM, stylesheet-list, or range-storage changes. Test lane will build exact freeze, run numeric81 with unchanged controls, then the unchanged full1248 cohort. See `agent/source-work/session19/candidate1906/source-freeze.json`. Keep source/Git frozen until test lane seals its build. Last qualified full result remains759/1248 (60.8173/100 selected-manifest compatibility), not an overall-browser quality score.
+- `2abd7f95c45b12a3bc70bd1e9bd70583798aecb2`: range-only native priority replay,
+  using existing priority tiers and validated all projections. Explicit CSSOM API
+  replacement remains unchanged.
+- `070bf79632a3391960eca1e2fe5553edd0323174`: root pseudo range rem uses the
+  originating root font; ordinary root/non-root contexts stay unchanged.
+- `6ee883838a8dba9bad203428c62c8a0bec5f6f21`: private live branded StyleSheetList
+  collections, item/identity/liveness/index semantics and genuine same-origin cross-realm
+  borrowing. Generic02-node.js helpers are unchanged.
+
+Exact integration hashes, reviews and source mutation intervals are in
+agent/source-work/session19/range-and-list-integration-ledger.json and the associated
+range-priority-v1, range-root-pseudo-v1 and stylesheet-list-v1 directories.
+
+Candidate1911 is now being sealed from this production tree plus continuity docs. Keep all
+tracked source/Git/status frozen through build and native218 until the test owner releases
+that exact HEAD. Required frozen range priority, root-pseudo, StyleSheetList and prior-pass
+neighbors precede the unchanged full1248 replay. The separate specified-calc draft is excluded.
+
+The isolated1910 descriptor-batching hypothesis was rejected after all six fixed comparisons:
+owned CPU15.383061s to15.431443s did not meet5% improvement, and wall8.583s to8.3747s
+improved2.426890%, below3%. Only the RSS criterion passed. Production64fd6463 was reverted
+in051a0d6408ff5c00874fd300fe4d15df964ad2c0; exact source comparison proves the08-window
+change relative to1909 is solely the StyleSheetList export. All benchmark receipts and the
+unused reflection plan remain retained; no extra runs may be used to erase the rejection.
+The default-off sampler remains unchanged and explicitly unset during qualification.
+
+## Reliability and profiler evidence
+
+Original1903 namespace harness TIMEOUT after51 PASS assertions remains HOLD. Similar
+historical1808 behavior and fixed diagnostics are retained; no timeout change or claimed
+lifecycle fix was made. Successful phase traces show prompt final parent-load completion,
+with about95–96% of child initialization CPU/wall in prelude execution. Cached script
+binding takes only about5ms across80 children. No mutable realm objects or globals are shared.
+Separate default-off Linux diagnostics LUMEN_TRACE_LOAD and LUMEN_PROFILE_PRELUDE remain
+explicitly unset for qualification/performance OFF scenarios. Sampler ON measurements
+identify shape230/1869 child ticks (~12.3%) and WebGL install192 (~10.3%); printed top20
+counts are lower bounds. The isolated batching hypothesis was measured, rejected, and reverted.
+
+## Public persistence and remaining delivery
+
+Qualified1906 public commit: `0d76bf0aeefb3c975b94b550f831681c41e3beda`.
+Current live source archive remains1906:10,395,999 bytes, SHA256
+`ad13919b9b5963c8ecf440f0d3b6d173f8139459073155d7cb9924e69930962c`,
+verified by offline recovery and full HTTPS readback. Qualified1908 passed independent source/ancestry review and environment is publishing it
+separately; defer only tracked status updates while1911 is frozen. Exact publication/archive
+readback is still required before changing the live archive label.
+Iteration20 work-only public commit: `e86534d5831f4d1a66b9fec029f44d2a0c3350cc`;
+exact31dbb source, marked unqualified at preparation, reviewed and remote-readback verified.
+The accepted live dashboard is1908; the archive label remains1906 until replacement verifies.
+
+Continue the authorized development session. After the final candidate qualifies, update
+AGENTS/continue/devsummary, preserve original evidence, publish the exact reviewed source,
+and restart the browser on display:0 and the authorized connected MI8 using the established
+install-r/data-preserving workflow. Do not present public source publication as device
+installation or infer Android conformance from Linux tests. Root/environment own delivery.

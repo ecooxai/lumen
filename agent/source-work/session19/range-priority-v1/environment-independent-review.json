@@ -1,0 +1,26 @@
+{
+  "reviewer": "environment_delivery; same-model built-in agent",
+  "reviewed_utc": "2026-11-04T09:02:06.123378+00:00",
+  "status": "STATIC REVIEW ACCEPTED; runtime/native/browser gates pending",
+  "patch_sha256": "6c9bb45ae1311f656abe5cee35e982bf597de94cca7c96850976e0a5f7ff5779",
+  "verified": [
+    "Replay tier encoding is identical to existing containment/interpolate-size scoped families.",
+    "compute() composes normal author then authored inline then important rules; second phase restores inline-important precedence above author-important, third preserves UA-important.",
+    "Each phase iterates unchanged declaration order; no global sort or property mutation.",
+    "all projection reaches range only after existing CSS-wide/substitution validation and changes only endpoints while scoped.",
+    "Range direct declarations are skipped from ordinary pass and reapplied after final font basis is established.",
+    "CSSOM setter/parsing source is untouched, allowing explicit setter replacement regardless of prior important metadata.",
+    "Scoped thread-local pointer is restored and checks exact style identity."
+  ],
+  "required_runtime": [
+    "Frozen range24 including parsed important shorthand/normal longhand",
+    "Source-proposed shorthand/longhand/all priority order controls",
+    "Author stylesheet important versus inline normal/important and explicit setter replacement",
+    "Nonrange fields and existing native218 preserved",
+    "Separate root-pseudo2 and dynamic controls"
+  ],
+  "limitations": [
+    "Static review is not runtime qualification",
+    "Existing global cascade limitations are outside this narrowly scoped repair"
+  ]
+}
