@@ -250,15 +250,126 @@ for (const k of ['url', 'readyState', 'bufferedAmount', 'onopen', 'onerror', 'on
 }
 for (const k of ['wasClean', 'code', 'reason']) { const d = Object.getOwnPropertyDescriptor(CloseEvent.prototype, k); d.enumerable = true; Object.defineProperty(CloseEvent.prototype, k, d); }
 for (const [k, v] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })) { Object.defineProperty(WebSocket, k, { value: v, enumerable: true }); Object.defineProperty(WebSocket.prototype, k, { value: v, enumerable: true }); }
-const portList = t => (t && typeof t[Symbol.iterator] === 'function' ? [...t] : t && t.transfer ? [...t.transfer] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function');
-class MessagePort extends EventTarget { constructor() { super(); this.onmessage = null; def(this, '_other', null); } postMessage(d, t) { const ps = portList(t), r = this._wk || (this._other && this._other._wk); if (r) { N.workerPost(r[0], { __lumenPort: r[1], data: d, xfer: ps.map(p => { const k = ++portSeq; p._wk = [r[0], k]; if (p._other) remotePorts.set(k, p._other); return k; }) }); return; } const x = this._xt || (this._other && this._other._xt); if (x) { N.portTo(x[0], x[1], d, ps.map(p => exportPort(p, x[0]))); return; } const o = this._other; if (o) { const c = structuredClone(d); N.timer(() => o._deliver(c, ps), 0, false, true); } } _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); } start() {} close() { this._other = null; } }
-// A port sent to another tab (another isolate) is bridged by a random key: the receiving tab gets a proxy port
-// keyed by it, and each side's tabPorts maps the key to its local end, so messages on either end cross over.
+const portList = t => {
+    const ports = (t && typeof t[Symbol.iterator] === 'function' ? [...t] : t && t.transfer ? [...t.transfer] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function');
+    const seen = new SSet();
+    for (const p of ports) {
+        if (seen.has(p)) throw new DOMException('A MessagePort cannot be transferred twice.', 'DataCloneError');
+        seen.add(p); p._assertTransferable();
+    }
+    return ports;
+};
+class MessagePort extends EventTarget {
+    #queue = []; #enabled = false; #scheduled = false; #detached = false; #onmessage = null;
+    constructor() { super(); def(this, '_other', null); }
+    get onmessage() { return this.#onmessage; }
+    set onmessage(value) { this.#onmessage = typeof value === 'function' ? value : null; this.#enabled = true; this.#schedule(); }
+    _isDetached() { return this.#detached; }
+    _assertTransferable() { if (this.#detached) throw new DOMException('MessagePort is already detached.', 'DataCloneError'); }
+    _takeTransfer() {
+        this._assertTransferable();
+        const other = this._other, peerRoute = other && other._isDetached() && (other._xt || other._wk);
+        const route = this._xt || this._wk || peerRoute;
+        const state = { queue: this.#queue, other: route ? null : other, route };
+        if (peerRoute) { if (other._other === this) other._other = null; if (other._xt) other._xt = null; if (other._wk) other._wk = null; }
+        this.#queue = []; this.#detached = true; this._other = null;
+        if (this._xt) this._xt = null;
+        if (this._wk) this._wk = null;
+        return state;
+    }
+    postMessage(data, transfer) {
+        const ports = portList(transfer);
+        if (this.#detached) return;
+        const route = this._xt || this._wk || (this._other && (this._other._xt || this._other._wk));
+        if (route) { route.send(data, ports); return; }
+        if (this._other) this._other._deliverLocal(data, ports);
+    }
+    _deliverLocal(data, ports) { const copy = structuredClone(data), transfer = portList(ports); this._deliver(copy, transfer.map(transferLocalPort)); }
+    _deliver(data, ports) { this.#queue.push([data, ports || []]); this.#schedule(); }
+    #schedule() {
+        // Each initially paused port owns its FIFO, independent of handler setup.
+        if (!this.#enabled || this.#scheduled || !this.#queue.length) return;
+        this.#scheduled = true;
+        N.timer(() => {
+            this.#scheduled = false;
+            const message = this.#queue.shift();
+            if (!message) return; // A transfer moved this task's queue to its new owner.
+            const [data, ports] = message;
+            try { dispatch(this, new MessageEvent('message', { data, ports }), true); }
+            finally { this.#schedule(); }
+        }, 0, false, true);
+    }
+    start() { this.#enabled = true; this.#schedule(); }
+    close() {
+        if (this.#detached) return;
+        this.#detached = true;
+        // Disentangle future traffic, retaining already queued tasks. Tombstones
+        // prevent late native packets from resurrecting a closed bridge queue.
+        const other = this._other, route = this._xt || this._wk || (other && (other._xt || other._wk));
+        if (route) route.registry.set(route.key, null);
+        if (this._xt) this._xt = null;
+        if (this._wk) this._wk = null;
+        this._other = null;
+        if (other && other._other === this) other._other = null;
+        if (other && other._isDetached()) { if (other._xt) other._xt = null; if (other._wk) other._wk = null; }
+    }
+}
+Object.defineProperty(MessagePort.prototype, 'onmessage', { ...Object.getOwnPropertyDescriptor(MessagePort.prototype, 'onmessage'), enumerable: true });
+function transferLocalPort(port) {
+    // Construct in the receiving realm; access the old realm's private state only
+    // through its method. A transferred wrapper is inert, even if it had a task.
+    const received = new MessagePort(), state = port._takeTransfer();
+    received._other = state.other;
+    if (state.other && state.other._other === port) state.other._other = received;
+    if (state.route) { received[state.route.kind === 'tab' ? '_xt' : '_wk'] = state.route; state.route.registry.set(state.route.key, received); }
+    for (const [data, ports] of state.queue) received._deliverLocal(data, ports);
+    return received;
+}
+// Registry entries are endpoints, pending pre-import FIFOs, forwarding routes,
+// or closed tombstones. Backlog can precede the transfer envelope on the wire.
 const tabPorts = new SMap();
 const tabKey = () => { const a = crypto.getRandomValues(new Uint32Array(2)); return a[0] * 2097152 + (a[1] & 2097151) || 1; };
-function exportPort(p, dest) { const k = tabKey(); def(p, '_xt', [dest, k]); if (p._other) tabPorts.set(k, p._other); return k; }
-function importPort(src, k) { const q = new MessagePort(); def(q, '_xt', [src, k]); tabPorts.set(k, q); return q; }
-function portMessage(k, data, src, keys) { const p = tabPorts.get(k); if (p) p._deliver(data, keys.map(j => importPort(src, j))); }
+function routeMessage(registry, key, data, ports) {
+    if (!registry.has(key)) { registry.set(key, [[data, ports]]); return; }
+    const target = registry.get(key);
+    if (Array.isArray(target)) target.push([data, ports]);
+    else if (target && target.relay) target.relay.send(data, ports);
+    else if (target) target._deliver(data, ports);
+}
+function bindImportedPort(port, route) {
+    const pending = route.registry.get(route.key);
+    port[route.kind === 'tab' ? '_xt' : '_wk'] = route;
+    if (pending === null) { port.close(); return port; }
+    route.registry.set(route.key, port);
+    if (Array.isArray(pending)) for (const [data, ports] of pending) port._deliver(data, ports);
+    return port;
+}
+function movePortToRoute(port, route) {
+    const state = port._takeTransfer();
+    port[route.kind === 'tab' ? '_xt' : '_wk'] = route;
+    if (state.other) {
+        // The old wrapper is an inert routing stub for its still-live peer.
+        port._other = state.other;
+        route.registry.set(route.key, state.other);
+    } else if (state.route) {
+        state.route.registry.set(state.route.key, { relay: route });
+        route.registry.set(route.key, { relay: state.route });
+    } else route.registry.set(route.key, null);
+    for (const [data, ports] of state.queue) route.send(data, ports);
+}
+function tabRoute(dest, key) { return { kind: 'tab', registry: tabPorts, key, send(data, ports) {
+    const copy = ports.length ? structuredClone(data) : data, transfer = portList(ports);
+    N.portTo(dest, key, copy, transfer.map(p => exportPort(p, dest)));
+} }; }
+function exportPort(port, dest) { const key = tabKey(); movePortToRoute(port, tabRoute(dest, key)); return key; }
+function importPort(src, key) { return bindImportedPort(new MessagePort(), tabRoute(src, key)); }
+function portMessage(key, data, src, keys) { routeMessage(tabPorts, key, data, keys.map(k => importPort(src, k))); }
+function workerRoute(id, key) { return { kind: 'worker', registry: remotePorts, key: id + ':' + key, send(data, ports) {
+    const copy = ports.length ? structuredClone(data) : data, transfer = portList(ports);
+    N.workerPost(id, { __lumenPort: key, data: copy, xfer: transfer.map(p => exportWorkerPort(p, id)) });
+} }; }
+function exportWorkerPort(port, id) { const key = ++portSeq; movePortToRoute(port, workerRoute(id, key)); return key; }
+function importWorkerPort(id, key) { return bindImportedPort(new MessagePort(), workerRoute(id, key)); }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const BC_FIRE = (target, event) => dispatch(target, event, true);
 const BC_LISTENERS = target => target.__ls;
@@ -277,7 +388,7 @@ class Worker extends EventTarget {
         def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : '', !!opts && opts.type === 'module', !!opts && opts[SHARED_WORKER] === true, false, sourceType));
         workers.set(this._id, this);
     }
-    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const transfer = Array.isArray(t) ? t : t && t.transfer || []; for (const item of transfer) if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); const ps = transfer.filter(p => p instanceof MessagePort); if (!ps.length) return N.workerPost(this._id, m); N.workerPost(this._id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [this._id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: m }); }
+    postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const transfer = Array.isArray(t) ? t : t && t.transfer || []; for (const item of transfer) if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); const ps = portList(transfer); if (!ps.length) return N.workerPost(this._id, m); const data = structuredClone(m), ports = portList(ps); N.workerPost(this._id, { __lumenXfer: ports.map(p => exportWorkerPort(p, this._id)), data }); }
     terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
 }
 /* A SharedWorker: one worker per script URL and name in this document; each SharedWorker object connects to it
@@ -310,8 +421,8 @@ function workerEvent(id, kind, data, message, filename, lineno, colno) {
     if (kind === 0) {
         let ports = [];
         if (data && typeof data === 'object') {
-            if (data.__lumenPort) { const p = remotePorts.get(data.__lumenPort); if (p) p._deliver(data.data, (data.xfer || []).map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; })); return; }
-            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; }); data = data.data; }
+            if (data.__lumenPort) { routeMessage(remotePorts, id + ':' + data.__lumenPort, data.data, (data.xfer || []).map(k => importWorkerPort(id, k))); return; }
+            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => importWorkerPort(id, k)); data = data.data; }
         }
         if (w._sw) return w._sw(0, data, ports);
         dispatch(w, new MessageEvent('message', { data, ports }), true);
@@ -348,7 +459,8 @@ function swSend(rec, m, ps = []) {
     if (!rec.id && !swSpawn(rec, 'wake')) return;
     swTouch(rec);
     if (!ps.length) return N.workerPost(rec.id, m);
-    N.workerPost(rec.id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [rec.id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: m });
+    const data = structuredClone(m), ports = portList(ps);
+    N.workerPost(rec.id, { __lumenXfer: ports.map(p => exportWorkerPort(p, rec.id)), data });
 }
 function swRedundant(rec) {
     if (rec.sw.state === 'redundant') return;
@@ -412,7 +524,7 @@ class ServiceWorker extends EventTarget {
         if (this.#state === 'redundant') throw new DOMException("Failed to execute 'postMessage' on 'ServiceWorker': The ServiceWorker is in redundant state.", 'InvalidStateError');
         const t = Array.isArray(transfer) ? transfer : transfer && typeof transfer === 'object' && transfer.transfer || [];
         for (const item of t) if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError');
-        swSend(this.#rec, { __lumenSW: 'msg', data: message, client: swClient() }, t.filter(p => p instanceof MessagePort));
+        swSend(this.#rec, { __lumenSW: 'msg', data: message, client: swClient() }, portList(t));
     }
     static {
         swSetState = (w, s) => { if (w.#state === s) return; w.#state = s; dispatch(w, new Event('statechange'), true); };

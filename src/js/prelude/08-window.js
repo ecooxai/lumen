@@ -530,14 +530,23 @@ function cloneValue(v, seen) {
     for (let p = Object.getPrototypeOf(v); p; p = Object.getPrototypeOf(p)) if (p !== DOMException.prototype && PLATFORM_PROTOS.has(p)) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
 }
-const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };
+const xferPorts = (o, t) => portList(o && typeof o === 'object' ? o.transfer : t);
 /* transferred ArrayBuffers are detached in the sender (after the clone took their contents) */
 const xferBuffers = (o, t) => { const tr = o && typeof o === 'object' && !Array.isArray(o) ? o.transfer : t; for (const b of (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : [])) if (b instanceof ArrayBuffer && !b.detached) b.transfer(); };
-function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer); xferBuffers(origin, transfer); N.timer(() => { try { dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true); } catch (e) { report(e); } }, 0, false, true); }
+function postMessage(data, origin, transfer) { const [src, org] = N.caller(); const d = structuredClone(data), ports = xferPorts(origin, transfer).map(transferLocalPort); xferBuffers(origin, transfer); N.timer(() => { try { dispatch(G, new MessageEvent('message', { data: d, origin: org, source: asWin(src), ports }), true); } catch (e) { report(e); } }, 0, false, true); }
 function rejection(promise, reason) { const e = new PromiseRejectionEvent('unhandledrejection', { promise, reason, cancelable: true }); try { dispatch(G, e, true); } catch (x) { report(x); } return e.defaultPrevented; }
-function queueMessage(data, origin, src, ports) { setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: ports ? [...ports].map(p => typeof p === 'number' ? importPort(src, p) : p) : [] }), true)); }
+function queueMessage(data, origin, src, ports) {
+    // Register transferred bridges before a following native port message arrives.
+    // The imported port retains it until the recipient enables its message queue.
+    const receivedPorts = ports ? [...ports].map(p => typeof p === 'number' ? importPort(src, p) : transferLocalPort(p)) : [];
+    setTimeout(() => dispatch(G, new MessageEvent('message', { data, origin, source: asWin(src), ports: receivedPorts }), true));
+}
 const remoteWins = new SMap();
-const postArgs = (v, d, o, t) => N.postTo(v, d, o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/'), xferPorts(o, t));
+const postArgs = (v, d, o, t) => {
+    const origin = o && typeof o === 'object' ? String(o.targetOrigin ?? '/') : String(o ?? '/'), ports = xferPorts(o, t);
+    const copy = ports.length ? structuredClone(d) : d;
+    return N.postTo(v, copy, origin, portList(ports));
+};
 // A window this page can't touch directly: a cross-origin frame (its context id) or another tab (-its window id,
 // as window.open returns and a popup's opener and message sources give)
 function asWin(v) {
