@@ -4,7 +4,7 @@
   "status": "WORK CHECKPOINT - QUALIFICATION PENDING",
   "source_snapshot_commit": "60f6cdbfddd9c6da906c31b4cf684a7974feea54",
   "source_snapshot_src_tree": "8b07962b833658f614a42eec2092697f497fd7e2",
-  "public_parent": "8aa6ea18d1f6304d6fb693e3c1de556569b84d76",
+  "public_parent": "dc6c6da150e7d99e3ffdde34528b2d470497cd4f",
   "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22012-20261105",
   "source_inputs": {
     ".gitignore": {

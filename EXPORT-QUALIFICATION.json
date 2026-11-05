@@ -4,7 +4,7 @@
   "prepared_utc": "2026-11-05T08:41:33.038484+00:00",
   "source_snapshot_commit": "60f6cdbfddd9c6da906c31b4cf684a7974feea54",
   "source_snapshot_src_tree": "8b07962b833658f614a42eec2092697f497fd7e2",
-  "public_parent": "8aa6ea18d1f6304d6fb693e3c1de556569b84d76",
+  "public_parent": "dc6c6da150e7d99e3ffdde34528b2d470497cd4f",
   "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22012-20261105",
   "source_snapshot_selected_cohort_qualified": false,
   "source_snapshot_full_wpt_qualified": false,
@@ -40,12 +40,12 @@
   "overall_quality_assessment": 70,
   "x_google_sign_in_fixed": false,
   "limitations": [
-    "Current22012 source is reviewed and committed but integratedqualification is pending.",
-    "ACCEPTANCE-22010.json describes only its named prior source and its oneexplicit reference/spec discrepancy.",
-    "Whole-WPT conformance, Chromiumparity and X Google sign-in remainunresolved.",
-    "No profiles,credentials,privateauthcaptures,inboxcontents orhost-specificlaunchers included.",
-    "PublicGit ancestry is genuine but is not canonicalprivatehistory.",
-    "Externaldependencies/binaries are not bundled; offlinerestoration is not a rebuild."
+    "Integrated candidate22012 is reviewed and committed; final qualification is pending.",
+    "ACCEPTANCE-22010.json describes only its named prior source and one explicit reference/spec discrepancy.",
+    "Whole-WPT conformance, Chromium parity and X sign-in through Google remain unresolved.",
+    "Profiles, credentials, private auth captures, inbox contents and host-specific launchers are excluded.",
+    "Public Git ancestry is genuine but is not canonical private history.",
+    "External dependencies and binaries are not bundled; offline restoration is not a rebuild."
   ],
   "native_expected_count": 221,
   "prior22004_status": "HOLD: native220 passed; two required CSSOM rows failed; original source/evidence retained; narrow/full not run.",
