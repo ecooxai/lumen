@@ -1,11 +1,11 @@
 {
   "status": "WORK CHECKPOINT - QUALIFICATION PENDING",
-  "candidate": 22006,
-  "prepared_utc": "2026-11-05T07:05:23.128728+00:00",
-  "source_snapshot_commit": "d3ffe4ba22a2adfaaf41f222f17b2a5b04ebf18f",
-  "source_snapshot_src_tree": "3f0d6b20d9cf3b056499f3cb62dd37e93657fa94",
-  "public_parent": "6f3bc1f7cd707a22615132c0a0ed20ef1a143699",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22006-20261105",
+  "candidate": 22010,
+  "prepared_utc": "2026-11-05T07:49:05.181861+00:00",
+  "source_snapshot_commit": "4248fd4a8d6b72a09e1f89f2b7f161b022f721af",
+  "source_snapshot_src_tree": "80162b4ece2dc39fb12d04b30681ac7ffa0bd9fc",
+  "public_parent": "88a45af971c0b399f645cbc19db726c295604ab7",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22010-20261105",
   "source_snapshot_selected_cohort_qualified": false,
   "source_snapshot_full_wpt_qualified": false,
   "source_snapshot_independently_rebuilt": false,
@@ -18,18 +18,19 @@
     "passed_assertions": 23329,
     "total_assertions": 26245,
     "native": 219,
-    "these_are_not_current22004_results": true
+    "these_are_not_current22010_results": true
   },
   "changes": [
-    "Retained CSSOM declaration parse/serialize and private write state.",
-    "Bounded empty ordinary-value guard before map mutation; all original controls retained.",
-    "Cookie retrieval path ordering plus stable mutation/deletion and unchanged-value creation position."
+    "Tiny inline custom whitespace-value storage repair, retaining key and priority.",
+    "Reviewed overflow shorthand getter/serialization with logical-order preservation.",
+    "Inherited reviewed CSSOM and cookie ordering; original22006 strictHOLD preserved."
   ],
   "gates_pending": [
-    "Exact native219+cookie_order+cookie_mutation_order=221",
-    "73 frozen CSSOM rows with70required, original3 observations explicit",
-    "Unchanged9-assertion upstream target plus1 prior-passing execution companion",
-    "All retained focused/narrow and unchanged1248 selected WPT gates"
+    "Exact native221 identities and all221PASS",
+    "Original73 authored rows:70required+3inherited observations",
+    "Additional12 whitespace and52 overflow required controls",
+    "Two direct name/escaping fieldchecks from unchanged26 diagnostic rows",
+    "Both frozen focused upstream pairs, retained narrow and unchanged1248 URLs under explicit one-case contract"
   ],
   "cookie_mutation_followup_included": true,
   "source_input_count": 813,
@@ -47,9 +48,8 @@
   "native_expected_count": 221,
   "prior22004_status": "HOLD: native220 passed; two required CSSOM rows failed; original source/evidence retained; narrow/full not run.",
   "changed_source_paths_from_previous_public_checkpoint": [
-    "CMakeLists.txt",
-    "src/js/prelude/03-element.js",
-    "src/net/cookies.c",
-    "tests/test_cookie_mutation_order.c"
-  ]
+    "src/js/prelude/03-element.js"
+  ],
+  "prior22006_status": "STRICT HOLD:16 gains/2 losses; observed814/1248URLs,23343/26245assertions. No retroactive acceptance.",
+  "future_qualification_contract": "CONFORMANCE-CONTRACT-22010.json"
 }

@@ -521,19 +521,55 @@ function cssFlexRemove(m, p) {
     if (p === 'flex') for (const name of CSS_FLEX_PARTS) m.delete(name);
     return old;
 }
+const cssOverflowLower = Function.prototype.call.bind(String.prototype.toLowerCase);
+function cssOverflowWideKeyword(value) {
+    return value === 'inherit' || value === 'initial' || value === 'unset' ||
+        value === 'revert' || value === 'revert-layer';
+}
+function cssOverflowLiteral(value) {
+    const name = N.cssPropertyIdentifier(value);
+    if (!name) return '';
+    const word = cssOverflowLower(name);
+    if (word === 'overlay') return 'auto';
+    return word === 'visible' || word === 'hidden' || word === 'clip' ||
+        word === 'scroll' || word === 'auto' || cssOverflowWideKeyword(word) ? word : '';
+}
+function cssOverflowPairValue(map) {
+    /* Keep opaque shorthand values and existing all-reset storage untouched. */
+    if (map.has('overflow') || map.has('all')) return '';
+    const x = map.get('overflow-x'), y = map.get('overflow-y');
+    if (!x || !y || x[1] !== y[1]) return '';
+    const first = cssOverflowLiteral(x[0]), second = cssOverflowLiteral(y[0]);
+    if (!first || !second) return '';
+    if (cssOverflowWideKeyword(first) || cssOverflowWideKeyword(second))
+        return first === second ? first : '';
+    return first === second ? first : first + ' ' + second;
+}
+function cssOverflowPairPriority(map) {
+    /* Priority is independent of whether the longhand values can coalesce. */
+    const x = map.get('overflow-x'), y = map.get('overflow-y');
+    return x && y && x[1] === 'important' && y[1] === 'important' ? 'important' : '';
+}
+
 function serDecls(m) {
     /* Coalescing longhands must not move a declaration across all: it is
        itself cascaded at its original position and can reset flex components. */
     let flexSeen = false, allAfterFlex = false, mergeFlex = true;
     let rangeSeen = false, allAfterRange = false, mergeRange = true;
+    let overflowSeen = false, logicalAfterOverflow = false, mergeOverflow = true;
     for (const name of m.keys()) {
         if (CSS_FLEX_PARTS.includes(name)) { if (allAfterFlex) mergeFlex = false; flexSeen = true; }
         else if (name === 'all' && flexSeen) allAfterFlex = true;
         if (CSS_ANIMATION_RANGE_PARTS.includes(name)) { if (allAfterRange) mergeRange = false; rangeSeen = true; }
         else if (name === 'all' && rangeSeen) allAfterRange = true;
+        if (name === 'overflow-x' || name === 'overflow-y') {
+            if (logicalAfterOverflow) mergeOverflow = false;
+            overflowSeen = true;
+        } else if (overflowSeen && (name === 'overflow-block' || name === 'overflow-inline')) logicalAfterOverflow = true;
     }
     const out = [], flex = mergeFlex ? cssFlexValue(m, 'flex') : '';
-    let flexWritten = false, rangeWritten = false;
+    let flexWritten = false, rangeWritten = false, overflowWritten = false;
+    const overflow = mergeOverflow ? cssOverflowPairValue(m) : '';
     const range = mergeRange ? cssAnimationRangePack(m) : '';
     const borderPacks = cssBorderPacks(m);
     for (const [k, [v, i]] of m) {
@@ -546,6 +582,9 @@ function serDecls(m) {
         } else if (CSS_FLEX_PARTS.includes(k) && flex && !m.has('flex')) {
             if (!flexWritten) out.push('flex: ' + flex + (i ? ' !important' : '') + ';');
             flexWritten = true;
+        } else if ((k === 'overflow-x' || k === 'overflow-y') && overflow) {
+            if (!overflowWritten) out.push('overflow: ' + overflow + (i ? ' !important' : '') + ';');
+            overflowWritten = true;
         } else out.push(N.cssIdentifierText(k) + ': ' + v + (i ? ' !important' : '') + ';');
     }
     return out.join(' ');
@@ -2046,8 +2085,8 @@ class CSSStyleDeclaration {
     get cssText() { return serDecls(this._m()); } set cssText(v) { cssInlineDeclarationWrite(this, parseDecls(String(v))); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
-    getPropertyValue(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p); return e ? e[0] : shorthandPart(m, p); }
-    getPropertyPriority(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p, true); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
+    getPropertyValue(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p); if (p === 'overflow' && !e && !cssDescriptorStyleHas(this)) return cssOverflowPairValue(m); return e ? e[0] : shorthandPart(m, p); }
+    getPropertyPriority(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p, true); if (p === 'overflow' && !m.has(p) && !cssDescriptorStyleHas(this) && cssDeclarationLocalState(this)?.operations !== cssDeclarationComputedOperations) return cssOverflowPairPriority(m); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = cssStylePropertyName(this, p);
         v = v == null ? '' : String(v);
         pri = pri == null ? '' : String(pri);
@@ -2151,7 +2190,7 @@ class CSSStyleDeclaration {
             cssInlineDeclarationWrite(this, m); return;
         }
         if (v !== '' && !p.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null) return; }
-        if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); cssInlineDeclarationWrite(this, m); }
+        if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [p.startsWith('--') && /^[\t\n\f\r ]+$/.test(v) ? '' : String(v), pri ? 'important' : '']); cssInlineDeclarationWrite(this, m); }
     removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) cssInlineDeclarationWrite(this, m); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) cssInlineDeclarationWrite(this, m); return value; } if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) cssInlineDeclarationWrite(this, m); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) cssInlineDeclarationWrite(this, m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) cssInlineDeclarationWrite(this, m); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) cssInlineDeclarationWrite(this, m); return v; } const e = m.get(p); if (e) { m.delete(p); cssInlineDeclarationWrite(this, m); } return e ? e[0] : ''; }
 }
 cssDeclarationInlineOperations = cssDeclarationCaptureOperations(CSSStyleDeclaration.prototype);

@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "recorded_utc": "2026-11-05T07:47:23.009490+00:00",
+  "authorization": "Explicit root CTO decision received after independent primary-spec/pinned150/current156/upstream review; applies only to futurecandidate22010 and explicitly bound later candidates.",
+  "candidate": 22010,
+  "source_commit": "4248fd4a8d6b72a09e1f89f2b7f161b022f721af",
+  "source_tree": "80162b4ece2dc39fb12d04b30681ac7ffa0bd9fc",
+  "qualification_label": "accepted with one documented reference/spec discrepancy",
+  "original_strict_contract": "Retained unchanged; candidate22006 remains strict HOLD permanently.",
+  "exact_permitted_raw_failure": {
+    "url": "/css/css-variables/variable-definition.html",
+    "name": "CSSOM.setProperty with space 2",
+    "occurrence": 0,
+    "expected": "",
+    "actual": "green",
+    "status": "FAIL",
+    "message": "assert_equals: Expected Value should match actual value expected \"\" but got \"green\""
+  },
+  "binding_requirements": {
+    "all_other_prior_assertion_pass_identities": 23328,
+    "all_prior_fully_passing_url_identities": 813,
+    "all_prior_harness_ok_identities": 1238,
+    "all_registered_assertion_identities": 26245,
+    "native221_exact_names": true,
+    "original_cssom_required": 70,
+    "additional_whitespace12_required": 12,
+    "overflow52_required": 52,
+    "retained_narrow": true,
+    "full1248_unchanged": true
+  },
+  "prohibited": [
+    "No raw WPT count or denominator adjustment",
+    "No lost fullURL/harness identity",
+    "No whitespace-value exception",
+    "No other assertion loss or registry drift",
+    "No retroactive22006 acceptance",
+    "No AGENTS or original oracle/runner edits"
+  ],
+  "all_raw_results_preserved": true,
+  "evidence": {
+    "original_pinned_chromium": "150.0.7871.114 exact originalWPT namecase FAIL actualgreen; whitespacevaluecase PASS",
+    "current_chromium": "156.0.8077.0 independently matches name behavior",
+    "upstream_test_sha256": "eb5cc33abd082593d00a34edcd91cb8b4eb16e2093865320275384998b334732",
+    "upstream_test_current_bytes_unchanged": true,
+    "primary_sources": [
+      "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty",
+      "https://drafts.csswg.org/cssom/#serialize-an-identifier",
+      "https://drafts.csswg.org/css-variables/#defining-variables",
+      "https://drafts.csswg.org/css-syntax-3/#tokenization"
+    ]
+  },
+  "counting": "Raw WPTFAIL and raw totals retained; no denominator adjustment; all other prior passes binding."
+}

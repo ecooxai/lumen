@@ -1,11 +1,11 @@
 {
   "session": "session21",
-  "iteration": "S21-12",
+  "iteration": "S21-15",
   "status": "WORK CHECKPOINT - QUALIFICATION PENDING",
-  "source_snapshot_commit": "d3ffe4ba22a2adfaaf41f222f17b2a5b04ebf18f",
-  "source_snapshot_src_tree": "3f0d6b20d9cf3b056499f3cb62dd37e93657fa94",
-  "public_parent": "6f3bc1f7cd707a22615132c0a0ed20ef1a143699",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22006-20261105",
+  "source_snapshot_commit": "4248fd4a8d6b72a09e1f89f2b7f161b022f721af",
+  "source_snapshot_src_tree": "80162b4ece2dc39fb12d04b30681ac7ffa0bd9fc",
+  "public_parent": "88a45af971c0b399f645cbc19db726c295604ab7",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22010-20261105",
   "source_inputs": {
     ".gitignore": {
       "sha256": "1f51a80dd1482d34c0b6a106bf20826dc8c85cc5a464e321c91c8d8ee914af0c",
@@ -576,7 +576,7 @@
       "mode": "100644"
     },
     "src/js/prelude/03-element.js": {
-      "sha256": "fae92d650ecccab74f8554e7e20cc33c36f6e1ffe3d5a538f33758f53f1f0b2b",
+      "sha256": "98a19be5c6a9af458846bc2f4b4c7592b305a313c6009b133023ffde67a7897f",
       "mode": "100644"
     },
     "src/js/prelude/03c-svg.js": {
@@ -3263,10 +3263,7 @@
   "source_input_count": 813,
   "inherited_recorded_input_count": 743,
   "changed_source_paths": [
-    "CMakeLists.txt",
-    "src/js/prelude/03-element.js",
-    "src/net/cookies.c",
-    "tests/test_cookie_mutation_order.c"
+    "src/js/prelude/03-element.js"
   ],
   "private_history_included": false,
   "historical_public_files_preserved": [
@@ -3299,8 +3296,8 @@
     "tests/jsrun-completion/failed-completion.html",
     "tests/jsrun-completion/missing-completion.html"
   ],
-  "candidate": 22006,
+  "candidate": 22010,
   "qualified_utc": null,
-  "prepared_utc": "2026-11-05T07:05:23.128728+00:00",
+  "prepared_utc": "2026-11-05T07:49:05.181861+00:00",
   "independent_acceptance_sha256": null
 }
