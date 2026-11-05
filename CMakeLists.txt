@@ -384,6 +384,10 @@ add_custom_target(lumen_embedded
 add_library(lumen_engine STATIC ${ENGINE_SOURCES})
 # V8 serializer delegate base classes are built without RTTI.
 set_source_files_properties(src/js/clone.cc PROPERTIES COMPILE_OPTIONS "-fno-rtti")
+if(ANDROID)
+    # Preserve the transfer-preparation allocation handlers on Android.
+    set_property(SOURCE src/js/clone.cc APPEND PROPERTY COMPILE_OPTIONS -fexceptions)
+endif()
 add_dependencies(lumen_engine lumen_embedded)
 target_include_directories(lumen_engine PRIVATE "${EMBEDDED_DIR}")
 target_link_libraries(lumen_engine PUBLIC lumen_net lumen_native_deps lumen_rtc)

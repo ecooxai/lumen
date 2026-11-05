@@ -323,7 +323,19 @@ bool read_transfer_buffers(v8::Isolate *iso, v8::Local<v8::Context> ctx,
     }
     return transfer_buffers_valid(iso, buffers);
 }
+#if defined(V8_ENABLE_SANDBOX)
+struct SandboxTransferAllocation {
+    std::unique_ptr<v8::ArrayBuffer::Allocator> allocator{v8::ArrayBuffer::Allocator::NewDefaultAllocator()};
+    void *data = nullptr;
+    size_t size = 0;
+    ~SandboxTransferAllocation() { if (data) allocator->Free(data, size); }
+};
+void release_transfer_bytes(void *, size_t, void *owner) {
+    delete static_cast<SandboxTransferAllocation *>(owner);
+}
+#else
 void release_transfer_bytes(void *data, size_t, void *) { std::free(data); }
+#endif
 bool prepare_transfer_stores(v8::Isolate *iso, const TransferBuffers &buffers, JsSerializedValue &pending) {
     // Serialization can invoke getters that detach or resize a listed buffer.
     // Recheck every source before preparing stores or committing any detachment.
@@ -342,12 +354,24 @@ bool prepare_transfer_stores(v8::Isolate *iso, const TransferBuffers &buffers, J
                 // resizable maximum and length-tracking ArrayBufferView flags.
                 store = v8::ArrayBuffer::NewResizableBackingStore(size, buffer->GetBackingStore()->MaxByteLength());
             } else {
+#if defined(V8_ENABLE_SANDBOX)
+                // Sandbox backing memory must come from V8's allocator. Keep a
+                // separate allocator alive with the store, never the sender's.
+                auto allocation = std::make_unique<SandboxTransferAllocation>();
+                if (!allocation->allocator) return transfer_error(iso, "Unable to create transfer allocator.");
+                allocation->size = size ? size : 1;
+                allocation->data = allocation->allocator->AllocateUninitialized(allocation->size);
+                if (!allocation->data) return transfer_error(iso, "Unable to allocate transferred ArrayBuffer.");
+                store = v8::ArrayBuffer::NewBackingStore(allocation->data, size, release_transfer_bytes, allocation.get());
+                if (store) (void)allocation.release();
+#else
                 // Sender contexts currently use raw-lifetime allocators. Never
                 // retain their stores across sender teardown; copy exactly once.
                 std::unique_ptr<void, decltype(&std::free)> bytes(std::malloc(size ? size : 1), std::free);
                 if (!bytes) return transfer_error(iso, "Unable to allocate transferred ArrayBuffer.");
                 store = v8::ArrayBuffer::NewBackingStore(bytes.get(), size, release_transfer_bytes, nullptr);
                 if (store) (void)bytes.release();
+#endif
             }
             if (!store) return transfer_error(iso, "Unable to allocate transferred ArrayBuffer.");
             if (size) std::memcpy(store->Data(), buffer->Data(), size);

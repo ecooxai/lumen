@@ -1,18 +1,18 @@
 {
   "session": "session21",
-  "iteration": "S21-17",
-  "status": "WORK CHECKPOINT - QUALIFICATION PENDING",
-  "source_snapshot_commit": "60f6cdbfddd9c6da906c31b4cf684a7974feea54",
-  "source_snapshot_src_tree": "8b07962b833658f614a42eec2092697f497fd7e2",
-  "public_parent": "dc6c6da150e7d99e3ffdde34528b2d470497cd4f",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22012-20261105",
+  "iteration": "S21-final",
+  "status": "Accepted with one documented reference/spec discrepancy; actual22015 Linux rebuild byte-identical to original22012 full campaign. No new full22015 campaign.",
+  "source_snapshot_commit": "6d2260d18bafebd2f92418251035a7a505b30638",
+  "source_snapshot_src_tree": "514fce3157df1762387b96f6ae65f4c409a18f06",
+  "public_parent": "c4ca542326ed1ab29b474561d53e16e4f90c9cd1",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-FINAL22015-20261105",
   "source_inputs": {
     ".gitignore": {
       "sha256": "1f51a80dd1482d34c0b6a106bf20826dc8c85cc5a464e321c91c8d8ee914af0c",
       "mode": "100644"
     },
     "CMakeLists.txt": {
-      "sha256": "fbee4fa4d13639f5c88ac5603c878f6eccd3986a4c383c004d5b427353e670b1",
+      "sha256": "682aa5aca8931d54082f1ed0e936c763a6d381af40ff3fcb789cc69507c5febb",
       "mode": "100644"
     },
     "LICENSE": {
@@ -504,7 +504,7 @@
       "mode": "100644"
     },
     "src/js/clone.cc": {
-      "sha256": "5f6254ae444451531a3ff3c983a995b0ffd942c8294e85cc8924d6bb69fa2a42",
+      "sha256": "cc0a6eeecb857bf58a9d3774b97f7aedef907f77c8ddd2653ea50ed103c79c8f",
       "mode": "100644"
     },
     "src/js/clone.h": {
@@ -3263,11 +3263,8 @@
   "source_input_count": 813,
   "inherited_recorded_input_count": 743,
   "changed_source_paths": [
-    "src/js/clone.cc",
-    "src/js/clone.h",
-    "src/js/prelude/07b-net.js",
-    "src/js/prelude/08-window.js",
-    "src/js/worker.cc"
+    "CMakeLists.txt",
+    "src/js/clone.cc"
   ],
   "private_history_included": false,
   "historical_public_files_preserved": [
@@ -3300,8 +3297,8 @@
     "tests/jsrun-completion/failed-completion.html",
     "tests/jsrun-completion/missing-completion.html"
   ],
-  "candidate": 22012,
-  "qualified_utc": null,
+  "candidate": 22015,
+  "qualified_utc": "2026-11-05T10:18:14.594620+00:00",
   "prepared_utc": "2026-11-05T08:41:33.038484+00:00",
-  "independent_acceptance_sha256": null
+  "independent_acceptance_sha256": "b6fa1d5d05dd52a163fd8317fb11c2dc83105e697e1a81c1dbebb7235c6678d2"
 }
