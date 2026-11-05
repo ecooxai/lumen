@@ -80,8 +80,16 @@ static void set_cookie(const char *host, const char *rpath, const char *sc, bool
 
 void cookies_set_from_header(const URL *u, const char *sc) { set_cookie(u->host, u->path ? u->path : "/", sc, true); }
 
+typedef struct { Cookie *cookie; size_t path_len; int jar_index; } CookieMatch;
+static int cookie_match_order(const void *left, const void *right) {
+    const CookieMatch *a = left, *b = right;
+    if (a->path_len != b->path_len) return a->path_len > b->path_len ? -1 : 1;
+    return (a->jar_index > b->jar_index) - (a->jar_index < b->jar_index);
+}
+
 char *cookies_get(const URL *u, bool for_http) {
     SB b; sb_init(&b);
+    VEC(CookieMatch) matches = {0};
     double now = (double)time(NULL);
     bool secure = !strcmp(u->scheme, "https") || !strcmp(u->scheme, "wss");
     pthread_mutex_lock(&g_mu);
@@ -92,10 +100,19 @@ char *cookies_get(const URL *u, bool for_http) {
         if (!path_match(u->path ? u->path : "/", c->path)) continue;
         if (c->secure && !secure) continue;
         if (c->http_only && !for_http) continue;
+        CookieMatch match = { c, strlen(c->path), i };
+        vec_push(matches, match);
+    }
+    /* Longer paths take precedence; ties retain the jar's existing order.
+       Sort only the selected view, leaving storage and persistence untouched. */
+    if (matches.n > 1) qsort(matches.v, (size_t)matches.n, sizeof *matches.v, cookie_match_order);
+    for (int i = 0; i < matches.n; i++) {
+        Cookie *c = matches.v[i].cookie;
         if (b.n) sb_puts(&b, "; ");
         if (c->name[0]) { sb_puts(&b, c->name); sb_putc(&b, '='); }
         sb_puts(&b, c->value);
     }
+    free(matches.v);
     pthread_mutex_unlock(&g_mu);
     if (!b.n) { sb_free(&b); return NULL; }
     return sb_take(&b);

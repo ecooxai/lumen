@@ -1506,6 +1506,7 @@ FN(cssVarValid) {
     std::string q = S(0); RET(v8::Boolean::New(iso, css_var_syntax_valid(q.c_str())));
 }
 extern "C" char *css_property_identifier(const char *source, size_t length);
+extern "C" void css_serialize_ident(SB *output, const char *identifier);
 extern "C" bool css_property_rule_data(const char *name_source, size_t name_length,
                                       const char *body_source, size_t body_length,
                                       char **name, char ***syntaxes, int *syntax_count, char **initial, bool *inherits);
@@ -1513,6 +1514,17 @@ FN(cssPropertyIdentifier) {
     CTX; v8::String::Utf8Value input(iso, a[0]);
     char *value = css_property_identifier(*input ? *input : "", *input ? (size_t)input.length() : 0);
     RET(nstr(iso, value)); free(value);
+}
+/* Keep CSSOM declaration-name serialization independent of public CSS.escape. */
+FN(cssIdentifierText) {
+    CTX; v8::String::Utf8Value input(iso, a[0]); std::string value;
+    /* CSSOM replaces NUL with U+FFFD; never truncate a property into an alias. */
+    if (*input) for (int i = 0; i < input.length(); i++) {
+        if ((*input)[i]) value.push_back((*input)[i]);
+        else value.append("\xef\xbf\xbd");
+    }
+    SB text{}; css_serialize_ident(&text, value.c_str());
+    RET(nstr(iso, text.s ? text.s : "")); sb_free(&text);
 }
 FN(cssPropertyRule) {
     CTX; v8::String::Utf8Value name_input(iso, a[0]), body_input(iso, a[1]);
@@ -2000,7 +2012,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(errPos); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(caret); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
-    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssPropertyIdentifier); REG(cssPropertyRule); REG(cssMinSize); REG(cssAnimationRange); REG(cssMathText); REG(cssNumericDimension); REG(cssTransitionProperty); REG(cssEasing); REG(cssBoxShadow); REG(cssBorder); REG(cssImageLonghand); REG(cssAnimationLonghand); REG(cssKeyframesName); REG(cssKeyframesNameText); REG(cssAnimationNames); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
+    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssPropertyIdentifier); REG(cssIdentifierText); REG(cssPropertyRule); REG(cssMinSize); REG(cssAnimationRange); REG(cssMathText); REG(cssNumericDimension); REG(cssTransitionProperty); REG(cssEasing); REG(cssBoxShadow); REG(cssBorder); REG(cssImageLonghand); REG(cssAnimationLonghand); REG(cssKeyframesName); REG(cssKeyframesNameText); REG(cssAnimationNames); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
     REG(heap); REG(imgWatch); REG(imgSize); REG(imgDone); REG(imgRequest); REG(imgSrc); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);

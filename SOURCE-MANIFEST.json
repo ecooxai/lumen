@@ -1,18 +1,18 @@
 {
   "session": "session21",
-  "iteration": "S21-03",
-  "status": "ACCEPTED SELECTED-COHORT ENGINE CHECKPOINT",
-  "source_snapshot_commit": "3d1d03d0733ca5d4f245bd0a8d7594e0ddec73ba",
-  "source_snapshot_src_tree": "2a8f1bddd978d88496355d2dc28fd2379f2c3a49",
-  "public_parent": "3c4ae62a71c1a1e5cb77a0cc2e04737428565d9e",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source22001-20261105",
+  "iteration": "S21-09",
+  "status": "WORK CHECKPOINT - QUALIFICATION PENDING",
+  "source_snapshot_commit": "4df1ca078e6f6b4ab7ea26d7de912c6385e08e02",
+  "source_snapshot_src_tree": "b8ce2eeeb9ae3bd4fad3959e285f7c1730536ca0",
+  "public_parent": "b2ed44e6028f578cbb74429a8d563468aa2427ef",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22004-20261105",
   "source_inputs": {
     ".gitignore": {
       "sha256": "1f51a80dd1482d34c0b6a106bf20826dc8c85cc5a464e321c91c8d8ee914af0c",
       "mode": "100644"
     },
     "CMakeLists.txt": {
-      "sha256": "30e0da6ccf3a60cf274d3aa910c85e5d3a14a3b8f58b61d8f4c49d90559627e5",
+      "sha256": "dfc8860eb4dba77bf5d1dc0df6fa4f9d2cd1bdc56ba17e247dafa8ab17403922",
       "mode": "100644"
     },
     "LICENSE": {
@@ -556,7 +556,7 @@
       "mode": "100644"
     },
     "src/js/jsnative.cc": {
-      "sha256": "be027670fc8050c3087836d16301ad254adf09b0553dfcdbff858295c162caee",
+      "sha256": "369fd179a1b44b0c06d56fdacff7b950a4cd190fb421728ca2cd1cd09f867dbc",
       "mode": "100644"
     },
     "src/js/lazy/editing.js": {
@@ -568,7 +568,7 @@
       "mode": "100644"
     },
     "src/js/prelude/01-events.js": {
-      "sha256": "1b86d9c780b92418b90fb7c8b4d5057bac24529317eda002026657bac682e2e2",
+      "sha256": "0635402fd9de32c9134e64f754a6d2442910f9dac1ed1fcaf5824315c723ed06",
       "mode": "100644"
     },
     "src/js/prelude/02-node.js": {
@@ -576,7 +576,7 @@
       "mode": "100644"
     },
     "src/js/prelude/03-element.js": {
-      "sha256": "1176be78410fd36c46438ba8f27493d6c39f076cccdd2f5566a0379bbe62b128",
+      "sha256": "2c07f3c0930e65dd56f6b6b6f953da02b2fce1dd1c722aa6e08a2c6549cf7f77",
       "mode": "100644"
     },
     "src/js/prelude/03c-svg.js": {
@@ -892,7 +892,7 @@
       "mode": "100644"
     },
     "src/net/cookies.c": {
-      "sha256": "1388e7e58cf6b23bef2a2bc8a402beb750db56f9494430230c1ad1671e5b2eef",
+      "sha256": "906480f991f0cf1ae06dbbe0012e1a30ca5c2450f793de8d56dd38d8a4073050",
       "mode": "100644"
     },
     "src/net/download.c": {
@@ -2607,6 +2607,10 @@
       "sha256": "07e79cd7850558aa9e5a73d2e0c7fe5f208cb65f64ef97e187d2b57987086939",
       "mode": "100644"
     },
+    "tests/test_cookie_order.c": {
+      "sha256": "4be7ccd45b8523e702658ceb8ed03b93a89388b9447bab0a17d4ce0e35528216",
+      "mode": "100644"
+    },
     "tests/test_cookie_scope.c": {
       "sha256": "67265b22e7ee137c6d17540f84c906c875f9f6944913d52b0f9477e4ff440651",
       "mode": "100644"
@@ -3252,14 +3256,15 @@
       "mode": "100644"
     }
   },
-  "source_input_count": 811,
+  "source_input_count": 812,
   "inherited_recorded_input_count": 743,
   "changed_source_paths": [
     "CMakeLists.txt",
-    "src/app/main.c",
-    "src/css/style.c",
+    "src/js/jsnative.cc",
+    "src/js/prelude/01-events.js",
+    "src/js/prelude/03-element.js",
     "src/net/cookies.c",
-    "tests/test_cookie_scope.c"
+    "tests/test_cookie_order.c"
   ],
   "private_history_included": false,
   "historical_public_files_preserved": [
@@ -3292,8 +3297,8 @@
     "tests/jsrun-completion/failed-completion.html",
     "tests/jsrun-completion/missing-completion.html"
   ],
-  "candidate": 22001,
-  "qualified_utc": "2026-11-05T06:17:14.607267+00:00",
-  "prepared_utc": "2026-11-05T06:26:24.044034+00:00",
-  "independent_acceptance_sha256": "ade6a866b6729753160e27895994fea2b88caf7e0ab2436569963d5f4aee2fc0"
+  "candidate": 22004,
+  "qualified_utc": null,
+  "prepared_utc": "2026-11-05T06:52:09.746692+00:00",
+  "independent_acceptance_sha256": null
 }

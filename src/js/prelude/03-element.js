@@ -79,10 +79,10 @@ function cssUnicodeRangeText(value) {
 }
 function parseDecls(s, fontFace = false, keyframe = false, supportedNames = true) {
     const m = new SMap(); if (!s) return m;
-    let depth = 0, q = '', colon = -1, name = ''; const parts = [];
+    let q = '', colon = -1, name = '', badClose = false; const parts = [], blocks = [];
     const finish = end => {
-        if (colon >= 0) parts.push([name, s.slice(colon + 1, end)]);
-        colon = -1; name = '';
+        if (colon >= 0 && !badClose) parts.push([name, s.slice(colon + 1, end)]);
+        colon = -1; name = ''; badClose = false;
     };
     /* Delimiters inside strings, escapes and comments cannot end a declaration.
        Keep value slices intact: custom properties retain the author's comments. */
@@ -107,15 +107,20 @@ function parseDecls(s, fontFace = false, keyframe = false, supportedNames = true
             i++;
             continue;
         }
-        if (c === ';' && !depth) { finish(i); continue; }
-        if (c === ':' && !depth && colon < 0) { colon = i; continue; }
+        if (c === ';' && !blocks.length) { finish(i); continue; }
+        if (c === ':' && !blocks.length && colon < 0) { colon = i; continue; }
         if (colon < 0) name += c;
         if (c === '"' || c === "'") q = c;
-        else if (c === '(') depth++;
-        else if (c === ')') depth--;
+        else if (c === '(') blocks.push(')');
+        else if (c === '[') blocks.push(']');
+        else if (c === '{') blocks.push('}');
+        else if (c === ')' || c === ']' || c === '}') {
+            if (!blocks.length) badClose = true;
+            else if (blocks[blocks.length - 1] === c) blocks.pop();
+        }
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'object-position') { cssObjectPositionSet(m, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (!fontFace && CSS_ANIMATION_LONGHAND.test(lk)) { cssAnimationLonghandSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) { v = cssScalarSpecified(lk, v); const previous = m.get(lk); if (previous && previous[1] && !imp) continue; } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = N.cssPropertyIdentifier(rawName); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'object-position') { cssObjectPositionSet(m, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (!fontFace && CSS_ANIMATION_LONGHAND.test(lk)) { cssAnimationLonghandSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) { v = cssScalarSpecified(lk, v); const previous = m.get(lk); if (previous && previous[1] && !imp) continue; } m.set(lk, [v, imp]); }
     return m;
 }
 /* The native enum parser owns acceptance; authored pending tokens remain opaque. */
@@ -527,7 +532,7 @@ function serDecls(m) {
         } else if (CSS_FLEX_PARTS.includes(k) && flex && !m.has('flex')) {
             if (!flexWritten) out.push('flex: ' + flex + (i ? ' !important' : '') + ';');
             flexWritten = true;
-        } else out.push(k + ': ' + v + (i ? ' !important' : '') + ';');
+        } else out.push(N.cssIdentifierText(k) + ': ' + v + (i ? ' !important' : '') + ';');
     }
     return out.join(' ');
 }
@@ -1869,6 +1874,8 @@ function cssOverflowSet(m, value, priority) {
 const cssDeclarationStates = new WeakMap();
 const cssDeclarationWeakGet = Function.prototype.call.bind(WeakMap.prototype.get);
 const cssDeclarationWeakSet = Function.prototype.call.bind(WeakMap.prototype.set);
+/* The central attribute notification can run before prelude initialization ends. */
+var cssInlineDeclarations = new WeakMap();
 const cssDeclarationApply = Reflect.apply, cssDeclarationString = String;
 const cssDeclarationTypeError = TypeError, cssDeclarationProxy = Proxy;
 const cssDeclarationFreeze = Object.freeze;
@@ -1997,8 +2004,24 @@ function cssDeclarationInstall(proto) {
         Object.defineProperty(proto, 'length', {get: cssDeclarationLength, configurable: true});
 }
 
+/* CSSOM owns declarations independently of their serialized style attribute. */
+function cssInlineAttributeChanged(element) {
+    const entry = cssInlineDeclarations && cssDeclarationWeakGet(cssInlineDeclarations, element);
+    if (!entry) return;
+    /* Consume only the intended own-write notification, before author reactions. */
+    if (entry.writePending) { entry.writePending = false; return; }
+    entry.style._src = null; entry.style._map = null;
+}
+function cssInlineDeclarationWrite(style, map) {
+    const text = serDecls(map), entry = cssDeclarationWeakGet(cssInlineDeclarations, style._el);
+    style._map = map; style._src = text;
+    entry.writePending = true;
+    try { attrSetQ(style._el, 'style', text); }
+    finally { entry.writePending = false; }
+}
+
 class CSSStyleDeclaration {
-    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); cssDeclarationWeakSet(cssDeclarationStates, this, {receiver: this, parent: null, ruleType: null, readonly: !!ro, operations: ro ? cssDeclarationComputedOperations : cssDeclarationInlineOperations}); }
+    constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); cssDeclarationWeakSet(cssDeclarationStates, this, {receiver: this, parent: null, ruleType: null, readonly: !!ro, operations: ro ? cssDeclarationComputedOperations : cssDeclarationInlineOperations}); if (el && !ro) cssDeclarationWeakSet(cssInlineDeclarations, el, {style: this, writePending: false}); }
     get parentRule() { return cssDeclarationState(this).parent; }
     /* parsed declarations of the current style attribute; callers that modify take a copy */
     _m() {
@@ -2006,7 +2029,7 @@ class CSSStyleDeclaration {
         if (s !== this._src || !this._map) { this._map = parseDecls(s); this._src = s; }
         return this._map;
     }
-    get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
+    get cssText() { return serDecls(this._m()); } set cssText(v) { cssInlineDeclarationWrite(this, parseDecls(String(v))); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
     getPropertyValue(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p); return e ? e[0] : shorthandPart(m, p); }
@@ -2019,103 +2042,103 @@ class CSSStyleDeclaration {
         if (CSS_SIZE_SHORTHAND.test(p)) {
             const m = new SMap(this._m());
             if (!cssSizeShorthandSet(m, p, v, pri)) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (p === 'interpolate-size') {
             const m = new SMap(this._m());
             if (!cssInterpolateSizeSet(m, v, pri)) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (CSS_EASING_LONGHAND.test(p)) {
             const m = new SMap(this._m());
             if (!cssEasingSet(m, p, v, pri)) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (p === 'object-position' && !cssDescriptorStyleHas(this)) {
             const m = new SMap(this._m());
             if (!cssObjectPositionSet(m, v, pri)) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (p === 'transition') {
             const m = new SMap(this._m());
             if (!cssTransitionSet(m, v, pri)) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (cssAnimationRangeRelevant(p)) {
             const m = new SMap(this._m());
             if (!cssAnimationRangeSet(m, p, v, pri)) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (!cssDescriptorStyleHas(this) && CSS_ANIMATION_LONGHAND.test(p)) {
             const m = new SMap(this._m());
             if (!cssAnimationLonghandSet(m, p, v, pri)) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (CSS_IMAGE_LONGHAND.test(p)) {
             const m = new SMap(this._m());
             if (!cssImageLonghandSet(m, p, v, pri)) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (p === 'overflow') {
             const m = new SMap(this._m());
             if (!cssOverflowSet(m, v, pri)) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (CSS_MIN_SIZE.test(p)) {
             const value = v === '' ? '' : cssMinSizeParse(p, v);
             if (value === null) return;
             const m = new SMap(this._m()); m.delete(p);
             if (value !== '') m.set(p, [value, pri ? 'important' : '']);
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (cssBorderRelevant(p)) {
             const m = new SMap(this._m());
             if (v === '') cssBorderRemove(m, p);
             else if (!cssBorderSet(m, p, v, pri ? 'important' : '')) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (p === 'box-shadow') {
             const value = v === '' ? '' : cssBoxShadowParse(v);
             if (value === null) return;
             const m = new SMap(this._m()); m.delete(p);
             if (value !== '') m.set(p, [value, pri ? 'important' : '']);
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (p === 'transition-property') {
             const value = v === '' ? '' : N.cssTransitionProperty(v);
             if (value === null) return;
             const m = new SMap(this._m()); m.delete(p);
             if (value !== '') m.set(p, [value, pri ? 'important' : '']);
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (CSS_NUMERIC_DIMENSION.test(p)) {
             const value = v === '' ? '' : cssNumericDimensionParse(p, v);
             if (value === null) return;
             const m = new SMap(this._m()); m.delete(p);
             if (value !== '') m.set(p, [value, pri ? 'important' : '']);
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (cssCisRelevant(p)) {
             const m = new SMap(this._m());
             if (v === '') cssCisRemove(m, p);
             else if (!cssCisSet(m, p, v, pri ? 'important' : '')) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (cssFlexRelevant(p)) {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri), m = new SMap(this._m());
             if (value === '') cssFlexRemove(m, p);
             else if (priority && !/^important$/i.test(priority) || !cssFlexSet(m, p, value, priority ? 'important' : '')) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (cssGridRelevant(p)) {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri), m = new SMap(this._m());
             if (value === '') cssGridRemove(m, p);
             else if (priority && !/^important$/i.test(priority) || !cssGridSet(m, p, value, priority ? 'important' : '')) return;
-            this._el.setAttribute('style', serDecls(m)); return;
+            cssInlineDeclarationWrite(this, m); return;
         }
         if (v !== '' && !p.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null) return; }
-        if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+        if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); cssInlineDeclarationWrite(this, m); }
+    removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) cssInlineDeclarationWrite(this, m); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) cssInlineDeclarationWrite(this, m); return value; } if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) cssInlineDeclarationWrite(this, m); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) cssInlineDeclarationWrite(this, m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) cssInlineDeclarationWrite(this, m); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) cssInlineDeclarationWrite(this, m); return v; } const e = m.get(p); if (e) { m.delete(p); cssInlineDeclarationWrite(this, m); } return e ? e[0] : ''; }
 }
 cssDeclarationInlineOperations = cssDeclarationCaptureOperations(CSSStyleDeclaration.prototype);
 cssDeclarationInstall(CSSStyleDeclaration.prototype);
