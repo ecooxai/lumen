@@ -1,17 +1,17 @@
-# Lumen Linux WORK22004
+# Lumen Linux WORK22006
 
 **Reviewed source checkpoint; qualification pending — 2026-11-05**
 
 Created with GPT-6 Astra Pro, built-in agents, and RubyWebTerm.
 
-Exact private source commit: `4df1ca078e6f6b4ab7ea26d7de912c6385e08e02`. Source tree: `b8ce2eeeb9ae3bd4fad3959e285f7c1730536ca0`.
+Exact private source: `d3ffe4ba22a2adfaaf41f222f17b2a5b04ebf18f`. Source tree: `3f0d6b20d9cf3b056499f3cb62dd37e93657fa94`.
 
-This checkpoint combines inline CSSOM declaration parsing/serialization and private attribute-write state with retrieval-only cookie path ordering. The separately prepared cookie mutation follow-up is excluded. Native identity checks, focused controls and the unchanged 1,248-URL campaign are pending; this archive is not an accepted release.
+This candidate retains CSSOM parsing/private write state and cookie path ordering, adds a bounded empty ordinary-declaration guard, and preserves cookie order across same-value updates and stable deletion. Native221, focused controls and unchanged1,248-URL qualification are pending. Prior22004 remains HOLD after two required CSSOM failures; original inputs/results are preserved.
 
 ## Last accepted results
 
-Candidate22001 at source3d1d03d passed813/1,248 selected URLs and23,329/26,245 assertions, with219/219 native tests and37/37 required background controls. Those results do not qualify this changed source. Whole-WPT conformance and Chromium parity remain unproved; X Google sign-in remains unresolved. Project assessment68/100 is subjective and separate from pass rates.
+Candidate22001 at3d1d03d passed813/1,248 selected URLs and23,329/26,245 assertions, with219 native tests and37 required background controls. Those results do not qualify this changed source. Whole-WPT conformance, Chromium parity and X Google sign-in remain unresolved. Project assessment68/100 is subjective and separate from test pass rates.
 
-## Source preservation
+## Recovery and exclusions
 
-[SOURCE-MANIFEST.json](SOURCE-MANIFEST.json) lists812 reviewed portable inputs. [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) records pending gates and exclusions. [ACCEPTANCE-22001.json](ACCEPTANCE-22001.json) is the historical acceptance audit for the prior source only. The archive preserves genuine public Git ancestry and supports offline Git restoration; it excludes canonical private history, account profiles, credentials, auth evidence, inbox contents and host-specific launchers. External dependencies and browser binaries are not bundled.
+SOURCE-MANIFEST.json lists813 reviewed portable inputs. EXPORT-QUALIFICATION.json records pending gates. ACCEPTANCE-22001.json is historical evidence for its named source only. The archive preserves genuine public Git ancestry and supports offline source restoration. Canonical private history, profiles, credentials, authentication captures, inbox contents and host configuration are excluded. External dependencies and browser binaries are not bundled; restoration is not a rebuild.

@@ -1,18 +1,18 @@
 {
   "session": "session21",
-  "iteration": "S21-09",
+  "iteration": "S21-12",
   "status": "WORK CHECKPOINT - QUALIFICATION PENDING",
-  "source_snapshot_commit": "4df1ca078e6f6b4ab7ea26d7de912c6385e08e02",
-  "source_snapshot_src_tree": "b8ce2eeeb9ae3bd4fad3959e285f7c1730536ca0",
-  "public_parent": "b2ed44e6028f578cbb74429a8d563468aa2427ef",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22004-20261105",
+  "source_snapshot_commit": "d3ffe4ba22a2adfaaf41f222f17b2a5b04ebf18f",
+  "source_snapshot_src_tree": "3f0d6b20d9cf3b056499f3cb62dd37e93657fa94",
+  "public_parent": "6f3bc1f7cd707a22615132c0a0ed20ef1a143699",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22006-20261105",
   "source_inputs": {
     ".gitignore": {
       "sha256": "1f51a80dd1482d34c0b6a106bf20826dc8c85cc5a464e321c91c8d8ee914af0c",
       "mode": "100644"
     },
     "CMakeLists.txt": {
-      "sha256": "dfc8860eb4dba77bf5d1dc0df6fa4f9d2cd1bdc56ba17e247dafa8ab17403922",
+      "sha256": "fbee4fa4d13639f5c88ac5603c878f6eccd3986a4c383c004d5b427353e670b1",
       "mode": "100644"
     },
     "LICENSE": {
@@ -576,7 +576,7 @@
       "mode": "100644"
     },
     "src/js/prelude/03-element.js": {
-      "sha256": "2c07f3c0930e65dd56f6b6b6f953da02b2fce1dd1c722aa6e08a2c6549cf7f77",
+      "sha256": "fae92d650ecccab74f8554e7e20cc33c36f6e1ffe3d5a538f33758f53f1f0b2b",
       "mode": "100644"
     },
     "src/js/prelude/03c-svg.js": {
@@ -892,7 +892,7 @@
       "mode": "100644"
     },
     "src/net/cookies.c": {
-      "sha256": "906480f991f0cf1ae06dbbe0012e1a30ca5c2450f793de8d56dd38d8a4073050",
+      "sha256": "8a6f1230d5dc6807f2a35e95a21e871fd018b255c7b3e7afa07678fbf23738e3",
       "mode": "100644"
     },
     "src/net/download.c": {
@@ -2607,6 +2607,10 @@
       "sha256": "07e79cd7850558aa9e5a73d2e0c7fe5f208cb65f64ef97e187d2b57987086939",
       "mode": "100644"
     },
+    "tests/test_cookie_mutation_order.c": {
+      "sha256": "4a9217384a51507b5b07e865672689b2278cb1af1dda30cd6c44e68885e7c063",
+      "mode": "100644"
+    },
     "tests/test_cookie_order.c": {
       "sha256": "4be7ccd45b8523e702658ceb8ed03b93a89388b9447bab0a17d4ce0e35528216",
       "mode": "100644"
@@ -3256,15 +3260,13 @@
       "mode": "100644"
     }
   },
-  "source_input_count": 812,
+  "source_input_count": 813,
   "inherited_recorded_input_count": 743,
   "changed_source_paths": [
     "CMakeLists.txt",
-    "src/js/jsnative.cc",
-    "src/js/prelude/01-events.js",
     "src/js/prelude/03-element.js",
     "src/net/cookies.c",
-    "tests/test_cookie_order.c"
+    "tests/test_cookie_mutation_order.c"
   ],
   "private_history_included": false,
   "historical_public_files_preserved": [
@@ -3297,8 +3299,8 @@
     "tests/jsrun-completion/failed-completion.html",
     "tests/jsrun-completion/missing-completion.html"
   ],
-  "candidate": 22004,
+  "candidate": 22006,
   "qualified_utc": null,
-  "prepared_utc": "2026-11-05T06:52:09.746692+00:00",
+  "prepared_utc": "2026-11-05T07:05:23.128728+00:00",
   "independent_acceptance_sha256": null
 }

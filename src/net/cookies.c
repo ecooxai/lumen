@@ -21,6 +21,12 @@ static bool path_match(const char *rp, const char *cp) {
     return cp[n - 1] == '/' || rp[n] == 0 || rp[n] == '/';
 }
 static void cookie_free(Cookie *c) { free(c->name); free(c->value); free(c->domain); free(c->path); }
+/* Keep unrelated cookies in their existing relative order when one entry leaves. */
+static void cookie_erase(int index) {
+    cookie_free(&g_jar.v[index]);
+    g_jar.n--;
+    if (index < g_jar.n) memmove(&g_jar.v[index], &g_jar.v[index + 1], (size_t)(g_jar.n - index) * sizeof *g_jar.v);
+}
 
 static double parse_http_date(const char *s) {
     struct tm tm = {0}; char mon[4] = {0}; int d, y, H, M, S;
@@ -70,7 +76,12 @@ static void set_cookie(const char *host, const char *rpath, const char *sc, bool
         Cookie *o = &g_jar.v[i];
         if (!strcmp(o->name, c.name) && !strcmp(o->domain, c.domain) && o->host_only == c.host_only && !strcmp(o->path, c.path)) {
             if (!from_http && o->http_only) { pthread_mutex_unlock(&g_mu); cookie_free(&c); return; }
-            cookie_free(o); g_jar.v[i] = g_jar.v[--g_jar.n]; break;
+            /* Chromium retains an equivalent cookie's creation order only when its value is unchanged.
+               Keep expiry/deletion and HttpOnly decisions unchanged; update all incoming attributes. */
+            if ((c.expires < 0 || c.expires > (double)time(NULL)) && !strcmp(o->value, c.value)) {
+                cookie_free(o); *o = c; g_dirty = true; pthread_mutex_unlock(&g_mu); return;
+            }
+            cookie_erase(i); break;
         }
     }
     if (c.expires < 0 || c.expires > (double)time(NULL)) vec_push(g_jar, c); else cookie_free(&c);
@@ -147,16 +158,18 @@ void cookies_clear(void) {
 }
 int cookies_site(const char *site, bool remove) {
     if (!site || !*site) return 0;
-    size_t sl = strlen(site); int count = 0; double now = (double)time(NULL);
+    size_t sl = strlen(site); int count = 0, kept = 0; double now = (double)time(NULL);
     pthread_mutex_lock(&g_mu);
     for (int i = 0; i < g_jar.n; i++) {
         Cookie *c = &g_jar.v[i];
         size_t dl = strlen(c->domain);
         bool match = dl == sl ? !strcasecmp(c->domain, site) : dl > sl && c->domain[dl - sl - 1] == '.' && !strcasecmp(c->domain + dl - sl, site);
-        if (!match) continue;
-        if (!remove) { count += c->expires < 0 || c->expires >= now; continue; }
-        cookie_free(c); g_jar.v[i--] = g_jar.v[--g_jar.n]; count++; g_dirty = true;
+        if (!remove) { if (match) count += c->expires < 0 || c->expires >= now; continue; }
+        if (match) { cookie_free(c); count++; g_dirty = true; }
+        else { if (kept != i) g_jar.v[kept] = *c; kept++; }
     }
+    /* Compact bulk deletions once, preserving survivor order without repeated tail moves. */
+    if (remove) g_jar.n = kept;
     pthread_mutex_unlock(&g_mu);
     return count;
 }
