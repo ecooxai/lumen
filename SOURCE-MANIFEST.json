@@ -1,11 +1,11 @@
 {
   "session": "session21",
   "iteration": "S21-03",
-  "status": "WORK CHECKPOINT; no new full qualification",
+  "status": "ACCEPTED SELECTED-COHORT ENGINE CHECKPOINT",
   "source_snapshot_commit": "3d1d03d0733ca5d4f245bd0a8d7594e0ddec73ba",
   "source_snapshot_src_tree": "2a8f1bddd978d88496355d2dc28fd2379f2c3a49",
-  "public_parent": "e7569b9a15d4f323c5edb66ee7a79f9f0e85473a",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-work3d1d03d-20261105",
+  "public_parent": "3c4ae62a71c1a1e5cb77a0cc2e04737428565d9e",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source22001-20261105",
   "source_inputs": {
     ".gitignore": {
       "sha256": "1f51a80dd1482d34c0b6a106bf20826dc8c85cc5a464e321c91c8d8ee914af0c",
@@ -3291,5 +3291,9 @@
     "tests/js/checkvisibility-slot-accessors.html",
     "tests/jsrun-completion/failed-completion.html",
     "tests/jsrun-completion/missing-completion.html"
-  ]
+  ],
+  "candidate": 22001,
+  "qualified_utc": "2026-11-05T06:17:14.607267+00:00",
+  "prepared_utc": "2026-11-05T06:26:24.044034+00:00",
+  "independent_acceptance_sha256": "ade6a866b6729753160e27895994fea2b88caf7e0ab2436569963d5f4aee2fc0"
 }

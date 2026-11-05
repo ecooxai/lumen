@@ -1,3 +1,3 @@
-# Restore the session21 WORK checkpoint
+# Restore the accepted candidate 22001 source checkpoint
 
-The archive includes PUBLIC-HISTORY.bundle and RESTORE-GIT.md. Follow RESTORE-GIT.md to clone the named public branch without network access and verify the exact commit/tree in ARCHIVE-PROVENANCE.json. Only approved public history is included; canonical private history is excluded. Recovery is not an independent rebuild or new qualification.
+The archive contains PUBLIC-HISTORY.bundle, RESTORE-GIT.md, and ARCHIVE-PROVENANCE.json. Follow RESTORE-GIT.md to clone the named public branch without network access and verify the exact commit/tree. Public history includes the prior accepted2007 and WORK3d1d03d checkpoints. Canonical private Git history and machine configuration are excluded. Recovery verifies source preservation; it is not an independent rebuild or whole-WPT qualification.

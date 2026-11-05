@@ -1,5 +1,5 @@
 {
-  "status": "WORK CHECKPOINT — NOT A NEW QUALIFIED RELEASE",
+  "status": "ACCEPTED SELECTED-COHORT ENGINE CHECKPOINT",
   "session": "session21",
   "iteration": "S21-03",
   "source_snapshot_commit": "3d1d03d0733ca5d4f245bd0a8d7594e0ddec73ba",
@@ -9,15 +9,15 @@
   "source_changes_from_accepted2007": {
     "CMakeLists.txt": "Inherited cookie_scope native test registration",
     "tests/test_cookie_scope.c": "Reviewed synthetic19-check cookie regression fixture; no network/profile use",
-    "src/css/style.c": "Reviewed number-valued background math rejection;22001 runtime qualification pending",
+    "src/css/style.c": "Reviewed number-valued background math rejection; candidate22001 native/focused/unchanged1248 qualification accepted",
     "src/app/main.c": "Previously accepted compact-toolbar origin correction acbce1135bb4",
     "src/net/cookies.c": "Previously accepted host-only cookie identity correction dd525a691da3"
   },
-  "candidate_under_qualification": 22001,
+  "candidate_under_qualification": null,
   "prior_narrow_runtime_candidate": 21004,
   "prior_narrow_runtime_source": "dd525a691da38935249858ddb9cd006f43bf41f3",
-  "latest_broad_qualified_candidate": 2007,
-  "latest_broad_qualified_source": "2de18b314abacd5a027496b715bb28b91d676191",
+  "latest_broad_qualified_candidate": 22001,
+  "latest_broad_qualified_source": "3d1d03d0733ca5d4f245bd0a8d7594e0ddec73ba",
   "historical_selected_cohort": {
     "passed_urls": 813,
     "total_urls": 1248,
@@ -40,20 +40,51 @@
     "tools/lume-beta.md"
   ],
   "real_x_google_login_fixed": false,
-  "overall_quality_assessment": 67,
+  "overall_quality_assessment": 68,
   "overall_score_is_subjective": true,
   "goal95_achieved": false,
   "full_wpt_conformance_claimed": false,
   "chromium_parity_claimed": false,
   "private_history_included": false,
   "external_dependencies_included": false,
-  "public_parent": "e7569b9a15d4f323c5edb66ee7a79f9f0e85473a",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-work3d1d03d-20261105",
+  "public_parent": "3c4ae62a71c1a1e5cb77a0cc2e04737428565d9e",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source22001-20261105",
   "limitations": [
-    "This snapshot preserves current source, not a new accepted production build.",
-    "Prior Beta21004 has narrow toolbar/cookie qualification but no fresh full1248 campaign.",
-    "Actual Google-return X error reproduced in session21; auth is unresolved.",
-    "Only previously approved public Git ancestry and811 reviewed portable source paths are included. Private task history, profiles, credentials, auth captures and inbox records are excluded.",
-    "Offline Git recovery checks source preservation; it does not independently rebuild the browser."
-  ]
+    "Same selected1248 HTTP/default-timeout DOM/CSS URLs only; wholeWPT and Chromium parity are not established.",
+    "Fresh22001 full counts equal separately accepted2007 reliability replay; focused background correction and combined toolbar/cookie source confidence are separate improvements.",
+    "Actual Google-return X error remains unresolved, despite successful same-account normal Chrome control.",
+    "Original2007 fullHOLD remains separate; its unchanged reliability replay remains historically accepted.",
+    "Only approved public Git ancestry and811 reviewed portable source paths are included. Private task history, profiles, credentials, auth captures and messages are excluded.",
+    "Offline Git recovery checks source preservation; it is not an independent rebuild of this public export. External dependencies are not bundled."
+  ],
+  "candidate": 22001,
+  "qualified_utc": "2026-11-05T06:17:14.607267+00:00",
+  "source_snapshot_selected_cohort_qualified": true,
+  "selected_cohort": {
+    "passed_urls": 813,
+    "total_urls": 1248,
+    "passed_assertions": 23329,
+    "total_assertions": 26245,
+    "harness_ok": 1238,
+    "exact_registered_identities_retained": 26245,
+    "required_pass_identities_retained": 23329,
+    "lost_prior_passes": 0,
+    "new_broad_url_passes": 0,
+    "new_broad_assertion_passes": 0,
+    "full_raw_sha256": "dce5c902a4d1dfbc7ba3ba08bf43a4b93e11b8299d152c62d56591bae9ee65ee",
+    "independent_acceptance_sha256": "ade6a866b6729753160e27895994fea2b88caf7e0ab2436569963d5f4aee2fc0"
+  },
+  "focused_controls": {
+    "native_registered": 219,
+    "native_passed": 219,
+    "native_identity_delta": "All218 prior names retained; exactly cookie_scope added",
+    "background_required": 37,
+    "background_required_passed": 37,
+    "background_observations_retained": 3,
+    "not_added_to_official1248_counts": true
+  },
+  "runtime_delivery": {
+    "linux": "Staged accepted executable; auth owner coordinates same-profile restoration after isolated diagnostic. No default-launcher or Android delivery is claimed by this source publication.",
+    "android": "Deferred to final selected source; no Android WPT result."
+  }
 }
