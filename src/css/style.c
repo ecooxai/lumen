@@ -2164,6 +2164,8 @@ static bool bg_length(ACtx *c, const char *text, Length *out) {
     if (!parse_dim(&p, out, &lc) || out->kind != LK_LEN) return false;
     if (!math_type_equal(lc.math_type, math_type_unit(MATH_LENGTH)) &&
         !math_type_equal(lc.math_type, math_type_unit(MATH_NUMBER))) return false;
+    /* A bare zero may represent a length; number-valued math functions may not. */
+    if (strchr(text, '(') && math_type_equal(lc.math_type, math_type_unit(MATH_NUMBER))) return false;
     while (is_ws((unsigned char)*p)) p++;
     return !*p;
 }

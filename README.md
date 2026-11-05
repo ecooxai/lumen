@@ -1,3 +1,11 @@
+# Lumen Linux session21 WORK3d1d03d
+
+**Not a new qualified release.** Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json).
+
+## Historical repository documentation
+
+The following preserved text describes earlier checkpoints.
+
 # Lumen Linux checkpoint 2007
 
 Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.

@@ -68,7 +68,7 @@ static void set_cookie(const char *host, const char *rpath, const char *sc, bool
     pthread_mutex_lock(&g_mu);
     for (int i = 0; i < g_jar.n; i++) {
         Cookie *o = &g_jar.v[i];
-        if (!strcmp(o->name, c.name) && !strcmp(o->domain, c.domain) && !strcmp(o->path, c.path)) {
+        if (!strcmp(o->name, c.name) && !strcmp(o->domain, c.domain) && o->host_only == c.host_only && !strcmp(o->path, c.path)) {
             if (!from_http && o->http_only) { pthread_mutex_unlock(&g_mu); cookie_free(&c); return; }
             cookie_free(o); g_jar.v[i] = g_jar.v[--g_jar.n]; break;
         }

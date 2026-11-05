@@ -1634,7 +1634,7 @@ static int bar_hit(App *a, float x, float y) {
     if (g_frameless && !g_bare && y < (g_compact ? TB : TABH) && x >= a->vw - WCW) return HB_WMIN + LMIN(2, (int)((x - (a->vw - WCW)) / 46));
     if (g_frameless && !g_bare && y < (g_compact ? TB : TABH) && x < LOGOW) return HB_LOGO;
     if (g_compact && y < TB) {
-        x -= TLW;
+        x -= bar_x0(a);   /* match the painted row origin, including the frameless logo */
 #ifdef __ANDROID__
         return android_bar_hit(a, x);
 #endif
