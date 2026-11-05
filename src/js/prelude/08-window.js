@@ -485,6 +485,14 @@ function structuredClone(v, options) {
     return cloneValue(v, new SMap());
 }
 const PLATFORM_PROTOS = new WeakSet();   /* prototypes of the WebIDL interfaces; filled when the globals are shaped */
+// Private native-worker bridge. Public structuredClone and local message
+// cloning never seed this map. Native serialization owns the preserved values.
+const nativeWorkerTransferCloneKey = Symbol('native-worker-transfer-clone');
+function cloneNativeWorkerPayload(value, buffers) {
+    const seen = new SMap(); mapSet(seen, nativeWorkerTransferCloneKey, true);
+    for (let i = 0; i < buffers.length; i++) mapSet(seen, buffers[i], buffers[i]);
+    return cloneValue(value, seen);
+}
 function cloneValue(v, seen) {
     if (v === null || typeof v !== 'object') { if (typeof v === 'function' || typeof v === 'symbol') throw new DOMException('could not be cloned.', 'DataCloneError'); return v; }
     // These platform objects are not serializable, including genuine values
@@ -492,6 +500,12 @@ function cloneValue(v, seen) {
     for (let kind = 1; kind <= 5; kind++) if (N.trustedData(v, kind) !== undefined)
         throw new DOMException('Trusted Types and Sanitizer objects could not be cloned.', 'DataCloneError');
     if (seen.has(v)) return seen.get(v);
+    if (mapGet(seen, nativeWorkerTransferCloneKey)) {
+        const buffer = N.transferredViewBuffer(v);
+        if (buffer !== undefined && mapGet(seen, buffer) === buffer) {
+            mapSet(seen, v, v); return v;
+        }
+    }
     const moduleCopy = N.cloneWasm(v);
     if (moduleCopy !== undefined) { seen.set(v, moduleCopy); return moduleCopy; }
     // Recognize genuine DOMExceptions before inspecting an author-controlled

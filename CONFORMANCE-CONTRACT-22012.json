@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "recorded_utc": "2026-11-05T08:35:37.986516+00:00",
+  "authorization": "Explicit root decision authorizes controlled22012 five-fileworker integration onto accepted22010, preserving all accepted22010 passes and original exactlyone documented reference/spec discrepancy. No additional exception.",
+  "candidate": 22012,
+  "source_commit": "60f6cdbfddd9c6da906c31b4cf684a7974feea54",
+  "source_tree": "8b07962b833658f614a42eec2092697f497fd7e2",
+  "qualification_label": "accepted with one documented reference/spec discrepancy",
+  "original_strict_contract": "Retained unchanged; candidate22006 remains strict HOLD permanently.",
+  "proposal": "reviews/custom-name-upstream/independent-contract-proposal-v1.json",
+  "proposal_sha256": "87ae64bf3fb6eee3ddcada877d77012829ff763bb0923269380220370fa6de78",
+  "exact_permitted_raw_failure": {
+    "url": "/css/css-variables/variable-definition.html",
+    "name": "CSSOM.setProperty with space 2",
+    "occurrence": 0,
+    "expected": "",
+    "actual": "green",
+    "status": "FAIL",
+    "message": "assert_equals: Expected Value should match actual value expected \"\" but got \"green\""
+  },
+  "binding_requirements": {
+    "all_other_prior_assertion_pass_identities": 23328,
+    "all_prior_fully_passing_url_identities": 813,
+    "all_prior_harness_ok_identities": 1238,
+    "all_registered_assertion_identities": 26245,
+    "native221_exact_names": true,
+    "original_cssom_required": 70,
+    "additional_whitespace12_required": 12,
+    "overflow52_required": 52,
+    "retained_narrow": true,
+    "full1248_unchanged": true,
+    "all_latest_accepted_assertion_pass_identities": 23352,
+    "all_latest_accepted_fully_passing_url_identities": 816,
+    "worker_frozen_controls": true,
+    "worker_retained_transport_gates": true
+  },
+  "additional_direct_observation_gate": {
+    "manifest": "agent/ops/session21/platform/custom-boundary-v1/custom-boundary26-v1-manifest.json",
+    "manifest_sha256": "125a05602e47954b539499310d4c72f56b0b192bafa8a7af4b730de0a6371ffb",
+    "fixture_sha256": "d3ad48193372cd077f152a8fc5ccf8ed378c71049659e813c7c5e81d2c64db3b",
+    "cohort_unchanged": true,
+    "raw_original_prior_assertion_stays_FAIL": true,
+    "rows": [
+      {
+        "name": "name internal space",
+        "observations_equal": {
+          "name": "--varUnique3 name",
+          "specified": "green",
+          "computed": "green",
+          "base": "blue",
+          "length": 2
+        },
+        "cssText_contains": "--varUnique3\\ name: green;",
+        "attribute_contains": "--varUnique3\\ name: green;"
+      },
+      {
+        "name": "name escaped space cssText",
+        "observations_equal": {
+          "name": "--escaped space",
+          "specified": "green",
+          "computed": "green",
+          "base": "blue",
+          "length": 2
+        },
+        "cssText_contains": "--escaped\\ space: green;",
+        "attribute_contains": "--escaped\\ space: green;"
+      }
+    ],
+    "counting": "These are separately extracted field predicates from unchanged26 diagnostic rows, not new WPT passes or replacement expectations."
+  },
+  "prohibited": [
+    "No raw WPT count or denominator adjustment",
+    "No lost fullURL/harness identity",
+    "No whitespace-value exception",
+    "No other assertion loss or registry drift",
+    "No retroactive22006 acceptance",
+    "No AGENTS or original oracle/runner edits"
+  ],
+  "all_raw_results_preserved": true,
+  "predecessor_contract_sha256": "701aeb0ed8e543c41a434210806e2b07330e32d5b65e94639a679a34ef8c44b8",
+  "latest_accepted_baseline": {
+    "candidate": 22010,
+    "registry": "agent/ops/session21/candidate22010-required-prior-pass-v1.json",
+    "registry_sha256": "5b09d6397aea292b12f8bfed8f1694c4256decf65b9e9435bb5e36c619bd6b6e",
+    "required_assertion_passes": 23352,
+    "required_full_urls": 816,
+    "required_harness_ok": 1238,
+    "registered_assertions": 26245,
+    "no_new_losses": true
+  }
+}

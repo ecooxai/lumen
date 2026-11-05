@@ -1,19 +1,17 @@
-# Lumen Linux WORK22010
+# Lumen Linux WORK22012
 
-**Reviewed source checkpoint; qualification pending — 2026-11-05**
+**Reviewed source checkpoint; integrated qualification pending — 2026-11-05**
 
 Created with GPT-6 Astra Pro, built-in agents, and RubyWebTerm.
 
-Exact source `4248fd4a8d6b72a09e1f89f2b7f161b022f721af`; source tree `80162b4ece2dc39fb12d04b30681ac7ffa0bd9fc`. This snapshot adds a narrow custom whitespace-value storage correction and reviewed overflow shorthand handling. Worker transfer work is excluded. Native221, required focused controls and the full frozen1,248-URL run are pending.
+Exact source `60f6cdbfddd9c6da906c31b4cf684a7974feea54`; source tree `8b07962b833658f614a42eec2092697f497fd7e2`. Five reviewed worker/clone files are integrated onto accepted22010. Native worker transport now prepares independently owned ArrayBuffer stores, preserves aliases/resizable views, commits in original transfer-list order, and keeps prior host-object rejection. Isolated22011 passed its frozen required controls and sanitizer ownership harness. The final integrated native221, focused/retained and unchanged1,248-URL qualification remains pending.
 
-## Qualification contract
+## Current accepted baseline
 
-Original22006 remains strict HOLD:16 assertion gains and two prior-pass losses, observed814/1248URLs and23343/26245assertions. A separately reviewed future contract permits only the exact documented internal-space custom-name reference/spec discrepancy while preserving its rawFAIL and every other prior assertion/URL/harnessPASS. CONFORMANCE-CONTRACT-22010.json records this explicit decision. No raw count or denominator is adjusted, and no qualification is claimed for this snapshot yet.
+Candidate22010 at4248fd4a is accepted with one documented reference/spec discrepancy: raw816/1248 fullypassing URLs and23352/26245 assertions,24gains and1permittedrawprior loss; strict_no_loss=false. All other priorPASS identities andall813priorfullURLs were retained. ACCEPTANCE-22010.json records the laterqualification ofthatnamedsource. Those results do not qualify changed22012.
 
-## Last accepted result
-
-Candidate22001 at3d1d03d remains813/1248 selected URLs,23329/26245assertions,219 native tests. Those results do not qualify this changed source. Whole-WPT conformance, Chromium parity and X Google sign-in remain unresolved; project assessment68/100 is separate from test pass percentages.
+CONFORMANCE-CONTRACT-22012.json retains the exactsame single raw discrepancy and additionally requires every accepted22010 PASS/fullURL/harness/registration identity. All originalHOLD receipts staypreserved. Newworkercontrols remain separatefrom the1,248WPT denominator. Same-isolate localArrayBuffertransfer is still a known gap. X Google sign-in remains unresolved; projectassessment70/100 is not a test passpercentage.
 
 ## Recovery and exclusions
 
-SOURCE-MANIFEST.json lists813 portable source inputs. The archive retains genuine public export ancestry with offline restoration; it does not contain canonical private history, profiles, credentials, account captures, inbox contents or host configuration. External dependencies and browser binaries are not bundled. Offline restoration is not an independent rebuild. Historical ACCEPTANCE-22001.json describes only its named source.
+SOURCE-MANIFEST.json binds813 portable sourceinputs. Thearchive preserves genuinepublicexportGit history withoffline restoration, not canonicalprivatehistory. Profiles,credentials,privatecaptures,inboxcontents andhostconfiguration are excluded. Externaldependencies and binaries are not bundled. Offlinerestoration is not an independent rebuild.

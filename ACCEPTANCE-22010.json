@@ -1,0 +1,87 @@
+{
+  "title": "Lumen Linux candidate22010 qualification addendum",
+  "created_utc": "2026-11-05T08:24:03.435957+00:00",
+  "model": "GPT-6 Astra Pro",
+  "agent_tools": [
+    "built-in agents",
+    "RubyWebTerm"
+  ],
+  "candidate": 22010,
+  "decision": "ACCEPTED_WITH_ONE_DOCUMENTED_REFERENCE_SPEC_DISCREPANCY",
+  "strict_no_loss_accepted": false,
+  "qualified_accepted": true,
+  "source_commit": "4248fd4a8d6b72a09e1f89f2b7f161b022f721af",
+  "source_tree": "80162b4ece2dc39fb12d04b30681ac7ffa0bd9fc",
+  "binary_sha256": "1937c1e64f2e01719f3a3e5631e5bf02339269ba60108eaa2aff23f30f92ce5d",
+  "public_export_commit": "8aa6ea18d1f6304d6fb693e3c1de556569b84d76",
+  "public_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22010-20261105",
+  "public_source_archive_sha256": "7871650eab6e77c2317727dc9e87f26d0825907b083c4d7d45cc6b8018e8cc5f",
+  "source_archive_capture_state": "WORK22010 qualification pending at capture; original archive and verification metadata preserved. This later addendum supplies qualification.",
+  "history_scope": "234 genuine public export commits; portable sanitized reconstruction, not canonical private Git history. Profiles, credentials, private auth captures and host configuration excluded.",
+  "audit_path": "agent/ops/session21/reviews/candidate22010-independent-full-audit-v1.json",
+  "audit_sha256": "9c72eb97105b1b85e82b3c1ae5c2cbbe16bc3dd114bd8eb82945b53d4b174ab5",
+  "qualification_contract_sha256": "701aeb0ed8e543c41a434210806e2b07330e32d5b65e94639a679a34ef8c44b8",
+  "candidate_raw_sha256": "a6b68f6d4d1e59fcd710e5f003c0c165be29fd02f1d183028e331fa631dc22a2",
+  "full_seal_sha256": "d3b4d9ff30de717b1ea650d922053044392995f61f1ef8307f86adc13ec1caa6",
+  "owner_acceptance_sha256": "2e22b80e7d8d16d073478d543fa601111cfccf6cb5743a58a43149bb7ccce27e",
+  "metrics": {
+    "candidate": 22010,
+    "acceptance_label": "ACCEPTED_WITH_ONE_DOCUMENTED_REFERENCE_SPEC_DISCREPANCY",
+    "qualified_accepted": true,
+    "strict_no_loss_accepted": false,
+    "urls_pass": 816,
+    "urls_total": 1248,
+    "assertions_pass": 23352,
+    "assertions_total": 26245,
+    "harness_ok": 1238,
+    "assertion_gains": 24,
+    "documented_raw_prior_pass_loss": 1,
+    "other_prior_assertion_passes_retained": 23328,
+    "prior_full_urls_retained": 813,
+    "all_registered_identities_retained": 26245,
+    "audit_sha256": "9c72eb97105b1b85e82b3c1ae5c2cbbe16bc3dd114bd8eb82945b53d4b174ab5"
+  },
+  "new_fully_passing_urls": [
+    "/css/cssom/cssstyledeclaration-csstext-setter.window.html",
+    "/css/cssom/overflow-serialization.html",
+    "/css/cssom/variable-names.html"
+  ],
+  "documented_raw_discrepancy": {
+    "id": [
+      "/css/css-variables/variable-definition.html",
+      "CSSOM.setProperty with space 2",
+      0
+    ],
+    "before": {
+      "status": "PASS",
+      "message": null
+    },
+    "after": {
+      "status": "FAIL",
+      "message": "assert_equals: Expected Value should match actual value expected \"\" but got \"green\""
+    }
+  },
+  "native_and_focused_gates": "221/221 native identities pass;134 required authored controls of137 pass, with3 unchanged observations. Two additional direct name/escaping field checks, both focused upstream pairs and retained narrow gates pass.",
+  "full_started_utc": "2026-11-05T07:55:45.460711+00:00",
+  "full_finished_utc": "2026-11-05T08:18:00.683304+00:00",
+  "full_stage_seconds": 1332.168051986955,
+  "runtime_candidate": 22001,
+  "authentication_status": "Unresolved. No login fix claimed.",
+  "worker_candidate22008_status": {
+    "candidate": 22008,
+    "status": "DIAGNOSTIC_HOLD",
+    "source_commit": "a20830f1e3727072344b4f5d04522d2811a74e5d",
+    "original_worker_controls": "36/36 pass",
+    "mixed_host_controls": "3/6 versus accepted22001 5/6 and Chrome156 6/6",
+    "reason": "Three mixed host-type rejection regressions require private cloner bridge correction; no integration or live-profile use."
+  },
+  "overall_project_score": 70,
+  "scope": "Selected1248 HTTP/default-timeout DOM/CSS WPT URLs, not whole WPT or Chromium parity. New worker diagnostics excluded from denominator.",
+  "prior_holds_preserved": [
+    22004,
+    22006,
+    22007,
+    22008
+  ],
+  "storage_policy": "Code checkpoint remains durable external Git/public source archive; this non-code addendum may be saved separately."
+}

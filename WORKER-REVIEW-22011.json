@@ -1,0 +1,114 @@
+{
+  "candidate": 22011,
+  "source_commit": "11a59225ec9e3f72a7e52736e107c13d3257931c",
+  "source_tree": "86c999fd3594a182604e8b8a8d15cf1b9591a15d",
+  "binary_sha256": "0a7a17332a74bb804bfc8156d57b7f56727bfe8f4600dccce8bb5f7aacd78037",
+  "decision": "CLEARED_REVIEWED_FIVE_FILE_INTEGRATION_ON_ACCEPTED22010",
+  "handoff_sha256": "2d017daaa835471533c7184eca2533182750195745081fee73888caef291b91b",
+  "static_v4_independent_review_sha256": "302d06e271e1f01711ae61e37857b6952fa6a4f384ce50596b1d6179f30b33ca",
+  "native_asan_exact_source_pass": true,
+  "native_asan_report_sha256": "ac3f49a2b0c5384538708e1affb5cac7b618d48e54f04bb3ec06ec63705f297c",
+  "focused_and_supplemental": [
+    {
+      "name": "native-host6",
+      "registered": 6,
+      "raw_passed": 6,
+      "report_sha256": "69c00c215c3a8255cf00fd72c58978b8a71e8160e854dca9ba3ac17fcaf1babe",
+      "manifest_sha256": "d976d6b6088dde64689ceb017c11e0de610c39078c28d6d6fc799b5f6b6b84a1"
+    },
+    {
+      "name": "native-view2",
+      "registered": 2,
+      "raw_passed": 2,
+      "report_sha256": "0d9d205d30448b761b86603889a136a563ace80f73425696840b72fff440f35e",
+      "manifest_sha256": "4098113eca16d41b2af792b03c54d979a56f22681c16445ebca6ca25c9cae493"
+    },
+    {
+      "name": "original16",
+      "registered": 16,
+      "raw_passed": 16,
+      "report_sha256": "bbc520d2a86839bdfb19acfb2e7bfd566775dcfeb4d6bb9ac899e7a0c45728dc",
+      "manifest_sha256": "9ddfd6e96b7d7f7e0de65c1d467333cbeb7d7a5eb38f0055799c63fac7928a2a"
+    },
+    {
+      "name": "original20",
+      "registered": 20,
+      "raw_passed": 20,
+      "report_sha256": "dc99b49a6d8a476c907c2e7eabcd8d43e650021a8f6c5e233044bf2ad0822bc2",
+      "manifest_sha256": "3a666e643ce4c255d531b53ae9eb7411c71f150805fa2d28b16263836a418e7c"
+    },
+    {
+      "name": "independent8",
+      "registered": 8,
+      "raw_passed": 8,
+      "report_sha256": "5cddcd7983a797c7743200b4a04d950af6cba3736b79b216142786e67db47dd0",
+      "manifest_sha256": "3ab9b679944657dd06c4e7718fb32b075a43e1e3d0421771bd0ed5e64ed09f4e"
+    },
+    {
+      "name": "wasm2",
+      "registered": 2,
+      "raw_passed": 2,
+      "report_sha256": "bb8970ddc26aabdf2902525d48f04eaa8a609f57e3aeb500bef4e9d380e6b7e5",
+      "manifest_sha256": "7b93324d9bb7bc19cce12a1490b07af07896e448b4bbcca183724cda02e51a95"
+    },
+    {
+      "name": "boundary8",
+      "registered": 8,
+      "raw_passed": 6,
+      "report_sha256": "1ed3b033049b4250d63f6331702ddb65ad59f1f54c839c32ca20898fc16776f4",
+      "manifest_sha256": "b04e35390ec19e9c364536acae2a64a4680c85e719a3c916c0e60336a9a6509a"
+    },
+    {
+      "name": "close4",
+      "registered": 4,
+      "raw_passed": 4,
+      "report_sha256": "d3d5e18e8258b714e5a364e5d997bceb1740f3b0f5243cc81ec0121aba3e73a4",
+      "manifest_sha256": "16f1ad635ddcc10f4b711d2de9cec396c3e8209286de4391533a6e2a7c5a374a"
+    },
+    {
+      "name": "timer2",
+      "registered": 2,
+      "raw_passed": 0,
+      "report_sha256": "b8e092c67f3bb3be00d233b878802e09b9de3536b3e4f397d60608acfd8dc0d6",
+      "manifest_sha256": "6353d44801463106fa661bf65d2040a609b50be1ddb8188a82a61976f954a18f"
+    },
+    {
+      "name": "local-host4",
+      "registered": 4,
+      "raw_passed": 4,
+      "report_sha256": "4eb04cecf995793f3dbd7c5d45dadf26cef55920d6a4ad09d943affe2c7a0d47",
+      "manifest_sha256": "4c7db910fad9ab7699c7419304d24180c76fd8d18f352b440025d3b228065f19"
+    }
+  ],
+  "retained_report_sha256": "64691b358c576b98e142a7c2e4b6a2901d76c4271c6ba67c173bc596fd7e9563",
+  "retained": {
+    "auth80": {
+      "registered": 80,
+      "passing": 80,
+      "retained_prior_passes": 80
+    },
+    "authpopup19": {
+      "registered": 19,
+      "passing": 19,
+      "retained_prior_passes": 19
+    },
+    "transfer109": {
+      "required_passed": 106,
+      "registered": 109,
+      "passing": 107,
+      "prior107_retained": true
+    },
+    "messaging18": {
+      "registered": 39,
+      "passing": 37,
+      "required_passed": 34,
+      "exact_registered_identities_retained": true,
+      "required_full_urls_retained": true,
+      "required_harness_ok_retained": true
+    }
+  },
+  "raw_observations": "Original boundaryWasm2 rawFAIL preserved; separate correctedWasm2 PASS. Localtimer2 raw0/2 remains knownlocalbuffer-detachmentgap; calloutfields0/noerror/bytesretained. Close4 are separate exact-field normative observations, not extra WPT passes.",
+  "live_profile_authorized": false,
+  "broad_full_qualification_required_on_final_integration": true,
+  "scope": "Isolated22011 scope qualification only; does not qualify integrated22012 or establish authentication success."
+}

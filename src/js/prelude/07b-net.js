@@ -287,128 +287,260 @@ const transferDuplicates = list => {
         transferApply(transferAdd, seen, [item]);
     }
 };
-const portList = list => {
+// Private records are native-branded across same-isolate realms. Their fields
+// and captured operations never consult an author's MessagePort overrides.
+const portNative = N, portApply = Reflect.apply, portDefine = Reflect.defineProperty;
+const portMap = Map, portMapGet = Map.prototype.get, portMapSet = Map.prototype.set, portMapHas = Map.prototype.has;
+const portCreate = Object.create, portException = DOMException;
+const portGet = p => portNative.getPortRecord(p);
+const portClone = value => structuredClone(value);
+const mapGet = (m, k) => portApply(portMapGet, m, [k]);
+const mapSet = (m, k, v) => portApply(portMapSet, m, [k, v]);
+const mapHas = (m, k) => portApply(portMapHas, m, [k]);
+const portPush = (a, v) => { portDefine(a, a.length, { value: v, writable: true, enumerable: true, configurable: true }); };
+const portAssert = s => { if (!s || s.detached) throw new portException('MessagePort is already detached.', 'DataCloneError'); };
+function portList(list) {
     transferDuplicates(list);
     const ports = [];
-    for (let i = 0; i < list.length; i++) {
-        const p = list[i];
-        if (p && typeof p.postMessage === 'function' && typeof p.start === 'function') apush(ports, p);
-    }
-    for (let i = 0; i < ports.length; i++) ports[i]._assertTransferable();
+    for (let i = 0; i < list.length; i++) { const s = portGet(list[i]); if (s) { portAssert(s); portPush(ports, list[i]); } }
     return ports;
-};
+}
+function transferBuffers(list, ports) {
+    const buffers = [];
+    for (let i = 0; i < list.length; i++) if (!portGet(list[i])) portPush(buffers, list[i]);
+    portNative.validateTransferBuffers(buffers);
+    return buffers;
+}
+function portClose(s, force = false) {
+    if (s.detached && !force) return;
+    s.detached = true; s.revision++;
+    const other = s.other && portGet(s.other), route = s.route || (other && other.route);
+    if (route) mapSet(route.registry, route.key, null);
+    s.route = null; s.other = null;
+    if (other && other.other === s.owner) { other.other = null; other.revision++; }
+    if (other && other.detached) { other.route = null; other.revision++; }
+}
 class MessagePort extends EventTarget {
-    #queue = []; #enabled = false; #scheduled = false; #detached = false; #onmessage = null;
-    constructor() { super(); def(this, '_other', null); }
-    get onmessage() { return this.#onmessage; }
-    set onmessage(value) { this.#onmessage = typeof value === 'function' ? value : null; this.#enabled = true; this.#schedule(); }
-    _isDetached() { return this.#detached; }
-    _assertTransferable() { if (this.#detached) throw new DOMException('MessagePort is already detached.', 'DataCloneError'); }
-    _takeTransfer() {
-        this._assertTransferable();
-        const other = this._other, peerRoute = other && other._isDetached() && (other._xt || other._wk);
-        const route = this._xt || this._wk || peerRoute;
-        const state = { queue: this.#queue, other: route ? null : other, route };
-        if (peerRoute) { if (other._other === this) other._other = null; if (other._xt) other._xt = null; if (other._wk) other._wk = null; }
-        this.#queue = []; this.#detached = true; this._other = null;
-        if (this._xt) this._xt = null;
-        if (this._wk) this._wk = null;
-        return state;
+    #state;
+    constructor() {
+        super();
+        const s = this.#state = portCreate(null);
+        s.owner = this; s.queue = []; s.enabled = false; s.scheduled = false; s.detached = false;
+        s.onmessage = null; s.other = null; s.route = null; s.revision = 0;
+        s.enqueue = (data, ports, error = false) => { portPush(s.queue, [data, ports || [], error]); s.revision++; this.#schedule(); };
+        portNative.setPortRecord(this, s);
+
     }
+    get onmessage() { return this.#state.onmessage; }
+    set onmessage(value) { const s = this.#state; s.onmessage = typeof value === 'function' ? value : null; s.enabled = true; this.#schedule(); }
+    _isDetached() { return this.#state.detached; }
+    _assertTransferable() { portAssert(this.#state); }
     postMessage(data, transfer) {
-        const ports = portList(transferOptions(transfer));
-        if (this.#detached) return;
-        const route = this._xt || this._wk || (this._other && (this._other._xt || this._other._wk));
-        if (route) { route.send(data, ports); return; }
-        if (this._other) this._other._deliverLocal(data, ports);
+        const list = transferOptions(transfer), ports = portList(list);
+        const s = this.#state;
+        if (s.detached) return;
+        const other = s.other && portGet(s.other), route = s.route || (other && other.route);
+        if (route) {
+            // This patch transfers buffers on native worker routes. Existing
+            // cross-tab and same-isolate local buffer-list behavior is retained.
+            if (route.kind === 'worker') transferBuffers(list, ports);
+            route.send(data, ports, list); return;
+        }
+        if (other) deliverLocal(other, data, ports);
     }
-    _deliverLocal(data, ports) { const copy = structuredClone(data), transfer = portList(ports); this._deliver(copy, transfer.map(transferLocalPort)); }
-    _deliver(data, ports) { this.#queue.push([data, ports || []]); this.#schedule(); }
+    _deliverLocal(data, ports, list = ports) { deliverLocal(this.#state, data, ports, list); }
+    _deliver(data, ports) { this.#state.enqueue(data, ports); }
     #schedule() {
-        // Each initially paused port owns its FIFO, independent of handler setup.
-        if (!this.#enabled || this.#scheduled || !this.#queue.length) return;
-        this.#scheduled = true;
+        const s = this.#state;
+        if (!s.enabled || s.scheduled || !s.queue.length) return;
+        s.scheduled = true;
         N.timer(() => {
-            this.#scheduled = false;
-            const message = this.#queue.shift();
-            if (!message) return; // A transfer moved this task's queue to its new owner.
-            const [data, ports] = message;
-            try { dispatch(this, new MessageEvent('message', { data, ports }), true); }
+            s.scheduled = false;
+            if (!s.queue.length) return;
+            const message = s.queue[0];
+            // Captured own-index moves avoid overridable Array.prototype.shift.
+            for (let i = 1; i < s.queue.length; i++) s.queue[i - 1] = s.queue[i];
+            s.queue.length--; s.revision++;
+            const [data, ports, error] = message;
+            try { dispatch(this, new MessageEvent(error ? 'messageerror' : 'message', { data, ports }), true); }
             finally { this.#schedule(); }
         }, 0, false, true);
     }
-    start() { this.#enabled = true; this.#schedule(); }
-    close() {
-        if (this.#detached) return;
-        this.#detached = true;
-        // Disentangle future traffic, retaining already queued tasks. Tombstones
-        // prevent late native packets from resurrecting a closed bridge queue.
-        const other = this._other, route = this._xt || this._wk || (other && (other._xt || other._wk));
-        if (route) route.registry.set(route.key, null);
-        if (this._xt) this._xt = null;
-        if (this._wk) this._wk = null;
-        this._other = null;
-        if (other && other._other === this) other._other = null;
-        if (other && other._isDetached()) { if (other._xt) other._xt = null; if (other._wk) other._wk = null; }
-    }
+    start() { this.#state.enabled = true; this.#schedule(); }
+    close() { portClose(this.#state); }
 }
 Object.defineProperty(MessagePort.prototype, 'onmessage', { ...Object.getOwnPropertyDescriptor(MessagePort.prototype, 'onmessage'), enumerable: true });
-function transferLocalPort(port) {
-    // Construct in the receiving realm; access the old realm's private state only
-    // through its method. A transferred wrapper is inert, even if it had a task.
-    const received = new MessagePort(), state = port._takeTransfer();
-    received._other = state.other;
-    if (state.other && state.other._other === port) state.other._other = received;
-    if (state.route) { received[state.route.kind === 'tab' ? '_xt' : '_wk'] = state.route; state.route.registry.set(state.route.key, received); }
-    for (const [data, ports] of state.queue) received._deliverLocal(data, ports);
-    return received;
+// Reservation does not move endpoints. Preparation traverses each private port
+// record once, so cyclic queued-port graphs terminate without rejecting cycles.
+function makePortPlan(ports, routeFactory = null) {
+    const plans = [], byState = new portMap(), roots = [], packets = [], pending = [];
+    function reserve(port) {
+        const state = portGet(port); portAssert(state);
+        if (mapHas(byState, state)) return mapGet(byState, state);
+        const received = routeFactory ? null : new MessagePort();
+        const p = { state, received, route: routeFactory ? routeFactory() : null, snapshot: null,
+            children: [], group: [], empty: [], committed: false, forward: { relay: null }, backward: { relay: null }, oldRoute: null, oldOther: null };
+        mapSet(byState, state, p); portPush(plans, p); return p;
+    }
+    for (let i = 0; i < ports.length; i++) portPush(roots, reserve(ports[i]));
+    const keys = [], received = [];
+    for (let i = 0; i < roots.length; i++) { portPush(keys, roots[i].route && roots[i].route.wireKey); portPush(received, roots[i].received); }
+    function prepare() {
+        for (let index = 0; index < plans.length; index++) {
+            const p = plans[index], s = p.state;
+            const peer = s.other && portGet(s.other);
+            p.snapshot = { revision: s.revision, queue: s.queue, other: s.other, route: s.route, peer, peerRevision: peer && peer.revision };
+            // A getter-closed port fails at its original transfer-list commit
+            // position; do not detach earlier buffers early or reject them late.
+            if (s.detached) continue;
+            const count = s.queue.length;
+            for (let i = 0; i < count; i++) {
+                const message = s.queue[i], children = [], childKeys = [], childPorts = [];
+                for (let j = 0; j < message[1].length; j++) {
+                    const child = reserve(message[1][j]); portPush(children, child); portPush(p.children, child);
+                    portPush(childKeys, child.route && child.route.wireKey); portPush(childPorts, child.received);
+                }
+                portPush(pending, { target: receivedState(p), ports: childPorts, data: message[0], error: !!message[2] });
+                if (routeFactory) portPush(packets, { __lumenPort: p.route.wireKey, data: message[0], xfer: childKeys, __lumenPortError: !!message[2] });
+            }
+        }
+        for (let i = 0; i < roots.length; i++) {
+            const work = [roots[i]], seen = new portMap();
+            for (let j = 0; j < work.length; j++) {
+                const p = work[j]; if (mapHas(seen, p)) continue; mapSet(seen, p, true); portPush(roots[i].group, p);
+                for (let k = 0; k < p.children.length; k++) portPush(work, p.children[k]);
+            }
+        }
+        // Local queues keep the receiving realm's existing host-object cloner.
+        // Traverse the private queue graph first, then run its fallible clones;
+        // getter-driven queue mutation is caught by final snapshot validation.
+        if (!routeFactory) for (let i = 0; i < pending.length; i++) if (!pending[i].error) pending[i].data = portClone(pending[i].data);
+        return packets;
+    }
+    function receivedState(p) { return p.received && portGet(p.received); }
+    function validate() {
+        for (let i = 0; i < plans.length; i++) {
+            const p = plans[i], s = p.state, before = p.snapshot;
+            if (s.detached) continue; // Ordered platform transfer failure is checked by commit().
+            if (!before || s.revision !== before.revision || s.queue !== before.queue || s.other !== before.other || s.route !== before.route || (before.peer && before.peer.revision !== before.peerRevision))
+                throw new portException('MessagePort changed while preparing its queued messages.', 'DataCloneError');
+        }
+    }
+    function commitOne(p) {
+        if (p.committed) return;
+        const s = p.state, other = s.other && portGet(s.other), peerRoute = other && other.detached && other.route;
+        const oldRoute = s.route || peerRoute, liveOther = oldRoute ? null : other;
+        p.oldRoute = oldRoute; p.oldOther = liveOther;
+        if (peerRoute) { if (other.other === s.owner) other.other = null; other.route = null; other.revision++; }
+        s.queue = p.empty; s.detached = true; s.other = null; s.route = null; s.revision++; p.committed = true;
+        if (p.route) {
+            s.route = p.route;
+            if (liveOther) { s.other = liveOther.owner; mapSet(p.route.registry, p.route.key, liveOther.owner); }
+            else if (oldRoute) {
+                p.forward.relay = p.route; p.backward.relay = oldRoute;
+                mapSet(oldRoute.registry, oldRoute.key, p.forward); mapSet(p.route.registry, p.route.key, p.backward);
+            } else mapSet(p.route.registry, p.route.key, null);
+        } else {
+            const target = receivedState(p);
+            target.other = liveOther && liveOther.owner; target.route = oldRoute;
+            if (liveOther && liveOther.other === s.owner) { liveOther.other = target.owner; liveOther.revision++; }
+            if (oldRoute) mapSet(oldRoute.registry, oldRoute.key, target.owner);
+            target.revision++;
+        }
+    }
+    function commit(index) {
+        portAssert(roots[index].state);
+        const group = roots[index].group;
+        for (let i = 0; i < group.length; i++) { if (!group[i].committed) portAssert(group[i].state); commitOne(group[i]); }
+    }
+    function abort() {
+        // Ordered transfer failure loses earlier transferred endpoints; it does
+        // not reattach them. Dispose both relay ends and their peer links.
+        for (let i = 0; i < plans.length; i++) {
+            const p = plans[i]; if (!p.committed) continue;
+            if (p.route) mapSet(p.route.registry, p.route.key, null);
+            if (p.oldRoute) mapSet(p.oldRoute.registry, p.oldRoute.key, null);
+            const target = receivedState(p), peer = p.oldOther;
+            if (peer && (peer.other === p.state.owner || (target && peer.other === target.owner))) { peer.other = null; peer.revision++; }
+            p.state.other = null; p.state.route = null; p.state.revision++;
+            if (target) { target.detached = true; target.other = null; target.route = null; target.queue = p.empty; target.revision++; }
+        }
+    }
+    return { keys, received, hooks: [prepare, validate, commit, abort], deliver() {
+        for (let i = 0; i < pending.length; i++) { const q = pending[i]; q.target.enqueue(q.data, q.ports, q.error); }
+    } };
 }
-// Registry entries are endpoints, pending pre-import FIFOs, forwarding routes,
-// or closed tombstones. Backlog can precede the transfer envelope on the wire.
-const tabPorts = new SMap();
-const tabKey = () => { const a = crypto.getRandomValues(new Uint32Array(2)); return a[0] * 2097152 + (a[1] & 2097151) || 1; };
-function routeMessage(registry, key, data, ports) {
-    if (!registry.has(key)) { registry.set(key, [[data, ports]]); return; }
-    const target = registry.get(key);
-    if (Array.isArray(target)) target.push([data, ports]);
-    else if (target && target.relay) target.relay.send(data, ports);
-    else if (target) target._deliver(data, ports);
+function deliverLocal(target, data, ports) {
+    // Keep the existing local cloner, including its known ArrayBuffer transfer
+    // gap. Only MessagePort ownership uses the private prepared local plan.
+    const ordinary = portClone(data), transfer = portList(ports), plan = makePortPlan(transfer);
+    portNative.cloneTransfer(undefined, transfer, plan.hooks);
+    plan.deliver(); target.enqueue(ordinary, plan.received);
+}
+// Window.postMessage's existing local-port import path calls this helper.
+// Preserve that contract without expanding its ordinary payload transport.
+function transferLocalPort(port) {
+    const plan = makePortPlan([port]), copies = N.cloneTransfer(undefined, [port], plan.hooks);
+    plan.deliver(copies); return plan.received[0];
+}
+function routeMessage(registry, key, data, ports, error = false) {
+    if (!mapHas(registry, key)) { mapSet(registry, key, [[data, ports, error]]); return; }
+    const target = mapGet(registry, key);
+    if (Array.isArray(target)) portPush(target, [data, ports, error]);
+    else if (target && target.relay) target.relay.send(data, ports, ports, error);
+    else if (target) { const s = portGet(target); if (s) s.enqueue(data, ports, error); }
 }
 function bindImportedPort(port, route) {
-    const pending = route.registry.get(route.key);
-    port[route.kind === 'tab' ? '_xt' : '_wk'] = route;
-    if (pending === null) { port.close(); return port; }
-    route.registry.set(route.key, port);
-    if (Array.isArray(pending)) for (const [data, ports] of pending) port._deliver(data, ports);
+    const pending = mapGet(route.registry, route.key), s = portGet(port); s.route = route; s.revision++;
+    if (pending === null) { portClose(s); return port; }
+    mapSet(route.registry, route.key, port);
+    if (Array.isArray(pending)) for (let i = 0; i < pending.length; i++) s.enqueue(pending[i][0], pending[i][1], pending[i][2]);
     return port;
 }
+// The pre-existing cross-tab/service wrappers retain their ordinary-serialization
+// transport. Their port helpers use private state, but are not the native batch.
 function movePortToRoute(port, route) {
-    const state = port._takeTransfer();
-    port[route.kind === 'tab' ? '_xt' : '_wk'] = route;
-    if (state.other) {
-        // The old wrapper is an inert routing stub for its still-live peer.
-        port._other = state.other;
-        route.registry.set(route.key, state.other);
-    } else if (state.route) {
-        state.route.registry.set(state.route.key, { relay: route });
-        route.registry.set(route.key, { relay: state.route });
-    } else route.registry.set(route.key, null);
-    for (const [data, ports] of state.queue) route.send(data, ports);
+    const s = portGet(port); portAssert(s);
+    const queue = s.queue, other = s.other && portGet(s.other), peerRoute = other && other.detached && other.route;
+    const oldRoute = s.route || peerRoute, liveOther = oldRoute ? null : other;
+    if (peerRoute) { if (other.other === s.owner) other.other = null; other.route = null; other.revision++; }
+    s.queue = []; s.detached = true; s.other = null; s.route = route; s.revision++;
+    if (liveOther) { s.other = liveOther.owner; mapSet(route.registry, route.key, liveOther.owner); }
+    else if (oldRoute) { mapSet(oldRoute.registry, oldRoute.key, { relay: route }); mapSet(route.registry, route.key, { relay: oldRoute }); }
+    else mapSet(route.registry, route.key, null);
+    for (let i = 0; i < queue.length; i++) route.send(queue[i][0], queue[i][1], queue[i][1], queue[i][2]);
 }
-function tabRoute(dest, key) { return { kind: 'tab', registry: tabPorts, key, send(data, ports) {
-    const copy = ports.length ? structuredClone(data) : data, transfer = portList(ports);
-    N.portTo(dest, key, copy, transfer.map(p => exportPort(p, dest)));
+class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); portGet(this.port1).other = this.port2; portGet(this.port2).other = this.port1; } }
+
+const tabPorts = new SMap();
+const tabKey = () => { const a = crypto.getRandomValues(new Uint32Array(2)); return a[0] * 2097152 + (a[1] & 2097151) || 1; };
+function tabRoute(dest, key) { return { kind: 'tab', registry: tabPorts, key, wireKey: key, send(data, ports) {
+    const copy = ports.length ? structuredClone(data) : data, transfer = portList(ports), keys = [];
+    for (let i = 0; i < transfer.length; i++) portPush(keys, exportPort(transfer[i], dest));
+    N.portTo(dest, key, copy, keys);
 } }; }
 function exportPort(port, dest) { const key = tabKey(); movePortToRoute(port, tabRoute(dest, key)); return key; }
 function importPort(src, key) { return bindImportedPort(new MessagePort(), tabRoute(src, key)); }
 function portMessage(key, data, src, keys) { routeMessage(tabPorts, key, data, keys.map(k => importPort(src, k))); }
-function workerRoute(id, key) { return { kind: 'worker', registry: remotePorts, key: id + ':' + key, send(data, ports) {
-    const copy = ports.length ? structuredClone(data) : data, transfer = portList(ports);
-    N.workerPost(id, { __lumenPort: key, data: copy, xfer: transfer.map(p => exportWorkerPort(p, id)) });
+function prepareWorkerTransfer(data, ports, buffers, routeFactory) {
+    if (!ports.length) return { data, plan: makePortPlan(ports, routeFactory) };
+    if (!buffers.length) {
+        const copy = structuredClone(data);
+        return { data: copy, plan: makePortPlan(ports, routeFactory) };
+    }
+    // Reserve before the cloner runs getters. A getter may close a listed port;
+    // native commit must reject it at its original ordered transfer position.
+    const plan = makePortPlan(ports, routeFactory);
+    try { return { data: cloneNativeWorkerPayload(data, buffers), plan }; }
+    catch (error) { plan.hooks[3](); throw error; } // No endpoint was committed.
+}
+function workerRoute(id, key) { return { kind: 'worker', registry: remotePorts, key: id + ':' + key, wireKey: key, send(data, ports, list = ports, error = false) {
+    const buffers = transferBuffers(list, ports);
+    const prepared = prepareWorkerTransfer(data, ports, buffers, () => workerRoute(id, ++portSeq)), plan = prepared.plan;
+    N.workerPost(id, { __lumenPort: key, data: prepared.data, xfer: plan.keys, __lumenPortError: error }, list, plan.hooks);
 } }; }
 function exportWorkerPort(port, id) { const key = ++portSeq; movePortToRoute(port, workerRoute(id, key)); return key; }
 function importWorkerPort(id, key) { return bindImportedPort(new MessagePort(), workerRoute(id, key)); }
-class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const BC_FIRE = (target, event) => dispatch(target, event, true);
 const BC_LISTENERS = target => target.__ls;
 /*@shared broadcast.js*/
@@ -431,10 +563,10 @@ class Worker extends EventTarget {
         const transfer = transferOptions(t);
         if (!this._id) { transferDuplicates(transfer); return; }
         for (let i = 0; i < transfer.length; i++) if (N.isWasmModule(transfer[i])) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError');
-        const ps = portList(transfer);
-        if (!ps.length) return N.workerPost(this._id, m);
-        const data = structuredClone(m), ports = portList(ps);
-        N.workerPost(this._id, { __lumenXfer: ports.map(p => exportWorkerPort(p, this._id)), data });
+        const ports = portList(transfer), buffers = transferBuffers(transfer, ports);
+        if (!ports.length) return N.workerPost(this._id, m, transfer);
+        const id = this._id, prepared = prepareWorkerTransfer(m, ports, buffers, () => workerRoute(id, ++portSeq)), plan = prepared.plan;
+        N.workerPost(id, { __lumenXfer: plan.keys, data: prepared.data }, transfer, plan.hooks);
     }
     terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
 }
@@ -468,7 +600,7 @@ function workerEvent(id, kind, data, message, filename, lineno, colno) {
     if (kind === 0) {
         let ports = [];
         if (data && typeof data === 'object') {
-            if (data.__lumenPort) { routeMessage(remotePorts, id + ':' + data.__lumenPort, data.data, (data.xfer || []).map(k => importWorkerPort(id, k))); return; }
+            if (data.__lumenPort) { routeMessage(remotePorts, id + ':' + data.__lumenPort, data.data, (data.xfer || []).map(k => importWorkerPort(id, k)), !!data.__lumenPortError); return; }
             if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => importWorkerPort(id, k)); data = data.data; }
         }
         if (w._sw) return w._sw(0, data, ports);

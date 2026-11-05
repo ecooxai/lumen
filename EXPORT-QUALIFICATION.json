@@ -1,55 +1,63 @@
 {
   "status": "WORK CHECKPOINT - QUALIFICATION PENDING",
-  "candidate": 22010,
-  "prepared_utc": "2026-11-05T07:49:05.181861+00:00",
-  "source_snapshot_commit": "4248fd4a8d6b72a09e1f89f2b7f161b022f721af",
-  "source_snapshot_src_tree": "80162b4ece2dc39fb12d04b30681ac7ffa0bd9fc",
-  "public_parent": "88a45af971c0b399f645cbc19db726c295604ab7",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22010-20261105",
+  "candidate": 22012,
+  "prepared_utc": "2026-11-05T08:41:33.038484+00:00",
+  "source_snapshot_commit": "60f6cdbfddd9c6da906c31b4cf684a7974feea54",
+  "source_snapshot_src_tree": "8b07962b833658f614a42eec2092697f497fd7e2",
+  "public_parent": "8aa6ea18d1f6304d6fb693e3c1de556569b84d76",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-WORK22012-20261105",
   "source_snapshot_selected_cohort_qualified": false,
   "source_snapshot_full_wpt_qualified": false,
   "source_snapshot_independently_rebuilt": false,
-  "latest_broad_qualified_candidate": 22001,
-  "latest_broad_qualified_source": "3d1d03d0733ca5d4f245bd0a8d7594e0ddec73ba",
+  "latest_broad_qualified_candidate": 22010,
+  "latest_broad_qualified_source": "4248fd4a8d6b72a09e1f89f2b7f161b022f721af",
   "prior_accepted_selected_cohort": {
-    "candidate": 22001,
-    "passed_urls": 813,
+    "candidate": 22010,
+    "acceptance_label": "accepted with one documented reference/spec discrepancy",
+    "strict_no_loss_accepted": false,
+    "passed_urls": 816,
     "total_urls": 1248,
-    "passed_assertions": 23329,
+    "passed_assertions": 23352,
     "total_assertions": 26245,
-    "native": 219,
-    "these_are_not_current22010_results": true
+    "native": 221,
+    "these_are_not_current22012_results": true
   },
   "changes": [
-    "Tiny inline custom whitespace-value storage repair, retaining key and priority.",
-    "Reviewed overflow shorthand getter/serialization with logical-order preservation.",
-    "Inherited reviewed CSSOM and cookie ordering; original22006 strictHOLD preserved."
+    "Native SharedWorker/dedicatedWorker ArrayBuffer transfer with sender detachment, independent backing-store ownership and receiver adoption.",
+    "Original mixed-list transfer order, private port-state preparation and FIFO backlog preservation.",
+    "Private native-worker host cloner bridge preserves listed buffers and views while retaining host-object rejection; same-isolate local payload behavior remains unchanged."
   ],
   "gates_pending": [
-    "Exact native221 identities and all221PASS",
-    "Original73 authored rows:70required+3inherited observations",
-    "Additional12 whitespace and52 overflow required controls",
-    "Two direct name/escaping fieldchecks from unchanged26 diagnostic rows",
-    "Both frozen focused upstream pairs, retained narrow and unchanged1248 URLs under explicit one-case contract"
+    "Exact integrated native221 identities/allPASS",
+    "Frozen worker72 rawrows with64required authored predicates plus explicit ordered-close observations; knownlocaltimer/Wasmrawdisagreements retained",
+    "Prior134required CSS controls of137 plus2 directnamefields andbothfocusedupstreampairs",
+    "Retained narrow/transport gates andunchanged1248 fullcampaign",
+    "All accepted22010 23352 assertionPASS,816 fullURLs,1238 harnessOK and26245 registrations retained under unchangedone-casecontract"
   ],
   "cookie_mutation_followup_included": true,
   "source_input_count": 813,
   "private_history_included": false,
-  "overall_quality_assessment": 68,
+  "overall_quality_assessment": 70,
   "x_google_sign_in_fixed": false,
   "limitations": [
-    "Current source is committed and reviewed but qualification is pending.",
-    "Historical ACCEPTANCE-22001.json describes only its named prior source.",
-    "No whole-WPT or Chromium parity claim.",
-    "No profile, credential, auth capture, private task history, inbox or host-specific launcher data.",
-    "Public Git ancestry is genuine but is not canonical private history.",
-    "External dependencies and binaries are not bundled; offline restoration is not a rebuild."
+    "Current22012 source is reviewed and committed but integratedqualification is pending.",
+    "ACCEPTANCE-22010.json describes only its named prior source and its oneexplicit reference/spec discrepancy.",
+    "Whole-WPT conformance, Chromiumparity and X Google sign-in remainunresolved.",
+    "No profiles,credentials,privateauthcaptures,inboxcontents orhost-specificlaunchers included.",
+    "PublicGit ancestry is genuine but is not canonicalprivatehistory.",
+    "Externaldependencies/binaries are not bundled; offlinerestoration is not a rebuild."
   ],
   "native_expected_count": 221,
   "prior22004_status": "HOLD: native220 passed; two required CSSOM rows failed; original source/evidence retained; narrow/full not run.",
   "changed_source_paths_from_previous_public_checkpoint": [
-    "src/js/prelude/03-element.js"
+    "src/js/clone.cc",
+    "src/js/clone.h",
+    "src/js/prelude/07b-net.js",
+    "src/js/prelude/08-window.js",
+    "src/js/worker.cc"
   ],
   "prior22006_status": "STRICT HOLD:16 gains/2 losses; observed814/1248URLs,23343/26245assertions. No retroactive acceptance.",
-  "future_qualification_contract": "CONFORMANCE-CONTRACT-22010.json"
+  "future_qualification_contract": "CONFORMANCE-CONTRACT-22012.json",
+  "worker_transfer_included": true,
+  "local_arraybuffer_transfer_gap_preserved": true
 }

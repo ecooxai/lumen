@@ -1,6 +1,8 @@
 #include "js_int.h"
 #include "clone.h"
 #include <limits>
+#include <cstring>
+#include <new>
 
 namespace {
 v8::Local<v8::Private> error_key(v8::Isolate *iso) {
@@ -137,7 +139,8 @@ void clone_error(v8::Isolate *iso, v8::Local<v8::String> message) {
         ctor.As<v8::Function>()->NewInstance(ctx, 2, args).ToLocal(&error)) iso->ThrowException(error);
     else iso->ThrowException(v8::Exception::Error(message));
 }
-bool serialize_into(v8::Isolate *, v8::Local<v8::Context>, v8::Local<v8::Value>, JsSerializedValue &);
+using TransferBuffers = std::vector<v8::Local<v8::ArrayBuffer>>;
+bool serialize_into(v8::Isolate *, v8::Local<v8::Context>, v8::Local<v8::Value>, JsSerializedValue &, const TransferBuffers & = {});
 class Serializer final : public v8::ValueSerializer::Delegate {
     v8::Isolate *iso_;
     JsSerializedValue &out_;
@@ -289,12 +292,140 @@ void set_record(const v8::FunctionCallbackInfo<v8::Value> &a) {
     auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
     if (a[0]->IsObject()) (void)a[0].As<v8::Object>()->SetPrivate(ctx, rec_key(iso), a[1]);
 }
-bool serialize_into(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> value, JsSerializedValue &out) {
+bool transfer_error(v8::Isolate *iso, const char *message) {
+    clone_error(iso, jstr(iso, message)); return false;
+}
+bool transfer_buffers_valid(v8::Isolate *iso, const TransferBuffers &buffers) {
+    for (auto buffer : buffers)
+        if (buffer->WasDetached())
+            return transfer_error(iso, "ArrayBuffer is already detached.");
+    return true;
+}
+bool read_transfer_buffers(v8::Isolate *iso, v8::Local<v8::Context> ctx,
+                           v8::Local<v8::Value> value, TransferBuffers &buffers) {
+    if (value.IsEmpty() || value->IsUndefined() || value->IsNull()) return true;
+    if (!value->IsArray()) return transfer_error(iso, "Invalid ArrayBuffer transfer list.");
+    auto list = value.As<v8::Array>();
+    auto seen = v8::Set::New(iso);
+    try {
+        buffers.reserve(list->Length());
+        for (uint32_t i = 0; i < list->Length(); i++) {
+            v8::Local<v8::Value> item; bool duplicate;
+            if (!list->Get(ctx, i).ToLocal(&item)) return false;
+            if (!item->IsArrayBuffer()) return transfer_error(iso, "Transfer entry is not transferable.");
+            if (!seen->Has(ctx, item).To(&duplicate)) return false;
+            if (duplicate) return transfer_error(iso, "An ArrayBuffer cannot be transferred twice.");
+            if (seen->Add(ctx, item).IsEmpty()) return false;
+            buffers.push_back(item.As<v8::ArrayBuffer>());
+        }
+    } catch (const std::bad_alloc &) {
+        return transfer_error(iso, "Unable to prepare ArrayBuffer transfer.");
+    }
+    return transfer_buffers_valid(iso, buffers);
+}
+void release_transfer_bytes(void *data, size_t, void *) { std::free(data); }
+bool prepare_transfer_stores(v8::Isolate *iso, const TransferBuffers &buffers, JsSerializedValue &pending) {
+    // Serialization can invoke getters that detach or resize a listed buffer.
+    // Recheck every source before preparing stores or committing any detachment.
+    // This also retains Chromium's observed preservation on a later invalid buffer.
+    if (!transfer_buffers_valid(iso, buffers)) return false;
+    try {
+        pending.buffers.reserve(buffers.size());
+        for (auto buffer : buffers) {
+            // This transfer must fail at its ordered commit point. Keep the ID
+            // slot without allocating or copying potentially huge Wasm memory.
+            if (!buffer->IsDetachable()) { pending.buffers.emplace_back(); continue; }
+            const size_t size = buffer->ByteLength();
+            std::unique_ptr<v8::BackingStore> store;
+            if (buffer->IsResizableByUserJavaScript()) {
+                // This V8 allocator is isolate-independent and preserves the
+                // resizable maximum and length-tracking ArrayBufferView flags.
+                store = v8::ArrayBuffer::NewResizableBackingStore(size, buffer->GetBackingStore()->MaxByteLength());
+            } else {
+                // Sender contexts currently use raw-lifetime allocators. Never
+                // retain their stores across sender teardown; copy exactly once.
+                std::unique_ptr<void, decltype(&std::free)> bytes(std::malloc(size ? size : 1), std::free);
+                if (!bytes) return transfer_error(iso, "Unable to allocate transferred ArrayBuffer.");
+                store = v8::ArrayBuffer::NewBackingStore(bytes.get(), size, release_transfer_bytes, nullptr);
+                if (store) (void)bytes.release();
+            }
+            if (!store) return transfer_error(iso, "Unable to allocate transferred ArrayBuffer.");
+            if (size) std::memcpy(store->Data(), buffer->Data(), size);
+            pending.buffers.emplace_back(std::move(store));
+        }
+    } catch (const std::bad_alloc &) {
+        return transfer_error(iso, "Unable to retain transferred ArrayBuffer.");
+    }
+    return true;
+}
+v8::Local<v8::Private> port_record_key(v8::Isolate *iso) {
+    return v8::Private::ForApi(iso, jstr(iso, "lumen:message-port-state"));
+}
+void set_port_record(const v8::FunctionCallbackInfo<v8::Value> &a) {
+    auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
+    if (a[0]->IsObject() && a[1]->IsObject())
+        (void)a[0].As<v8::Object>()->SetPrivate(ctx, port_record_key(iso), a[1]);
+}
+void get_port_record(const v8::FunctionCallbackInfo<v8::Value> &a) {
+    auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext(); v8::Local<v8::Value> state;
+    if (a[0]->IsObject() && a[0].As<v8::Object>()->GetPrivate(ctx, port_record_key(iso)).ToLocal(&state))
+        a.GetReturnValue().Set(state);
+}
+struct TransferEntry { int buffer; uint32_t port; };
+bool read_transfer_list(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> value,
+                        TransferBuffers &buffers, std::vector<TransferEntry> &entries) {
+    if (value.IsEmpty() || value->IsUndefined() || value->IsNull()) return true;
+    if (!value->IsArray()) return transfer_error(iso, "Invalid converted transfer list.");
+    auto list = value.As<v8::Array>(); auto seen = v8::Set::New(iso); uint32_t ports = 0;
+    try {
+        entries.reserve(list->Length()); buffers.reserve(list->Length());
+        for (uint32_t i = 0; i < list->Length(); i++) {
+            v8::Local<v8::Value> item, state; bool duplicate;
+            if (!list->Get(ctx, i).ToLocal(&item) || !seen->Has(ctx, item).To(&duplicate)) return false;
+            if (duplicate) return transfer_error(iso, "An object cannot be transferred twice.");
+            if (seen->Add(ctx, item).IsEmpty()) return false;
+            if (item->IsArrayBuffer()) {
+                if (buffers.size() >= static_cast<size_t>(std::numeric_limits<int>::max()))
+                    return transfer_error(iso, "Too many transferred buffers.");
+                entries.push_back({static_cast<int>(buffers.size()), 0}); buffers.push_back(item.As<v8::ArrayBuffer>());
+            } else if (item->IsObject() && item.As<v8::Object>()->GetPrivate(ctx, port_record_key(iso)).ToLocal(&state) && state->IsObject()) {
+                entries.push_back({-1, ports++});
+            } else return transfer_error(iso, "Transfer entry is not transferable.");
+        }
+    } catch (const std::bad_alloc &) { return transfer_error(iso, "Unable to prepare transfer list."); }
+    // Non-detachable Wasm buffers fail in transfer-list order at commit. An
+    // already detached buffer is rejected here, before payload serialization.
+    return transfer_buffers_valid(iso, buffers);
+}
+v8::MaybeLocal<v8::Value> transfer_hook(v8::Isolate *iso, v8::Local<v8::Context> ctx,
+                                       v8::Local<v8::Value> hooks, uint32_t index,
+                                       int argc = 0, v8::Local<v8::Value> *argv = nullptr) {
+    if (!hooks->IsArray()) return v8::Undefined(iso);
+    v8::Local<v8::Value> fn;
+    if (!hooks.As<v8::Array>()->Get(ctx, index).ToLocal(&fn)) return {};
+    if (!fn->IsFunction()) return v8::Undefined(iso);
+    return fn.As<v8::Function>()->Call(ctx, v8::Undefined(iso), argc, argv);
+}
+void validate_transfer_buffers(const v8::FunctionCallbackInfo<v8::Value> &a) {
+    TransferBuffers buffers;
+    if (read_transfer_buffers(a.GetIsolate(), a.GetIsolate()->GetCurrentContext(), a[0], buffers))
+        a.GetReturnValue().Set(true);
+}
+void is_array_buffer(const v8::FunctionCallbackInfo<v8::Value> &a) {
+    a.GetReturnValue().Set(a[0]->IsArrayBuffer());
+}
+void transferred_view_buffer(const v8::FunctionCallbackInfo<v8::Value> &a) {
+    // Intrinsic backing identity: never consult an author's own .buffer getter.
+    if (a[0]->IsArrayBufferView()) a.GetReturnValue().Set(a[0].As<v8::ArrayBufferView>()->Buffer());
+}
+bool serialize_into(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> value,
+                    JsSerializedValue &out, const TransferBuffers &buffers) {
     // Build locally: a failed serialization must release retained native code.
     JsSerializedValue pending;
     Serializer delegate(iso, pending);
     v8::ValueSerializer serializer(iso, &delegate);
     delegate.ser = &serializer;
+    for (uint32_t i = 0; i < buffers.size(); i++) serializer.TransferArrayBuffer(i, buffers[i]);
     serializer.WriteHeader();
     if (!serializer.WriteValue(ctx, value).FromMaybe(false)) return false;
     // Stack formatting may execute JavaScript. Collect it only after all host
@@ -315,15 +446,89 @@ bool serialize_into(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::
     out = std::move(pending);
     return true;
 }
+void clone_transfer(const v8::FunctionCallbackInfo<v8::Value> &a) {
+    auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
+    std::vector<JsSerializedValue> messages;
+    if (!js_serialize_transfer_batch(iso, ctx, a[0], a[1], a[2], messages)) return;
+    // Receiver reconstruction follows transfer commit, as in HTML. Host-record
+    // constructors cannot reenter sender preparation after its final byte copy.
+    // Deserialization failure becomes a queued messageerror in the JS caller.
+    auto copies = v8::Array::New(iso, static_cast<int>(messages.size()));
+    for (uint32_t i = 0; i < messages.size(); i++) {
+        v8::Local<v8::Value> copy; bool ok;
+        { v8::TryCatch tc(iso); ok = js_deserialize(iso, ctx, messages[i]).ToLocal(&copy); }
+        v8::Local<v8::Value> fields[] = { v8::Boolean::New(iso, ok), ok ? copy : v8::Local<v8::Value>(v8::Undefined(iso)) };
+        if (!copies->CreateDataProperty(ctx, i, v8::Array::New(iso, fields, 2)).FromMaybe(false)) return;
+    }
+    a.GetReturnValue().Set(copies);
+}
 }
 
 bool js_serialize(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> value, JsSerializedValue &out) {
     return serialize_into(iso, ctx, value, out);
 }
+void js_discard_transfer_ports(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> hooks) {
+    // The abort hook is private state disposal only; it never reattaches sources.
+    v8::TryCatch tc(iso); (void)transfer_hook(iso, ctx, hooks, 3);
+}
+bool js_serialize_transfer_batch(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Value> value,
+                                 v8::Local<v8::Value> list, v8::Local<v8::Value> hooks,
+                                 std::vector<JsSerializedValue> &out) {
+    TransferBuffers buffers; std::vector<TransferEntry> entries; JsSerializedValue outer;
+    if (!read_transfer_list(iso, ctx, list, buffers, entries) || !serialize_into(iso, ctx, value, outer, buffers)) return false;
+    v8::Local<v8::Value> backlog, ignored;
+    if (!transfer_hook(iso, ctx, hooks, 0).ToLocal(&backlog)) return false;
+    std::vector<JsSerializedValue> pending;
+    try {
+        uint32_t count = backlog->IsArray() ? backlog.As<v8::Array>()->Length() : 0;
+        if (count >= static_cast<uint32_t>(std::numeric_limits<int>::max())) return transfer_error(iso, "Too many queued port messages.");
+        pending.reserve(static_cast<size_t>(count) + 1);
+        for (uint32_t i = 0; i < count; i++) {
+            v8::Local<v8::Value> packet; JsSerializedValue serialized;
+            if (!backlog.As<v8::Array>()->Get(ctx, i).ToLocal(&packet) || !serialize_into(iso, ctx, packet, serialized)) return false;
+            pending.push_back(std::move(serialized));
+        }
+        if (!transfer_hook(iso, ctx, hooks, 1).ToLocal(&ignored) || !prepare_transfer_stores(iso, buffers, outer)) return false;
+        // Reserve and construct every vector slot before any ownership commit.
+        pending.push_back(std::move(outer));
+    } catch (const std::bad_alloc &) { return transfer_error(iso, "Unable to prepare queued port messages."); }
+    v8::Local<v8::Value> commit_error;
+    size_t completed = 0;
+    {
+        v8::TryCatch tc(iso);
+        for (const auto &entry : entries) {
+            if (entry.buffer >= 0) {
+                auto buffer = buffers[entry.buffer];
+                if (!buffer->IsDetachable()) {
+                    iso->ThrowException(v8::Exception::TypeError(jstr(iso, "ArrayBuffer cannot be detached.")));
+                    break;
+                }
+                if (!buffer->Detach(v8::Local<v8::Value>()).FromMaybe(false)) {
+                    if (!tc.HasCaught()) iso->ThrowException(v8::Exception::TypeError(jstr(iso, "ArrayBuffer could not be detached.")));
+                    break;
+                }
+            } else {
+                v8::Local<v8::Value> argv[] = { v8::Integer::NewFromUnsigned(iso, entry.port) };
+                if (!transfer_hook(iso, ctx, hooks, 2, 1, argv).ToLocal(&ignored)) break;
+            }
+            ++completed;
+        }
+        if (tc.HasCaught()) commit_error = tc.Exception();
+    }
+    if (completed != entries.size() || !commit_error.IsEmpty()) {
+        js_discard_transfer_ports(iso, ctx, hooks);
+        if (!commit_error.IsEmpty()) iso->ThrowException(commit_error);
+        return false; // Includes termination/empty Maybe without a catchable exception.
+    }
+    out = std::move(pending); return true;
+}
+
 v8::MaybeLocal<v8::Value> js_deserialize(v8::Isolate *iso, v8::Local<v8::Context> ctx, const JsSerializedValue &input) {
     Deserializer delegate(input);
     v8::ValueDeserializer deserializer(iso, input.bytes.get(), input.size, &delegate);
     delegate.des = &deserializer;
+    for (uint32_t i = 0; i < input.buffers.size(); i++)
+        deserializer.TransferArrayBuffer(i, v8::ArrayBuffer::New(iso, input.buffers[i]));
     v8::Local<v8::Value> v, exception;
     bool ok;
     {
@@ -369,6 +574,12 @@ void js_clone_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> native) 
     (void)native->Set(ctx, jstr(iso, "domExceptionStack"), v8::Function::New(ctx, domexception_stack).ToLocalChecked());
     (void)native->Set(ctx, jstr(iso, "cloneWasm"), v8::Function::New(ctx, clone_module).ToLocalChecked());
     (void)native->Set(ctx, jstr(iso, "isWasmModule"), v8::Function::New(ctx, is_module).ToLocalChecked());
+    (void)native->Set(ctx, jstr(iso, "isArrayBuffer"), v8::Function::New(ctx, is_array_buffer).ToLocalChecked());
+    (void)native->Set(ctx, jstr(iso, "transferredViewBuffer"), v8::Function::New(ctx, transferred_view_buffer).ToLocalChecked());
+    (void)native->Set(ctx, jstr(iso, "validateTransferBuffers"), v8::Function::New(ctx, validate_transfer_buffers).ToLocalChecked());
+    (void)native->Set(ctx, jstr(iso, "setPortRecord"), v8::Function::New(ctx, set_port_record).ToLocalChecked());
+    (void)native->Set(ctx, jstr(iso, "getPortRecord"), v8::Function::New(ctx, get_port_record).ToLocalChecked());
+    (void)native->Set(ctx, jstr(iso, "cloneTransfer"), v8::Function::New(ctx, clone_transfer).ToLocalChecked());
     (void)native->Set(ctx, jstr(iso, "cloneHost"), v8::Function::New(ctx, register_host).ToLocalChecked());
     (void)native->Set(ctx, jstr(iso, "cloneRec"), v8::Function::New(ctx, set_record).ToLocalChecked());
 }

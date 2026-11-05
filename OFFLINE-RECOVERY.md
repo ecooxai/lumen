@@ -1,3 +1,3 @@
-# Restore WORK22006
+# Restore WORK22012
 
-Use RESTORE-GIT.md and PUBLIC-HISTORY.bundle in the archive to restore the exact public commit/tree without network. Current qualification is pending. Accepted22001 and heldWORK22004 remain in genuine public ancestry. Canonical private history and account data are excluded. Source restoration is not a browser rebuild.
+Use RESTORE-GIT.md and PUBLIC-HISTORY.bundle in thearchive to restore the exactpubliccommit/tree withoutnetwork. Integrated22012 qualification waspendingatcapture. Accepted22010 withoneexplicitdiscrepancy andhistoricalHOLD checkpoints remain in genuinepublic ancestry. Canonicalprivatehistory andaccountdata areexcluded. Source restoration is not a browser rebuild.
