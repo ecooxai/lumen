@@ -151,7 +151,7 @@ Known remaining work includes mixed-arity radius animation, partial pending-vari
 | Independent full core seal | a6cccfbf608ca25d3f9cb3cd776519ff3ca8fe7a78fc0daa2e2f7c9da7f29186 |
 | Independent final window seal | 442e781d175d99450344cfeff73c33985d8fb15b165c6a750760b7c3d47fc553 |
 | Root five-image visual review | ff7391aeed729f5b77f8601e3323c1161464f1c3e5d1a65a0a1b91033f0b3dc1 |
-| Current machine-readable report | 8b1c468c88bb5fed142fe135263f745065f979a8ab11a0f7914f60439a32d189 |
+| Current machine-readable report | 7e168a336a6c6879691ced617efccfbc745f7def71b58aea0a7b9b8857ab5c4c |
 | Sanitized additive comparison | bb2e5cd75086db5db0d8d20c4d4112d0c64710308bef2abc1b352c3364fe310b |
 | Current build/run guide | fab7355e455628e6f31d4bb69756c2c25cc99a7d9fd4ade061aa8dcef87146e5 |
 | Real credited 4:3 video | fdf01c56395f86eee5f2d5b79d195274e14df1296f1ad24f2dd4ba4383985ae2 |

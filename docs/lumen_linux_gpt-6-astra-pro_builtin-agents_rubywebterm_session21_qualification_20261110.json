@@ -237,7 +237,9 @@
       "gained_assertion_passes_vs2104": 1,
       "gained_complete_entries_vs2104": 1,
       "entry_count": 1248,
-      "unique_source_files": 1247
+      "unique_source_files": 1247,
+      "group_counts_baseline_candidate": 2104,
+      "group_counts_baseline_note": "These group counts compare2105 with2104 and sum to one new pass. The adjacent accepted2007 replay is the earlier baseline for the overall gain of36 passes."
     },
     "common_chromium_comparison": {
       "identity_rule": "Full URL, exact assertion name, zero-based occurrence within URL/name. Every registered identity is retained.",
@@ -1246,7 +1248,7 @@
     "live_archive_mapping": "Historical2007 mapping remains unchanged; current source archive is on Pages."
   },
   "optional_follow_on": {
-    "radius_animation": "Deferred at a computed-endpoint isolation boundary; no animation/native resolver changes in2104.",
+    "radius_animation": "Deferred at a computed-endpoint isolation boundary; no animation/native resolver changes through2105.",
     "mutation_observer": "Ordinary callback-exception routing is accepted in2105; parser/XML/outerHTML and foreign-constructor gaps remain. No claim of complete MutationObserver conformance.",
     "outerhtml_and_parser_xml": "Not repaired by this checkpoint."
   },
