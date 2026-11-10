@@ -1,13 +1,9 @@
-# Lumen Linux source checkpoint 2007
+# Accepted Lumen Linux checkpoint 2104
 
-Prepared with GPT-6 Astra Pro, built-in agents and RubyWebTerm on 2026-11-04.
+The selected three unprefixed radius parsing/computed WPT files pass 48/48; the broader frozen sample is 819/1248 complete files and 23364/26245 assertion passes (89.02267%). Native 222 and independent actual-window redraw gates pass. This is not whole-WPT or all-radius conformance.
 
-This tree reproduces the recorded inputs from tested working source `2de18b314abacd5a027496b715bb28b91d676191`.
-The public commit has separate, previously approved public ancestry. Private task
-history, profiles, credentials, inbox records and guarded validation machinery
-are excluded. Existing older validation documents are historical snapshots;
-`EXPORT-QUALIFICATION.json` describes this checkpoint and its exact limitations.
+Tested engine source: `3edec1c75b9e332f16e2e5b0943eb881c3c00e1f`.
 
-This source package does not claim full WPT conformance or Chromium parity.
-External build dependencies are not bundled. Packaging and offline Git recovery
-are not an independent rebuild of the browser.
+Accepted immutable Linux binary SHA256: `0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9`.
+
+Read [docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md](docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md) and `EXPORT-QUALIFICATION.json`. Public export commit/archive/Pages identities are recorded by separate publication receipts, avoiding self-referential commit claims. Later optional candidates are excluded from this immutable 2104 branch.

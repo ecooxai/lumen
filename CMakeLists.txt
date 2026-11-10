@@ -856,6 +856,54 @@ else()
         target_link_libraries(test_flex_alignment PRIVATE lumen_engine)
         target_compile_options(test_flex_alignment PRIVATE -UNDEBUG)
         add_test(NAME flex_alignment COMMAND test_flex_alignment)
+        add_executable(test_css_border_radius tests/test_css_border_radius.c)
+        target_link_libraries(test_css_border_radius PRIVATE lumen_engine)
+        target_compile_options(test_css_border_radius PRIVATE -UNDEBUG)
+        add_test(NAME css_border_radius COMMAND test_css_border_radius)
+        add_executable(test_css_border_radius_rendering tests/test_css_border_radius_rendering.c)
+        target_link_libraries(test_css_border_radius_rendering PRIVATE lumen_engine)
+        target_compile_options(test_css_border_radius_rendering PRIVATE -UNDEBUG)
+        add_test(NAME css_border_radius_rendering COMMAND test_css_border_radius_rendering)
+        add_executable(test_css_background_position_types tests/test_css_background_position_types.c)
+        target_link_libraries(test_css_background_position_types PRIVATE lumen_engine)
+        target_compile_options(test_css_background_position_types PRIVATE -UNDEBUG)
+        add_test(NAME css_background_position_types COMMAND test_css_background_position_types)
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+            add_executable(test_css_border_radius_damage tests/test_css_border_radius_damage.c)
+            add_dependencies(test_css_border_radius_damage lumen_embedded)
+            target_include_directories(test_css_border_radius_damage PRIVATE
+                "$<TARGET_PROPERTY:lumen,INCLUDE_DIRECTORIES>")
+            target_compile_definitions(test_css_border_radius_damage PRIVATE
+                "$<TARGET_PROPERTY:lumen,COMPILE_DEFINITIONS>")
+            target_compile_options(test_css_border_radius_damage PRIVATE
+                "$<TARGET_PROPERTY:lumen,COMPILE_OPTIONS>"
+                -UNDEBUG -ffunction-sections -fdata-sections)
+            target_link_libraries(test_css_border_radius_damage PRIVATE lumen_engine)
+            target_link_options(test_css_border_radius_damage PRIVATE
+                "$<TARGET_PROPERTY:lumen,LINK_OPTIONS>" -Wl,--gc-sections)
+            add_test(NAME css_border_radius_damage COMMAND test_css_border_radius_damage)
+            target_compile_definitions(test_css_border_radius PRIVATE RADIUS_WRAP_MALLOC=1)
+            target_link_options(test_css_border_radius PRIVATE -Wl,--wrap=malloc)
+            # This explicit target instruments style ownership and its native
+            # lifetime controls. Other archive objects and V8 stay uninstrumented.
+            add_executable(test_css_border_radius_sanitized EXCLUDE_FROM_ALL
+                tests/test_css_border_radius.c src/css/style.c)
+            target_link_libraries(test_css_border_radius_sanitized PRIVATE lumen_engine)
+            target_compile_definitions(test_css_border_radius_sanitized PRIVATE RADIUS_WRAP_MALLOC=1)
+            target_compile_options(test_css_border_radius_sanitized PRIVATE
+                -UNDEBUG -fsanitize=address,undefined -fno-omit-frame-pointer)
+            target_link_options(test_css_border_radius_sanitized PRIVATE
+                -fsanitize=address,undefined -Wl,--wrap=malloc)
+            # Instrument the changed hit traversal and its real DOM/raster/hit
+            # controls. Display/raster/style archive objects and V8 stay ordinary.
+            add_executable(test_css_border_radius_hit_sanitized EXCLUDE_FROM_ALL
+                tests/test_css_border_radius_rendering.c src/layout/block.c)
+            target_link_libraries(test_css_border_radius_hit_sanitized PRIVATE lumen_engine)
+            target_compile_options(test_css_border_radius_hit_sanitized PRIVATE
+                -UNDEBUG -fsanitize=address,undefined -fno-omit-frame-pointer)
+            target_link_options(test_css_border_radius_hit_sanitized PRIVATE
+                -fsanitize=address,undefined)
+        endif()
         add_executable(test_css_viewport_units tests/test_css_viewport_units.c)
         target_link_libraries(test_css_viewport_units PRIVATE lumen_engine)
         target_compile_options(test_css_viewport_units PRIVATE -UNDEBUG)

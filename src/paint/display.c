@@ -30,17 +30,14 @@ static bool visible(PB *p, float x, float y, float w, float h) {
     return true;
 }
 static bool rounded(const ComputedStyle *s) {
-    for (int i = 0; i < 4; i++) if (s->border_radius[i].px > 0 || s->border_radius[i].pct > 0) return true;
+    const Length *vertical = s->border_radius_y ? s->border_radius_y : s->border_radius;
+    for (int i = 0; i < 4; i++)
+        if (s->border_radius[i].px || s->border_radius[i].pct || s->border_radius[i].mm ||
+            vertical[i].px || vertical[i].pct || vertical[i].mm) return true;
     return false;
 }
-static void radii(const Box *b, float w, float h, float r[4]) {
-    for (int i = 0; i < 4; i++) r[i] = res(b->st->border_radius[i], i % 2 ? w : w);
-    float f = 1;
-    if (r[0] + r[1] > w) f = LMIN(f, w / (r[0] + r[1]));
-    if (r[3] + r[2] > w) f = LMIN(f, w / (r[3] + r[2]));
-    if (r[0] + r[3] > h) f = LMIN(f, h / (r[0] + r[3]));
-    if (r[1] + r[2] > h) f = LMIN(f, h / (r[1] + r[2]));
-    if (f < 1) for (int i = 0; i < 4; i++) r[i] *= f;
+static void radii(const Box *b, float w, float h, unsigned corners, float r[4], float ry[4]) {
+    css_used_border_radii(b->st, w, h, corners, r, ry);
 }
 
 /* mask-image is approximated as the background colour shown through the mask's alpha */
@@ -61,19 +58,17 @@ static Image *tinted(Image *src, Color c) {
     return o;
 }
 
-typedef struct BgArea { float x, y, w, h, r[4]; } BgArea;
+typedef struct BgArea { float x, y, w, h, r[4], ry[4]; } BgArea;
 static BgArea background_area(const Box *b, float x, float y, float w, float h,
-                              int kind, const float outer_r[4], bool l_edge, bool r_edge) {
+                              int kind, const float outer_r[4], const float outer_ry[4], bool l_edge, bool r_edge) {
     float in[4] = {0};
     if (kind != BG_BORDER_BOX) for (int i = 0; i < 4; i++) {
         if ((i == 3 && !l_edge) || (i == 1 && !r_edge)) continue;
         in[i] = b->b[i] + (kind == BG_CONTENT_BOX ? b->p[i] : 0);
     }
-    BgArea a = {x + in[3], y + in[0], LMAX(0, w - in[1] - in[3]), LMAX(0, h - in[0] - in[2]), {0}};
-    a.r[0] = LMAX(0, outer_r[0] - LMAX(in[0], in[3]));
-    a.r[1] = LMAX(0, outer_r[1] - LMAX(in[0], in[1]));
-    a.r[2] = LMAX(0, outer_r[2] - LMAX(in[2], in[1]));
-    a.r[3] = LMAX(0, outer_r[3] - LMAX(in[2], in[3]));
+    BgArea a = {.x = x + in[3], .y = y + in[0],
+        .w = LMAX(0, w - in[1] - in[3]), .h = LMAX(0, h - in[0] - in[2])};
+    rounded_radii_inset(outer_r, outer_ry, in, a.r, a.ry);
     return a;
 }
 /* Background position percentages use (positioning area - image size), which
@@ -129,33 +124,54 @@ static void paint_background_source(PB *p, const ComputedStyle *s, const BgArea 
     if (step_y <= 0) { y = LMAX(y, (float)oy); bottom = LMIN(bottom, (float)(oy + ih)); }
     if (right <= x || bottom <= y || !visible(p, x, y, right - x, bottom - y)) return;
     DItem *it = emit(p, im ? DO_IMAGE : DO_GRADIENT); it->x = x; it->y = y; it->w = right - x; it->h = bottom - y; it->img = im; it->grad = grad;
-    memcpy(it->r, clip_area->r, sizeof it->r);
+    ditem_set_radii(it, clip_area->r, clip_area->ry);
     it->tile = (BackgroundTile){(float)(ox - x), (float)(oy - y), iw, ih, step_x, step_y,
                                clip_area->x - x, clip_area->y - y, clip_area->w, clip_area->h};
+}
+
+/* Generic mask-repeat values are retained even though masks use the existing
+ * background-colour approximation. Change only the initial/repeat operation;
+ * explicit no-repeat and other authored modes keep their previous path. */
+static bool mask_default_repeat(const ComputedStyle *s) {
+    const char *value = custom_get(s->gen_n, "mask-repeat");
+    if (!value || !*value) return true;
+    char a[16], b[16], extra[2];
+    int n = sscanf(value, "%15s %15s %1s", a, b, extra);
+    return (n == 1 && str_ieq(a, "repeat")) ||
+           (n == 2 && str_ieq(a, "repeat") && str_ieq(b, "repeat"));
 }
 
 static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, bool l_edge, bool r_edge) {
     const ComputedStyle *s = b->st;
     if (!visible(p, x - 64, y - 64, w + 128, h + 128)) return;
-    float r[4]; radii(b, w, h, r);
+    float r[4], ry[4];
+    /* Sliced inline fragments have no curve on an absent start/end edge. */
+    unsigned corners = (l_edge ? 9u : 0u) | (r_edge ? 6u : 0u);
+    radii(b, w, h, corners, r, ry);
     if (s->mask_image) {
         Image *mk = paint_url_image_hook ? paint_url_image_hook(s->mask_image) : NULL;
         if (!mk || !mk->w || !mk->h || !COLOR_A(s->bg_color)) return;
         float iw = image_css_w(mk), ih = image_css_h(mk), ox = x, oy = y;
         if (s->mask_fit) { float k = s->mask_fit == 1 ? LMIN(w / iw, h / ih) : LMAX(w / iw, h / ih); iw *= k; ih *= k; ox += (w - iw) / 2; oy += (h - ih) / 2; }
-        DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; memcpy(c->r, r, sizeof r);
+        DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; ditem_set_radii(c, r, ry);
         DItem *it = emit(p, DO_IMAGE); it->x = ox; it->y = oy; it->w = iw; it->h = ih; it->img = tinted(mk, s->bg_color);
+        if (!s->mask_fit && mask_default_repeat(s)) {
+            /* Tile at intrinsic CSS size through the existing image lattice,
+               without allocating a display item for each repeated image. */
+            it->x = x; it->y = y; it->w = w; it->h = h;
+            it->tile = (BackgroundTile){0, 0, iw, ih, iw, ih, 0, 0, w, h};
+        }
         emit(p, DO_POP_CLIP);
         return;
     }
     if (s->has_shadow && !s->box_shadow.inset && COLOR_A(s->box_shadow.color)) {
         DItem *it = emit(p, DO_SHADOW); it->x = x + s->box_shadow.x; it->y = y + s->box_shadow.y; it->w = w; it->h = h;
-        memcpy(it->r, r, sizeof r); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread;
+        ditem_set_radii(it, r, ry); it->color = s->box_shadow.color; it->blur = s->box_shadow.blur; it->spread = s->box_shadow.spread;
         it->ox = s->box_shadow.x; it->oy = s->box_shadow.y;
     }
-    BgArea bg_clip = background_area(b, x, y, w, h, s->bg_clip, r, l_edge, r_edge);
-    BgArea bg_origin = background_area(b, x, y, w, h, s->bg_origin, r, l_edge, r_edge);
-    BgArea color_clip = background_area(b, x, y, w, h, s->bg_color_clip, r, l_edge, r_edge);
+    BgArea bg_clip = background_area(b, x, y, w, h, s->bg_clip, r, ry, l_edge, r_edge);
+    BgArea bg_origin = background_area(b, x, y, w, h, s->bg_origin, r, ry, l_edge, r_edge);
+    BgArea color_clip = background_area(b, x, y, w, h, s->bg_color_clip, r, ry, l_edge, r_edge);
     if ((!p->canvas_color_owner || b->node != p->canvas_color_owner) && COLOR_A(s->bg_color) && color_clip.w > 0 && color_clip.h > 0) {
         Color c = s->bg_color;
         /* backdrop-filter: blur() isn't rendered; blurred content behind a translucent surface reads as
@@ -164,7 +180,7 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
            opaque, since faint sharp text behind it reads as stale pixels */
         if (s->backdrop_blur > 0 && COLOR_A(c) < 255)
             c = (c & 0xffffff) | (Color)(s->backdrop_blur >= 16 && COLOR_A(c) >= 128 ? 255 : 255 - (255 - COLOR_A(c)) / 4) << 24;
-        DItem *it = emit(p, DO_RECT); it->x = color_clip.x; it->y = color_clip.y; it->w = color_clip.w; it->h = color_clip.h; memcpy(it->r, color_clip.r, sizeof it->r); it->color = c;
+        DItem *it = emit(p, DO_RECT); it->x = color_clip.x; it->y = color_clip.y; it->w = color_clip.w; it->h = color_clip.h; ditem_set_radii(it, color_clip.r, color_clip.ry); it->color = c;
     }
     if (s->bg_gradient) paint_background_source(p, s, &bg_origin, &bg_clip, NULL, s->bg_gradient);
     if (s->bg_image && paint_url_image_hook) {
@@ -173,12 +189,18 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
     }
     float bw[4]; bool any = false;
     for (int i = 0; i < 4; i++) { bw[i] = b->b[i]; if ((i == 3 && !l_edge) || (i == 1 && !r_edge)) bw[i] = 0; if (bw[i] > 0 && s->border_style[i] > BS_HIDDEN && COLOR_A(s->border_color[i])) any = true; else bw[i] = 0; }
-    if (any) { DItem *it = emit(p, DO_BORDER); it->x = x; it->y = y; it->w = w; it->h = h; memcpy(it->r, r, sizeof r); memcpy(it->bw, bw, sizeof bw); memcpy(it->bc, s->border_color, sizeof it->bc); memcpy(it->bs, s->border_style, 4); }
+    if (any) { DItem *it = emit(p, DO_BORDER); it->x = x; it->y = y; it->w = w; it->h = h; ditem_set_radii(it, r, ry); memcpy(it->bw, bw, sizeof bw); memcpy(it->bc, s->border_color, sizeof it->bc); memcpy(it->bs, s->border_style, 4); }
     if (s->outline_style > BS_HIDDEN && s->outline_width > 0 && COLOR_A(s->outline_color)) {
         float o = s->outline_offset + s->outline_width;
         DItem *it = emit(p, DO_BORDER); it->x = x - o; it->y = y - o; it->w = w + 2 * o; it->h = h + 2 * o;
         /* the outline follows the box's rounded corners, grown by its offset and width */
-        for (int i = 0; i < 4; i++) { it->bw[i] = s->outline_width; it->bc[i] = s->outline_color; it->bs[i] = s->outline_style; it->r[i] = r[i] > 0 ? LMAX(0, r[i] + o) : 0; }
+        float outline_x[4], outline_y[4];
+        for (int i = 0; i < 4; i++) {
+            it->bw[i] = s->outline_width; it->bc[i] = s->outline_color; it->bs[i] = s->outline_style;
+            outline_x[i] = r[i] > 0 ? LMAX(0, r[i] + o) : 0;
+            outline_y[i] = ry[i] > 0 ? LMAX(0, ry[i] + o) : 0;
+        }
+        rounded_square_corners(outline_x, outline_y); ditem_set_radii(it, outline_x, outline_y);
     }
 }
 
@@ -293,7 +315,13 @@ static void paint_replaced(PB *p, Box *b) {
         dw = im->w * k; dh = im->h * k; dx = x + (w - dw) / 2; dy = y + (h - dh) / 2;
     }
     bool needclip = dw > w + 0.5f || dh > h + 0.5f || rounded(b->st);
-    if (needclip) { DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; radii(b, w, h, c->r); }
+    if (needclip) {
+        float outer_x[4], outer_y[4]; radii(b, b->w, b->h, 15u, outer_x, outer_y);
+        BgArea area = background_area(b, b->x + p->dx, b->y + p->dy, b->w, b->h,
+            BG_CONTENT_BOX, outer_x, outer_y, true, true);
+        DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h;
+        ditem_set_radii(c, area.r, area.ry);
+    }
     DItem *it = emit(p, DO_IMAGE); it->x = dx; it->y = dy; it->w = dw; it->h = dh; it->img = im;
     if (needclip) emit(p, DO_POP_CLIP);
 }
@@ -473,9 +501,10 @@ static void paint_block_content(PB *p, Box *b, bool decorate) {
         float x = b->x + p->dx + b->b[3], y = b->y + p->dy + b->b[0], w = b->w - b->b[1] - b->b[3], h = b->h - b->b[0] - b->b[2];
         DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; c->sc = b;
         if (rounded(s)) {   /* overflow clips to the padding box's rounded corners */
-            float o[4]; radii(b, b->w, b->h, o);
-            const float side[4][2] = { { b->b[3], b->b[0] }, { b->b[1], b->b[0] }, { b->b[1], b->b[2] }, { b->b[3], b->b[2] } };
-            for (int i = 0; i < 4; i++) c->r[i] = LMAX(0, o[i] - LMAX(side[i][0], side[i][1]));
+            float outer_x[4], outer_y[4], inner_x[4], inner_y[4];
+            radii(b, b->w, b->h, 15u, outer_x, outer_y);
+            rounded_radii_inset(outer_x, outer_y, b->b, inner_x, inner_y);
+            ditem_set_radii(c, inner_x, inner_y);
         }
         if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
         p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
@@ -551,6 +580,50 @@ static int def_cmp(const void *a, const void *b) {
     return x->order - y->order;
 }
 
+/* Find the already-active scroller prefix using the existing snapshot chains.
+ * A false clip is an affine boundary: its inherited contours are outside that
+ * group's coordinate system. No extra state or ancestor allocation is needed. */
+static unsigned deferred_clip_depth(const PB *state) {
+    unsigned depth = 0;
+    for (; state && state->clip && state->sb && state->outer; state = state->outer) depth++;
+    return depth;
+}
+static const Box *deferred_active_clip_prefix(const PB *state, const PB *active) {
+    if (!state->clip || !active->clip || !state->sb || !active->sb) return NULL;
+    if (state->sb == active->sb) return state->sb;
+    unsigned a = deferred_clip_depth(state), b = deferred_clip_depth(active);
+    while (a > b) { state = state->outer; a--; }
+    while (b > a) { active = active->outer; b--; }
+    while (a--) {
+        if (state->sb == active->sb) return state->sb;
+        state = state->outer; active = active->outer;
+    }
+    return NULL;
+}
+/* Deferred descendants keep an aggregate rectangular clip. Re-emit only the
+ * rounded padding contours between their state and the active common prefix;
+ * contexts must not duplicate contours already enclosing their paint. */
+static unsigned paint_deferred_rounded_clips(PB *p, const PB *state, const Box *active) {
+    if (!state || !state->clip || !state->sb || !state->outer || state->sb == active) return 0;
+    const PB *outer = state->outer;
+    unsigned count = paint_deferred_rounded_clips(p, outer, active);
+    const Box *b = state->sb;
+    if (!b->node || !rounded(b->st)) return count;
+    float x[4], y[4], ix[4], iy[4];
+    radii(b, b->w, b->h, 15u, x, y);
+    rounded_radii_inset(x, y, b->b, ix, iy);
+    if (!(ix[0] || ix[1] || ix[2] || ix[3])) return count;
+    DItem *c = emit(p, DO_PUSH_CLIP);
+    c->x = b->x + outer->dx + b->b[3];
+    c->y = b->y + outer->dy + b->b[0];
+    c->w = b->w - b->b[1] - b->b[3];
+    c->h = b->h - b->b[0] - b->b[2];
+    c->sc = b; c->mv = outer->mv;
+    c->fixed = outer->fixed; c->sticky = outer->sticky;
+    ditem_set_radii(c, ix, iy);
+    return count + 1;
+}
+
 static void paint_deferred(PB *p, Deferred *d) {
     PB saved = *p;
     *p = d->state; p->order = saved.order;
@@ -560,7 +633,10 @@ static void paint_deferred(PB *p, Deferred *d) {
     } else if (d->b->abs && d->b->cb == p->L->root) p->clip = false;
     bool clipped = p->clip;
     if (clipped) { DItem *c = emit(p, DO_PUSH_CLIP); c->x = p->cx; c->y = p->cy; c->w = p->cw; c->h = p->ch; }
+    const Box *active = clipped ? deferred_active_clip_prefix(p, &saved) : NULL;
+    unsigned rounded_clips = clipped ? paint_deferred_rounded_clips(p, p, active) : 0;
     paint_stacking(p, d->b, makes_context(d->b));
+    for (unsigned i = 0; i < rounded_clips; i++) emit(p, DO_POP_CLIP);
     if (clipped) emit(p, DO_POP_CLIP);
     int order = p->order; *p = saved; p->order = order;
 }

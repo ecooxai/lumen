@@ -1548,7 +1548,35 @@ void box_sticky_offset(const Box *b, float scroll_x, float scroll_y, float *dx, 
     *dy = sticky_axis(b->y, b->h, res(b->st->margin[0], margin_width), res(b->st->margin[2], margin_width), cy, cbottom, py - parent_dy, ph, b->st->inset[0], b->st->inset[2], false);
 }
 
+#include "../base/rounded-rect.h"
+
 /* ---------------- hit testing ---------------- */
+
+static bool hit_has_radius(const Box *b) {
+    if (!b->st || !b->node || b->node->type != NODE_ELEMENT) return false;
+    for (int i = 0; i < 4; i++)
+        if (b->st->border_radius[i].px || b->st->border_radius[i].pct || b->st->border_radius[i].mm) return true;
+    return false;
+}
+static bool hit_radius_rect(const Box *b, float px, float py, float x, float y,
+                            float width, float height, unsigned corners) {
+    if (!(px >= x && px < x + width && py >= y && py < y + height)) return false;
+    if (!hit_has_radius(b)) return true;
+    float rx[4], ry[4]; css_used_border_radii(b->st, width, height, corners, rx, ry);
+    return rounded_rect_contains(px, py, x, y, x + width, y + height, rx, ry);
+}
+static bool hit_radius_padding(const Box *b, float px, float py) {
+    if (!b->scroller || !b->node) return true;
+    if (!(px >= b->x + b->b[3] && px < b->x + b->w - b->b[1] &&
+          py >= b->y + b->b[0] && py < b->y + b->h - b->b[2])) return false;
+    if (!hit_has_radius(b)) return true;
+    float outer_x[4], outer_y[4], rx[4], ry[4];
+    css_used_border_radii(b->st, b->w, b->h, 15u, outer_x, outer_y);
+    rounded_radii_inset(outer_x, outer_y, b->b, rx, ry);
+    return rounded_rect_contains(px, py, b->x + b->b[3], b->y + b->b[0],
+        b->x + b->w - b->b[1], b->y + b->h - b->b[2], rx, ry);
+}
+
 /* Match the renderer's deferred layers: positioned descendants of ordinary
    wrappers participate in the same ordering as their positioned uncles. A
    wrapper alone must not put a painted overlay behind the content it covers. */
@@ -1560,28 +1588,46 @@ static int hit_layer(const Box *c) {
     int z = c->st->z_auto ? 0 : c->st->z_index;
     return z > 0 ? 0 : z == 0 ? 1 : 3;
 }
-static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy, float sx, float sy, bool layers);
+/* Hit collection keeps applicable clipping ancestors while searching for
+ * descendants that escape them through their containing block. This mirrors
+ * the existing deferred paint/scroll semantics without owning any Box state. */
+typedef struct HitClip {
+    const Box *box;
+    const struct HitClip *outer;
+    float ox, oy;               /* coordinates outside this scroller */
+    bool visible;              /* point is inside every applicable clip */
+} HitClip;
+static const HitClip *hit_child_clips(const Box *child, const HitClip *clips,
+                                     float *ox, float *oy, float vx, float vy) {
+    if (box_fixed_to_viewport(child)) { *ox = vx; *oy = vy; return NULL; }
+    if (child->abs) while (clips && !box_within(child->cb, clips->box)) {
+        *ox = clips->ox; *oy = clips->oy; clips = clips->outer;
+    }
+    return clips;
+}
+static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy, float sx, float sy, bool layers, const HitClip *clips);
 typedef struct HitLayer { Box *box; int z; bool negative; } HitLayer;
-static void hit_layers(Box *b, float x, float y, float ox, float oy, float vx, float vy, float sx, float sy, HitLayer *best) {
+static void hit_layers(Box *b, float x, float y, float ox, float oy, float vx, float vy, float sx, float sy, HitLayer *best, const HitClip *clips) {
     if (layout_contents_hidden(b)) return;
     float lx = x + ox, ly = y + oy;
-    if (b->scroller && b->node && !(lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h)) return;
+    bool children_visible = (!clips || clips->visible) && hit_radius_padding(b, lx, ly);
+    HitClip own = {b, clips, ox, oy, children_visible};
+    if (b->scroller && b->node) clips = &own;
     float cox = ox, coy = oy;
     if (b->scroller && b->node) { cox += box_scroll_left(b); coy += box_scroll_y(b); }
     /* Reverse tree order resolves equal z-index without sorting or allocating.
        Each layer is tested at most once, and a lower layer cannot replace a hit. */
     for (Box *c = b->last; c; c = c->prev) {
-        bool outside = c->abs && b->scroller && !box_within(c->cb, b);
-        bool viewport_fixed = box_fixed_to_viewport(c);
-        float cx = viewport_fixed ? vx : outside ? ox : cox, cy = viewport_fixed ? vy : outside ? oy : coy;
-        if (hit_layer(c) == 2) { hit_layers(c, x, y, cx, cy, vx, vy, sx, sy, best); continue; }
+        float cx = cox, cy = coy;
+        const HitClip *child_clips = hit_child_clips(c, clips, &cx, &cy, vx, vy);
+        if (hit_layer(c) == 2) { hit_layers(c, x, y, cx, cy, vx, vy, sx, sy, best, child_clips); continue; }
         int z = c->st->z_auto ? 0 : c->st->z_index;
         if ((z < 0) != best->negative || (best->box && z <= best->z)) continue;
-        Box *h = hit(c, x, y, cx, cy, vx, vy, sx, sy, true);
+        Box *h = hit(c, x, y, cx, cy, vx, vy, sx, sy, true, child_clips);
         if (h) { best->box = h; best->z = z; }
     }
 }
-static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy, float sx, float sy, bool layers) {
+static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy, float sx, float sy, bool layers, const HitClip *clips) {
     bool hidden = b->st && b->st->visibility != VIS_VISIBLE;   /* not a target itself, but visible descendants are */
     float sticky_x, sticky_y; box_sticky_offset(b, sx, sy, &sticky_x, &sticky_y);
     ox -= sticky_x; oy -= sticky_y;
@@ -1596,37 +1642,46 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     }
     float lx = x + ox, ly = y + oy;
     bool inside = lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h;
-    if (b->scroller && b->node && !inside) return NULL;
+    bool ancestor_visible = !clips || clips->visible;
+    bool inside_shape = ancestor_visible && inside && hit_radius_rect(b, lx, ly, b->x, b->y, b->w, b->h, 15u);
+    bool children_visible = ancestor_visible && hit_radius_padding(b, lx, ly);
     if (layout_contents_hidden(b))
-        return inside && !hidden && b->st->pointer_events ? b : NULL;
+        return inside_shape && !hidden && b->st->pointer_events ? b : NULL;
     if (layers) {
         HitLayer best = {0};
-        hit_layers(b, x, y, ox, oy, vx, vy, sx, sy, &best);
+        hit_layers(b, x, y, ox, oy, vx, vy, sx, sy, &best, clips);
         if (best.box) return best.box;
     }
     float cox = ox, coy = oy;
     if (b->scroller && b->node) { cox += box_scroll_left(b); coy += box_scroll_y(b); }
-    for (Box *c = b->last; c; c = c->prev) {
+    HitClip own = {b, clips, ox, oy, children_visible};
+    const HitClip *child_clips = b->scroller && b->node ? &own : clips;
+    for (Box *c = children_visible ? b->last : NULL; c; c = c->prev) {
         if (hit_layer(c) != 2) continue;
-        Box *h = hit(c, x, y, cox, coy, vx, vy, sx, sy, false);
+        Box *h = hit(c, x, y, cox, coy, vx, vy, sx, sy, false, child_clips);
         if (h) return h;
     }
     if (layers) {
         HitLayer best = {.negative = true};
-        hit_layers(b, x, y, ox, oy, vx, vy, sx, sy, &best);
+        hit_layers(b, x, y, ox, oy, vx, vy, sx, sy, &best, clips);
         if (best.box) return best.box;
     }
     if (b->kind == BX_INLINE) {
-        for (int i = 0; i < b->nir; i++) { IRect *r = &b->ir[i]; if (lx >= r->x && lx < r->x + r->w && ly >= r->y && ly < r->y + r->h) return hidden || (b->st && !b->st->pointer_events) ? NULL : b; }
+        if (!ancestor_visible) return NULL;
+        for (int i = 0; i < b->nir; i++) {
+            IRect *r = &b->ir[i]; unsigned corners = (r->first ? 9u : 0u) | (r->last ? 6u : 0u);
+            if (hit_radius_rect(b, lx, ly, r->x, r->y, r->w, r->h, corners))
+                return hidden || (b->st && !b->st->pointer_events) ? NULL : b;
+        }
         return NULL;
     }
-    for (int i = 0; i < b->nfrags; i++) { TextFrag *f = &b->frags[i]; if (f->box->kind == BX_TEXT && !(f->box->st && (f->box->st->visibility != VIS_VISIBLE || !f->box->st->pointer_events)) && lx >= f->x && lx < f->x + f->w && ly >= f->y && ly < f->y + f->h) { Box *t = f->box; return t->parent && t->parent->kind == BX_INLINE ? t->parent : b; } }
-    if (inside && !hidden && b->node && b->st && b->st->pointer_events) return b;
+    for (int i = 0; children_visible && i < b->nfrags; i++) { TextFrag *f = &b->frags[i]; if (f->box->kind == BX_TEXT && !(f->box->st && (f->box->st->visibility != VIS_VISIBLE || !f->box->st->pointer_events)) && lx >= f->x && lx < f->x + f->w && ly >= f->y && ly < f->y + f->h) { Box *t = f->box; return t->parent && t->parent->kind == BX_INLINE ? t->parent : b; } }
+    if (inside_shape && !hidden && b->node && b->st && b->st->pointer_events) return b;
     return NULL;
 }
 Box *layout_hit(Layout *layout, float x, float y, float scroll_x, float scroll_y) {
     if (!layout->root) return NULL;
-    Box *box = hit(layout->root, x, y, 0, 0, -scroll_x, -scroll_y, scroll_x, scroll_y, true);
+    Box *box = hit(layout->root, x, y, 0, 0, -scroll_x, -scroll_y, scroll_x, scroll_y, true, NULL);
     while (box && !box->node) box = box->parent;
     return box;
 }

@@ -1,203 +1,35 @@
-# Lumen Linux checkpoint 2007
+# Lumen Linux: accepted source checkpoint 2104
 
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
+This public branch contains the exact tested engine source for the two-axis border-radius repair, curated qualification reports and preserved public history.
 
-## Historical repository documentation
+## Measured result
 
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
+- Selected unprefixed parsing/computed WPT target: **48/48** across 3 files (previous 21/48).
+- Separate prefixed companion: **25/25** (previous 20/25).
+- Expanded frozen cohort: **819/1248 complete files;23364/26245 passing assertions (89.02267%)**.
+- Native tests: **222/222**, retaining all 218 previous names.
+- Actual same-window Y-only redraw: 10 patch checks PASS, 1,127 changed pixels inside the shape, 0 outside.
 
-# Lumen Linux checkpoint 2006
+The scoped target passes; this is not all WPT, all-radius animation, Chromium-wide parity or overall 98% conformance. Known mixed-arity animation remains a retained limitation. The original Chromium run and its separate startup diagnostic are reported without silently merging them.
 
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
+## Inspect and recover
 
-## Historical repository documentation
+Read the [qualification report](docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md), [machine-readable report](docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json) and [sanitized 1,248-row comparison](docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json). `SOURCE-MANIFEST.json` maps 748 recorded build inputs and the remaining approved source paths to exact blobs/modes. `EXPORT-QUALIFICATION.json` binds the accepted source, binary and independent seals. `OFFLINE-RECOVERY.md` explains the public-history bundle.
 
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
+The source tree contains 815 engine/build/doc paths, 28 preserved historical public files, 5 metadata files and 3 reports: 851 tracked paths. It imports no canonical private Git history, browser profiles, inbox, posting capabilities or unreviewed runtime artifacts.
 
-# Lumen Linux checkpoint 2005
+## Build and run
 
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
+Consult [CMakeLists.txt](CMakeLists.txt) for the current native build configuration. The preserved `docs/build-dependencies200.json` is an older dependency snapshot, not a new build result. External dependencies are not bundled and a new independent archive rebuild is not claimed. On the original project host, the accepted executable is `build/codex-native/lumen-astra-i2104`; the normal build output may advance during later work. The readable report supplies a new isolated-profile launch command and the exact ICU data pin. No existing desktop browser/profile was replaced.
 
-## Historical repository documentation
+## Identity
 
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
+Tested engine source: `3edec1c75b9e332f16e2e5b0943eb881c3c00e1f`.
 
-# Lumen Linux checkpoint 2003
+Accepted binary SHA256: `0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9`.
 
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
+This branch is a new descendant of public checkpoint 2007 commit`e7569b9a15d4f323c5edb66ee7a79f9f0e85473a`. The public export commit, source archive and Pages commit are separate publication identities recorded outside this report-containing commit.
 
-## Historical repository documentation
+[Public release page](https://ecooxai.github.io/lumen/) · [Live progress](https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz)
 
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
-
-# Lumen Linux checkpoint 2002
-
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
-
-## Historical repository documentation
-
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
-
-# Lumen Linux checkpoint 1915
-
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
-
-## Historical repository documentation
-
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
-
-# Lumen Linux checkpoint 1908
-
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
-
-## Historical repository documentation
-
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
-
-# Lumen Linux checkpoint 1906
-
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
-
-## Historical repository documentation
-
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
-
-# Lumen Linux checkpoint 1902
-
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
-
-## Historical repository documentation
-
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
-
-# Lumen Linux checkpoint 1808
-
-**DEVELOPMENT DEVICE CHECKPOINT — preregistered reliability replay and two namespace checks PASS. Earlier intermittent namespace timeout remains documented. Not a production or whole-WPT certification.**
-
-The one preregistered unchanged reliability replay completed 759/1248 selected test cases/URLs (60.82%), with 22826/26245 assertions passing and all 22826 prior passes retained. The first full run remains HOLD at 758/1248 because its namespace harness timed out despite 51/51 assertions passing. Its raw result is preserved; no source fix or resolved cause is claimed.
-
-The starting accepted sample was 1705:714/1248 (57.21%). The 1248 URLs come from 1247 source files across 10 DOM/CSS families; the pre-existing selection excludes 44 long-timeout cases and 1 HTTPS-only case. This is not the whole WPT platform, and Chromium parity or 95/100 product quality is not claimed.
-
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for exact scope and identities. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) for the approved public Git history.
-
-## Historical repository documentation
-
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
-
-# Lumen Linux checkpoint 1701
-
-Read [CURRENT-CHECKPOINT.md](CURRENT-CHECKPOINT.md) and [EXPORT-QUALIFICATION.json](EXPORT-QUALIFICATION.json) for the current source identity, measured scope and limitations. Use [OFFLINE-RECOVERY.md](OFFLINE-RECOVERY.md) to restore the packaged Git history.
-
-## Historical repository documentation
-
-The following previously published text describes older checkpoints. Its candidate numbers and validation totals are historical.
-
-# Lumen browser (early preview)
-
-## Linux measured source
-
-The current [Linux measured report](docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.md) records the selected WPT scope, fixed 640-file non-URL comparison, native regression and rendering gates, source and binary identities, and resource measurements. Each suite retains its own denominator. URL work remains deferred; full WPT and whole-browser Chromium parity remain unverified.
-
-The source distribution includes the reviewed public-history Git bundle, generators and regression tests. `SOURCE-MANIFEST.json` and `EXPORT-QUALIFICATION.json` bind the public export to the tested source inputs. `OFFLINE-RECOVERY.md` explains recovery from the included bundle. The separately packaged executable is the exact tested Linux development build and requires its matching runtime.
-
-See the [tested Linux build and run guide](docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md) and [runtime identity record](docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json) before building or launching it.
-
-## Install on macOS
-
-1. Download `Lumen-0.1.0-preview.dmg` from the [Releases page](https://github.com/ecooxai/lumen/releases).
-2. Open the DMG and drag **Lumen** onto **Applications**.
-3. Lumen is **not signed with an Apple Developer ID** (it uses a local debug signature), so macOS Gatekeeper will block the first launch with "Lumen can't be opened" or "Lumen is damaged". Remove the download quarantine flag once in Terminal:
-
-   ```sh
-   xattr -dr com.apple.quarantine /Applications/Lumen.app
-   ```
-
-   Then open Lumen normally. Alternatively: try to open it once, then go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.
-
-Requirements: macOS 13 or newer on Apple Silicon (arm64).
-
----
-
-Lumen is a browser engine written from scratch in C. It is not a wrapper around WebKit, Chromium/Blink or Gecko: it has its own HTTP/1.1 + TLS stack, HTML and CSS parsers, DOM, layout engine and GPU renderer (wgpu). JavaScript runs on V8 through a small custom bridge, and media plays through FFmpeg with VideoToolbox hardware decoding.
-
-Goals: high performance, low RAM use, robustness.
-
-## Features
-
-- Real tabs in one process, Chrome-style tab strip in the title bar
-- Workspaces in a left vertical bar, each with its own tabs, icons and menu
-- Built-in new tab page with Bookmarks, History and Settings
-- **Lite mode** (off by default, global or per tab): releases off-screen images, video frames and audio and reloads them when scrolled into view; text and layout stay
-- Per-tab CPU limiter: a tab above 80% CPU for 60 s is limited to 40%, with a top bar to lift the limit for 1, 4 or 10 hours
-- Always-visible video controls (global or per tab)
-
-## Build from source
-
-```sh
-brew install v8 sdl3 wgpu-native ffmpeg icu4c freetype harfbuzz openssl brotli zstd libpng jpeg-turbo webp giflib
-make -j8
-./build/lumen https://www.youtube.com
-```
-
-Package a DMG: `python3 tools/mkdmg.py 0.1.0-preview` (output in `dist/`).
-
-## Status
-
-Early preview. Expect broken pages and missing features.
-
-## Linux and Android development
-
-Linux runs Lumen's native C/C++ engine with V8 and wgpu-native. In the full
-development checkout, current accepted binaries, exact source hashes, measured
-compatibility and remaining work are recorded in the dated `AGENTS.md` handoff
-and `devsummary.md`. These private task and handoff documents, including
-`agent/task.md`, are intentionally omitted from public source snapshots.
-The current public Linux report carries the measured validation for this source
-export. Android has separate build and release gates; Linux measurements do not
-establish an Android release.
-
-### Linux prerequisites and build
-
-The core build requires C11/C++20 compilers, CMake 3.22 or newer, Python 3,
-threads, ICU, OpenSSL, zlib, Brotli and Zstandard development libraries.
-The native core test suite also uses Git for an isolated local dependency-plan
-fixture; it does not download or build Android dependencies.
-The full browser additionally requires SDL3, matching V8 headers/libraries and
-build flags, wgpu-native, FreeType, HarfBuzz, FFmpeg, PNG/JPEG/WebP/GIF libraries,
-EGL/OpenGL ES, Fontconfig, libdatachannel and Opus. Install system fonts covering
-the scripts and symbols you use. Optional JavaScript viewer controls need Node.
-
-The commands below use the supplied build-budget wrapper. It requires an active
-systemd user manager plus `chrt` and `nice`, shares a CPU quota equal to 60% of
-host logical CPUs, and fails closed if that quota cannot be established.
-On the managed development host, all compilation must use this wrapper.
-
-Native core tests can run without V8, SDL3 or wgpu-native:
-
-```sh
-python3 tools/codex_compile.py cmake -S . -B build/codex-core -DLUMEN_BUILD_BROWSER=OFF
-python3 tools/codex_compile.py cmake --build build/codex-core -j2
-python3 tools/codex_compile.py ctest --test-dir build/codex-core --output-on-failure -j2 -E '^(url|url_host_nul|data_url)$'
-```
-
-For the full browser, use the exact compiler, V8/wgpu include and library paths,
-pointer-compression setting, runtime search paths and ICU setup in the
-[tested Linux build and run guide](docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md).
-The [runtime identity record](docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json)
-lists the actual tested toolchain, external dependency identities and ELF imports. Prebuilt
-V8/wgpu libraries, installed system libraries, and the separately pinned WPT
-and Chromium installations are not included in the source snapshot. The source
-archive and recorded source/resource/test/build manifest do not constitute a
-hermetic build or a compiler-generated transitive dependency closure. The
-published source snapshot also omits private validation runners and raw results;
-complete standalone WPT reproduction requires the separate validation setup.
-
-### Android adapter
-
-The Android adapter builds the same C/C++ engine through SDL3; it does not embed
-Android WebView. Android prerequisites and release gates remain separate. Linux results do not
-establish an Android release or Chromium-level web-platform compatibility.
-
-## Authored interactive demonstration
-
-[Open the included demonstration](examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html). The interactive page runs in the browser opening it. Open it in Lumen to exercise the Lumen engine. Recorded native234 validation is separate from the live values shown in any other browser. This is authored content outside WPT scoring, with separately recorded native234 observations in [the demo evidence](docs/gpt-6-astra-pro-builtin-rubywebterm-live-demo-evidence.json).
+Prepared by GPT-6 Astra Pro / built-in agents / RubyWebTerm.

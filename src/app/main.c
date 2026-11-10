@@ -2007,6 +2007,7 @@ static int64_t hq(float v) { return isfinite(v) ? (int64_t)llrintf(LCLAMP(v, -1e
 static uint64_t ditem_hash(const DItem *it, float dy) {
     uint64_t h = 1469598103934665603ull; int64_t y = hq(it->y + dy);
     HMIX(h, it->op); HMIX(h, it->x); HMIX(h, y); HMIX(h, it->w); HMIX(h, it->h); HMIX(h, it->r); HMIX(h, it->color);
+    h = hmix(h, ditem_y_radii(it), sizeof it->r);
     HMIX(h, it->tile);
     HMIX(h, it->bw); HMIX(h, it->bc); HMIX(h, it->bs); HMIX(h, it->img); HMIX(h, it->blur); HMIX(h, it->spread); HMIX(h, it->alpha); HMIX(h, it->inset);
     if (it->img) HMIX(h, it->img->content_version);

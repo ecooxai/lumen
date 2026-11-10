@@ -1,157 +1,84 @@
 {
-  "candidate": 2007,
-  "status": "REVIEWED COMPLETE SELECTED1248 DEVELOPMENT CHECKPOINT; publication receipt recorded separately",
-  "tested_source_commit": "2de18b314abacd5a027496b715bb28b91d676191",
-  "tested_binary_sha256": "2751690036083f7ba162d8caea6bdbe383f48e183245c828f2f0d58c4d22a586",
-  "source_manifest_digest": "c6585dae7b98c840cb7d94962ab62f83d81608cc7c6d6f0ca2230ecadfcf2c8f",
-  "public_parent": "17a324530cc3d819474e8a2a54a0948d3ef40bac",
-  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2007-20261104",
+  "candidate": 2104,
+  "status": "ACCEPTED SELECTED48 TARGET AND FROZEN1248 REGRESSION CHECKPOINT; publication receipt recorded separately",
+  "tested_source_commit": "3edec1c75b9e332f16e2e5b0943eb881c3c00e1f",
+  "tested_binary_sha256": "0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9",
+  "source_manifest_digest": "b8b0e73ddfba95353cf9d3dda57437341fad3698258eeebdd3c2978a5f1a17ff",
+  "public_parent": "e7569b9a15d4f323c5edb66ee7a79f9f0e85473a",
+  "public_branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2104-20261110",
   "all_recorded_inputs_exact": true,
   "full_wpt_conformance_claimed": false,
+  "all_border_radius_conformance_claimed": false,
   "chromium_parity_claimed": false,
+  "global98_goal_achieved": false,
   "private_history_included": false,
-  "publication_performed": false,
+  "public_push_performed_at_metadata_creation": false,
   "validation_summary": {
-    "qualification": "Accepted source2007 after one separately preregistered unchanged full reliability replay, exact native218 and all retained direct/companion gates. Original first full HOLD remains preserved and disclosed. This source checkpoint alone is not a device delivery claim.",
-    "selected_cohort_scope": "1248 HTTP/default-timeout DOM/CSS testharness URLs; not all WPT",
-    "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
-    "selected_urls": {
-      "lumen_passed": 813,
-      "total": 1248,
-      "previous2006_passed": 810,
-      "pass_percent": 65.14423076923077
+    "main_unprefixed": [
+      48,
+      48
+    ],
+    "prefixed_companion": [
+      25,
+      25
+    ],
+    "native": [
+      222,
+      222
+    ],
+    "rendering_comparisons": [
+      17,
+      17
+    ],
+    "expanded_complete_files": [
+      819,
+      1248
+    ],
+    "expanded_assertions": [
+      23364,
+      26245
+    ],
+    "expanded_assertion_rate_percent": 89.02267098494951,
+    "new_passes": 35,
+    "new_complete_files": 6,
+    "prior_pass_losses": 0,
+    "same_window_y_only_pixels": "PASS; 1127 changed inside, 0 outside",
+    "real_recording": "25 seconds, 1280x960, 4:3, software rendered"
+  },
+  "evidence_sha256": {
+    "acceptance": "d7e8ffca054b0dcb4de15279575a71c1742c168721d1895e93b30341b0790518",
+    "core": "7e41f44b5faf042c4e0cdf9234f4b944b8b0e2019301991a0fd9b6d778edf068",
+    "independent_window": "8b7f09c9cb204e188fb2d67e459b849d00959e7a953f3b675c652a875ea07a1e",
+    "root_visual": "df5092a4f2e22c8f0db7b38a49270665f8c6597edc505d9ec431ec3491c87966"
+  },
+  "reports": {
+    "docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json": {
+      "sha256": "bf31b3637eca437c039669a3495b0b13e094ad189fe98d467fde69f7a9e9b0a2",
+      "bytes": 48945
     },
-    "selected_assertions": {
-      "lumen_passed": 23329,
-      "total": 26245,
-      "previous2006_passed": 23225,
-      "pass_percent": 88.88931224995237
+    "docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md": {
+      "sha256": "eb91af4e7830fe5794cf9eb3736d98b4ad92d1e97fe9b93e686f7c964f57757b",
+      "bytes": 22350
     },
-    "harness_ok": 1238,
-    "assertion_statuses": {
-      "PASS": 23329,
-      "FAIL": 2888,
-      "TIMEOUT": 7,
-      "NOTRUN": 21
-    },
-    "required_union": {
-      "passing_assertions": 23329,
-      "fully_passing_urls": 813,
-      "harness_ok_urls": 1238
-    },
-    "lost_preregistered_pass_identities": 0,
-    "lost_required_fully_passing_urls": 0,
-    "harness_regressions": 0,
-    "registered_identities_and_per_url_counts_unchanged": true,
-    "full_started_utc": "2026-11-04T18:09:55.354047+00:00",
-    "full_finished_utc": "2026-11-04T18:31:32.450990+00:00",
-    "full_wrapper_seconds": 1298.253738046973,
-    "raw_results_sha256": "469fd3462044c970502780075fa37299b4bb55256c4bcf66caa020ffd89b58ca",
-    "runtime_receipt_sha256": "1e66ed2556eccafefa2d22b03698f624fa5c673aeb21566e9b051f032c450827",
-    "independent_retention_audit_sha256": "e2522a2a4f09c39aee293fc56a0995d03ac92eb7777523b6a777d580919cc8c1",
-    "next_prior_union_registry_sha256": "67a899b5502ded418a7e55c4fc678c86cf5850cc2e9ebf89e68ff93601bfc54d",
-    "original_full_hold": {
-      "fully_passing_urls": 812,
-      "passing_assertions": 23329,
-      "registered_assertions": 26245,
-      "harness_ok": 1237,
-      "raw_sha256": "e868a979629a6dbe5ed99adb56bd1d494a9b7c0e2ea09a3dc49cc8e5cff3ea26",
-      "reason": "Document-createElement-namespace harness TIMEOUT after51/51 assertions PASS; no assertion/registration loss.",
-      "not_overwritten_or_relabelled": true
-    },
-    "reliability_policy": {
-      "maximum_full_replays": 1,
-      "source_binary_framework_manifest_unchanged": true,
-      "workers": 2,
-      "native_deadline_seconds": 15,
-      "strict_predeclared_passes": 23329,
-      "strict_predeclared_full_urls": 813,
-      "strict_predeclared_harness_ok": 1238,
-      "four_alternating_diagnostic_pairs_passed": true,
-      "timing_cause_not_established": true
-    },
-    "historical_pinned_reference": {
-      "version": "150.0.7871.114",
-      "passed_urls": 1062,
-      "total_urls": 1248,
-      "passed_assertions": 24541,
-      "total_assertions": 26064,
-      "fresh_full_reference_claimed": false
-    },
-    "native_contracts_passed": 218,
-    "separate_messaging": {
-      "urls": 18,
-      "fully_passing_urls": 15,
-      "passing_assertions": 34,
-      "registered_assertions": 39,
-      "harness_ok": 18,
-      "registry": "agent/ops/session20/platform-qa/messaging2007-required-prior-pass-v1.json",
-      "registry_sha256": "5fc2e1c374641c94a0c85ae04dd3308837fea0f3046d4fc5650ed36c9bd1df11",
-      "not_added_to_main_denominator": true
-    },
-    "authored_controls": {
-      "native": 218,
-      "authored_messaging": 80,
-      "original_popup_post": 19,
-      "authored_animation_grammar_effects": 53,
-      "authored_animation_reconciliation": 7,
-      "csskeyframes_indexed": 26,
-      "transfer_conversion_required": 106,
-      "transfer_conversion_registered": 109,
-      "transfer_late_observations": 3,
-      "transfer_required_prior_observation_passes": 1,
-      "object_position_authored": 75,
-      "object_position_upstream_urls": 3,
-      "object_position_upstream_registered": 123,
-      "object_position": 75,
-      "not_counted_as_upstream_WPT": true
-    },
-    "object_position_upstream": {
-      "urls": 3,
-      "registered": 123,
-      "passed": 123,
-      "scope": "Grammar, specified serialization and computed storage only; no image/video placement consumer added."
-    },
-    "object_authored_reference_disagreements": {
-      "original62": 24,
-      "units9": 0,
-      "order2": 0,
-      "empty2": 2,
-      "unchanged_controls_and_oracles": true,
-      "explanation": "23 logical-form reference disagreements, one background layer serialization disagreement, and two empty-value invalid-priority ordering disagreements remain explicit."
-    },
-    "new_assertion_gains_vs2006": {
-      "total": 104,
-      "pinned_chromium_pass": 44,
-      "pinned_chromium_fail_logical_reference_disagreements": 60,
-      "unmatched": 0
-    },
-    "real_x_google_login_fixed": false,
-    "temporary_diagnostic2004_excluded": true,
-    "parked_background_patch_integrated": false,
-    "overall_assessment": 67,
-    "overall_assessment_is_subjective": true,
-    "goal95_achieved": false
+    "docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json": {
+      "sha256": "80bef1da9b031b3a13c2d7785a74a31b20d4d4336e2cf25c7394e5fbdc0a4f95",
+      "bytes": 1000933
+    }
   },
   "limitations": [
-    "Selected1248 HTTP/default-timeout URLs only; not all WPT, visual/manual/network coverage, Android WPT or Chromium parity.",
-    "Original2007 full HOLD remains immutable; one separately preregistered unchanged full replay was required. Four short comparisons do not prove the cause of the original timeout or repair its timing sensitivity.",
-    "Object-position work covers values/computed storage only; image/video placement remains unimplemented in this stage.",
-    "Separate messaging18 and authored CSS/transfer/animation/auth/object controls do not inflate the1248 denominator; five inherited upstream messaging failures and stated reference disagreements remain.",
-    "Real X Google sign-in remains unresolved; platform repairs have not established a causal login fix.",
-    "Reviewed two-line background number-math patch remains parked and unqualified, separate from this production source.",
-    "Private Git ancestry, browser profiles, account/auth captures, credentials, inbox data and guarded validation machinery are excluded. Diagnostic2004 source is excluded.",
-    "Source and offline Git recovery are not an independent rebuild; external dependencies are not bundled.",
-    "Device installation/restart is recorded separately after exact-source delivery; this package itself does not claim Android WPT parity.",
-    "Overall67/100 is a subjective project assessment, separate from any measured selected-cohort pass percentage;95goal remains unmet."
+    "Frozen selected sample, not all WPT or overall98.",
+    "Known mixed-arity radius animation and pending-variable partial mutation limitations remain.",
+    "Original Chromium startup failures/diagnostic view and all historical HOLDs are retained.",
+    "Existing sibling desktop/profile was preserved; manual launch selects immutable 2104 with new isolated profile.",
+    "External runtime dependencies and private validation environment are not bundled."
   ],
   "public_inventory_review": {
-    "agent": "project_steward",
-    "review_kind": "mechanical exact-inventory audit following root publication authorization",
-    "review_receipt_sha256": "6dfecbfbc363ccca5a7f3cde564fc14e7a65e1e92bfa184a0f9c798e297432d8",
-    "preparation_receipt_sha256": "34b5d49931627764f9000c16d27c8db703b40a47ebc68031ee4fe936ba26ed8b",
-    "all843_public_inventory_hashes_verified": true,
-    "all743_recorded_inputs_verified_against_tested_source": true,
-    "private_history_excluded": true
+    "source_paths": 815,
+    "recorded_inputs": 748,
+    "historical_paths": 28,
+    "metadata_paths": 5,
+    "curated_report_paths": 3,
+    "total_paths": 851,
+    "inventory_sha256": "272f462719025205e8472df3532191620f6e932bebb28cba3119d003618f6f4d"
   }
 }

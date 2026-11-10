@@ -116,6 +116,9 @@ static ComputedStyle *anon_block_style(Layout *L, ComputedStyle *p) {
         p->max_width.kind == LK_NONE && p->max_height.kind == LK_NONE && p->aspect_ratio <= 0) return p;
     ComputedStyle *s = arena_alloc(&L->arena, sizeof *s);
     *s = *p; s->refs = 1 << 20;
+    /* Detached anonymous wrappers must not borrow owned non-inherited radii. */
+    for (int i = 0; i < 4; i++) s->border_radius[i] = L_px(0);
+    s->border_radius_y = NULL;
     s->width = s->height = s->min_width = s->min_height = L_auto();
     s->max_width.kind = s->max_height.kind = LK_NONE; s->aspect_ratio = 0;
     return s;

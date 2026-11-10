@@ -5,6 +5,7 @@
 #endif
 /* Cascade, inheritance and computed values */
 #include "css.h"
+#include "../base/rounded-rect.h"
 #include "easing.h"
 #include "animation-aliases.h"
 #include "../html/xml-stylesheet.h"
@@ -120,6 +121,7 @@ void style_free(ComputedStyle *s) {
     if (!s || --s->refs > 0) return;
     g_styles_live--;
     free(s->anchor_name); free(s->pos_anchor); free(s->pos_area); free(s->pos_try); for (int i = 0; i < 4; i++) free(s->anchor_ins[i]); free(s->anchor_sz[0]); free(s->anchor_sz[1]);
+    free(s->border_radius_y);
     free(s->bg_image); free(s->mask_image); free(s->bg_gradient); free(s->content); free(s->grid_cols); free(s->grid_rows); free(s->grid_areas); free(s->grid_area);
     custom_unref(s->custom); custom_unref(s->gen_i); custom_unref(s->gen_n);
     if (s->before) style_free(s->before);
@@ -2164,6 +2166,8 @@ static bool bg_length(ACtx *c, const char *text, Length *out) {
     if (!parse_dim(&p, out, &lc) || out->kind != LK_LEN) return false;
     if (!math_type_equal(lc.math_type, math_type_unit(MATH_LENGTH)) &&
         !math_type_equal(lc.math_type, math_type_unit(MATH_NUMBER))) return false;
+    /* A bare zero may represent a length; number-valued math functions may not. */
+    if (strchr(text, '(') && math_type_equal(lc.math_type, math_type_unit(MATH_NUMBER))) return false;
     while (is_ws((unsigned char)*p)) p++;
     return !*p;
 }
@@ -4270,6 +4274,130 @@ static int border_corner(const char *P) {
     for (int i = 0; i < 4; i++) if (!strcmp(P, corners[i])) return i;
     return -1;
 }
+
+/* Radius values own only the optional distinct vertical axis. Borrowed style
+ * snapshots never mutate/free it; adopt() transfers it with the whole style. */
+static const Length *radius_y(const ComputedStyle *s) {
+    return s->border_radius_y ? s->border_radius_y : s->border_radius;
+}
+static bool radius_length_equal(Length a, Length b) {
+    return a.kind == b.kind && a.pctu == b.pctu && a.mm == b.mm &&
+        a.math_pct_mask == b.math_pct_mask && a.px == b.px && a.pct == b.pct &&
+        a.px2 == b.px2 && a.pct2 == b.pct2 && a.px3 == b.px3 && a.pct3 == b.pct3;
+}
+static bool radius_axes_equal(const Length a[4], const Length b[4]) {
+    for (int i = 0; i < 4; i++) if (!radius_length_equal(a[i], b[i])) return false;
+    return true;
+}
+static void radius_store(ComputedStyle *s, const Length x[4], const Length y[4]) {
+    /* Inputs may borrow either of the old arrays. Prepare both before mutation. */
+    Length horizontal[4], vertical[4];
+    memcpy(horizontal, x, sizeof horizontal); memcpy(vertical, y, sizeof vertical);
+    bool distinct = !radius_axes_equal(horizontal, vertical);
+    Length *storage = s->border_radius_y;
+    if (distinct && !storage) {
+        storage = malloc(sizeof vertical);
+        if (!storage) return; /* Preserve both old axes when optional storage cannot be obtained. */
+    }
+    if (distinct) memcpy(storage, vertical, sizeof vertical);
+    memcpy(s->border_radius, horizontal, sizeof horizontal);
+    if (!distinct) { free(storage); storage = NULL; }
+    s->border_radius_y = storage;
+}
+static int radius_corner(const char *property) {
+    int corner = border_corner(property);
+    if (corner >= 0) return corner;
+    /* Keep the pre-existing physical mapping of logical radius properties. */
+    static const char *const logical[] = {"border-start-start-radius", "border-start-end-radius",
+        "border-end-end-radius", "border-end-start-radius"};
+    for (int i = 0; i < 4; i++) if (!strcmp(property, logical[i])) return i;
+    return -1;
+}
+static const char *radius_property_name(const char *property) {
+    return !strncmp(property, "-webkit-", 8) && border_corner(property + 8) >= 0 ? property + 8 : property;
+}
+static void radius_copy(ComputedStyle *s, const ComputedStyle *source, int corner) {
+    Length x[4], y[4];
+    memcpy(x, s->border_radius, sizeof x); memcpy(y, radius_y(s), sizeof y);
+    if (corner == 4) { memcpy(x, source->border_radius, sizeof x); memcpy(y, radius_y(source), sizeof y); }
+    else { x[corner] = source->border_radius[corner]; y[corner] = radius_y(source)[corner]; }
+    radius_store(s, x, y);
+}
+static bool radius_length(ACtx *c, const char *text, Length *out) {
+    char *end; float number = strtof(text, &end);
+    if (end != text && !*end && number != 0) return false;
+    Length value = L_px(0);
+    if (!alen_size(c, text, &value) || value.kind != LK_LEN || len_calc_size(value)) return false;
+    /* A percentage-only negative math result has a known nonnegative bound.
+       Mixed length-percentage math stays unresolved until its used reference. */
+    if (!value.mm && value.pctu && value.px == 0 && value.pct < 0) value.pct = 0;
+    *out = value; return true;
+}
+static void radius_expand(Length values[4], int count) {
+    if (count == 1) values[1] = values[2] = values[3] = values[0];
+    else if (count == 2) { values[2] = values[0]; values[3] = values[1]; }
+    else if (count == 3) values[3] = values[1];
+}
+static bool radius_parse(ACtx *c, const char *value, int corner, Length x[4], Length y[4]) {
+    char *text = min_size_parser_text(value);
+    if (!text) return false;
+    char *slash = NULL; int depth = 0; bool valid = true;
+    for (char *p = text; *p; p++) {
+        if (*p == '(') depth++;
+        else if (*p == ')') { if (--depth < 0) valid = false; }
+        else if (*p == '/' && !depth) { if (slash || corner != 4) valid = false; slash = p; }
+    }
+    if (depth) valid = false;
+    char *tokens[5]; int n = 0;
+    if (valid) {
+        if (slash) *slash = 0;
+        n = split_ws(text, tokens, corner == 4 ? 5 : 3);
+        valid = n > 0 && n <= (corner == 4 ? 4 : 2);
+        for (int i = 0; i < n && valid; i++) valid = radius_length(c, tokens[i], &x[i]);
+        free_toks(tokens, n);
+    }
+    if (valid && corner != 4) {
+        y[0] = n == 2 ? x[1] : x[0];
+    } else if (valid) {
+        radius_expand(x, n);
+        if (slash) {
+            n = split_ws(slash + 1, tokens, 5); valid = n > 0 && n <= 4;
+            for (int i = 0; i < n && valid; i++) valid = radius_length(c, tokens[i], &y[i]);
+            if (valid) radius_expand(y, n);
+            free_toks(tokens, n);
+        } else memcpy(y, x, sizeof(Length) * 4);
+    }
+    free(text); return valid;
+}
+static bool radius_value_valid(const char *property, const char *value) {
+    int corner = radius_corner(radius_property_name(property));
+    if (corner < 0) return true;
+    if (!css_var_syntax_valid(value)) return false;
+    if (css_math_substitution_pending(value) || var_wide_keyword(value)) return true;
+    if (!css_math_spacing_valid(value)) return false;
+    ComputedStyle style = {.font_size = 16, .font_weight = 400, .line_height_normal = true};
+    style.font_family = atom("sans-serif");
+    ACtx context = {.st = &style, .em = 16, .rem = 16, .validation_only = true};
+    Length x[4], y[4];
+    return radius_parse(&context, value, corner, x, y);
+}
+static void radius_apply(ACtx *c, const char *value, int corner) {
+    Length parsed_x[4], parsed_y[4], x[4], y[4];
+    if (!radius_parse(c, value, corner, parsed_x, parsed_y)) return;
+    if (corner == 4) { radius_store(c->st, parsed_x, parsed_y); return; }
+    memcpy(x, c->st->border_radius, sizeof x); memcpy(y, radius_y(c->st), sizeof y);
+    x[corner] = parsed_x[0]; y[corner] = parsed_y[0]; radius_store(c->st, x, y);
+}
+void css_used_border_radii(const ComputedStyle *s, float width, float height,
+                           unsigned corners, float x[4], float y[4]) {
+    const Length *vertical = radius_y(s);
+    for (int i = 0; i < 4; i++) {
+        x[i] = corners & (1u << i) ? len_resolve(s->border_radius[i], width) : 0;
+        y[i] = corners & (1u << i) ? len_resolve(vertical[i], height) : 0;
+    }
+    rounded_radii_normalize(width, height, x, y);
+}
+
 static bool inherit_copies_uncompared(const char *P) {
     static const char *const props[] = { "background-color","background","width","height","margin","padding","inset","border","position", NULL };
     for (int i = 0; props[i]; i++) if (!strcmp(P, props[i])) return true;
@@ -4982,7 +5110,7 @@ static bool object_position_valid(const char *value) {
 }
 
 static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
-    prop = css_animation_property_name(prop);
+    prop = radius_property_name(css_animation_property_name(prop));
     /* Invalid argument grammar is discarded before pending substitution can
        unset a normal property or replace a custom property's prior tokens. */
     if (css_value_has_if(value_in) && !css_var_syntax_valid(value_in)) return;
@@ -5042,6 +5170,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
     if (!css_animation_longhand_valid(prop, value_in)) return;
     if (!css_easing_valid(prop, value_in)) return;
     if (!css_animation_range_valid(prop, value_in)) return;
+    if (!radius_value_valid(prop, value_in)) return;
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
@@ -5068,7 +5197,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
         border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) :
         image_longhand_kind(prop) ? css_image_longhand_parse(prop, v) :
         animation_longhand_kind(prop) ? css_animation_longhand_parse(prop, v) :
-        !strcmp(prop, "object-position") ? min_size_parser_text(v) :
+        (!strcmp(prop, "object-position") || radius_corner(prop) >= 0) ? min_size_parser_text(v) :
         easing_property(prop) ? css_easing_parse(v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);
@@ -5436,9 +5565,9 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
         else if (!strcmp(P, "position")) st->position = src->position;
         else if (!strcmp(P, "cursor")) st->cursor = src->cursor;
         else if (!strcmp(P, "fill")) st->fill = src->fill;
-        else if ((k = border_corner(P)) >= 0) {   /* Google's search box: a white inner box with border-radius: inherit */
-            if (k == 4) memcpy(st->border_radius, src->border_radius, sizeof st->border_radius);
-            else st->border_radius[k] = src->border_radius[k];
+        else if ((k = radius_corner(P)) >= 0) {
+            radius_copy(st, src, k);
+            if (inherit) st->parent_sensitive = true;
         }
         else if (!strcmp(P, "all")) {
             /* Preserve authored all ordering for these native families. The
@@ -5451,6 +5580,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
                 css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
                 if (contain_intrinsic_projection_style != st) {
                     css_apply_decl(st, par, "border", val, e, el);
+                    css_apply_decl(st, par, "border-radius", val, e, el);
                     css_apply_decl(st, par, "animation-range", val, e, el);
                 }
             }
@@ -5513,7 +5643,7 @@ apply:
         else if (!strcmp(P, "border-width")) { char *t[4]; int n = split_ws(val, t, 4); float w[4]; for (int i = 0; i < n; i++) w[i] = LMAX(0, border_w(&c, t[i])); if (n == 1) w[1] = w[2] = w[3] = w[0]; else if (n == 2) { w[2] = w[0]; w[3] = w[1]; } else if (n == 3) w[3] = w[1]; if (n) memcpy(st->border_width, w, sizeof w); free_toks(t, n); }
         else if (!strcmp(P, "border-style")) { char *t[4]; int n = split_ws(val, t, 4); int s[4]; for (int i = 0; i < n; i++) { s[i] = kw(t[i], bstyles); if (s[i] < 0) s[i] = 0; } if (n == 1) s[1] = s[2] = s[3] = s[0]; else if (n == 2) { s[2] = s[0]; s[3] = s[1]; } else if (n == 3) s[3] = s[1]; for (int i = 0; i < 4 && n; i++) st->border_style[i] = (uint8_t)s[i]; free_toks(t, n); }
         else if (!strcmp(P, "border-color")) { char *t[4]; int n = split_ws(val, t, 4); Color cc[4] = {0}; for (int i = 0; i < n; i++) css_parse_color(t[i], &cc[i], st->color); if (n == 1) cc[1] = cc[2] = cc[3] = cc[0]; else if (n == 2) { cc[2] = cc[0]; cc[3] = cc[1]; } else if (n == 3) cc[3] = cc[1]; if (n) memcpy(st->border_color, cc, sizeof cc); free_toks(t, n); }
-        else if (!strcmp(P, "border-radius")) { char *sl = strchr(val, '/'); if (sl) *sl = 0; set4(st->border_radius, &c, val); }
+        else if (!strcmp(P, "border-radius")) radius_apply(&c, val, 4);
         else if (!strcmp(P, "border-spacing")) {
             char *t[3]; int n = split_ws(val, t, 3); float gaps[2] = {0};
             bool ok = n == 1 || n == 2;
@@ -5545,13 +5675,13 @@ apply:
                     else if (!strcmp(rest, "color")) { if (css_parse_color(val, &col, st->color)) st->border_color[i] = col; }
                 }
                 size_t cl = strlen(corners[i]);
-                if (!strncmp(P + 7, corners[i], cl) && !strcmp(P + 7 + cl, "-radius")) { char *t[2]; int n = split_ws(val, t, 2); if (n) alen(&c, t[0], &st->border_radius[i]); free_toks(t, n); }
+                if (!strncmp(P + 7, corners[i], cl) && !strcmp(P + 7 + cl, "-radius")) radius_apply(&c, val, i);
             }
             if (!strcmp(P, "border-collapse")) st->border_collapse = str_ieq(val, "collapse");
-            if (!strcmp(P, "border-start-start-radius")) alen(&c, val, &st->border_radius[0]);
-            if (!strcmp(P, "border-start-end-radius")) alen(&c, val, &st->border_radius[1]);
-            if (!strcmp(P, "border-end-end-radius")) alen(&c, val, &st->border_radius[2]);
-            if (!strcmp(P, "border-end-start-radius")) alen(&c, val, &st->border_radius[3]);
+            if (!strcmp(P, "border-start-start-radius")) radius_apply(&c, val, 0);
+            if (!strcmp(P, "border-start-end-radius")) radius_apply(&c, val, 1);
+            if (!strcmp(P, "border-end-end-radius")) radius_apply(&c, val, 2);
+            if (!strcmp(P, "border-end-start-radius")) radius_apply(&c, val, 3);
         }
         else if (!strcmp(P, "backdrop-filter") || !strcmp(P, "-webkit-backdrop-filter")) { const char *b = strstr(val, "blur("); st->backdrop_blur = b ? alen_px(&c, b + 5, 0) : 0; }
         break;
@@ -7591,6 +7721,7 @@ static char *quirk_px(const char *v) {
 /* A supports() declaration asks the same native value grammars that consume
  * these properties. The broader validator chain remains in parse.c. */
 bool css_supports_native_value(const char *property, const char *value, bool quirks) {
+    if (radius_corner(radius_property_name(property)) >= 0) return radius_value_valid(property, value);
     if (!strcmp(property, "object-position")) return object_position_valid(value);
     bool display = !strcmp(property, "display");
     bool preferred = !strcmp(property, "width") || !strcmp(property, "height") ||
@@ -8084,9 +8215,11 @@ static bool paint_only(const ComputedStyle *a, const ComputedStyle *b) {
     for (size_t i = 0; i < sizeof abs_align_props / sizeof *abs_align_props; i++)
         if (!str_same(custom_get(a->gen_n, abs_align_props[i]), custom_get(b->gen_n, abs_align_props[i]))) return false;
     if (!paint_only(a->before, b->before) || !paint_only(a->after, b->after) || !paint_only(a->marker, b->marker)) return false;
+    if (!radius_axes_equal(radius_y(a), radius_y(b))) return false;
     ComputedStyle x = *a, y = *b;
 #define PO_Z(f) (memset(&x.f, 0, sizeof x.f), memset(&y.f, 0, sizeof y.f))
     PO_Z(anchor_name); PO_Z(pos_anchor); PO_Z(pos_area); PO_Z(pos_try); PO_Z(anchor_ins); PO_Z(anchor_sz); PO_Z(refs); PO_Z(grid_cols); PO_Z(grid_rows); PO_Z(content); PO_Z(grid_areas); PO_Z(grid_area); PO_Z(before); PO_Z(after); PO_Z(custom); PO_Z(gen_i); PO_Z(gen_n);
+    PO_Z(border_radius_y);
     PO_Z(custom_dependencies); PO_Z(attribute_dependencies); PO_Z(parent_sensitive); PO_Z(inherited_dynamic); PO_Z(uses_tree_counts); PO_Z(indep_set);
     PO_Z(color); PO_Z(bg_color); PO_Z(bg_image); PO_Z(bg_gradient); PO_Z(bg_repeat); PO_Z(bg_origin); PO_Z(bg_clip); PO_Z(bg_color_clip); PO_Z(bg_layers); PO_Z(bg_size_kind); PO_Z(bg_size); PO_Z(bg_pos);
     PO_Z(mask_image); PO_Z(mask_fit); PO_Z(border_color); PO_Z(outline_style); PO_Z(outline_width); PO_Z(outline_offset); PO_Z(outline_color);
@@ -8149,7 +8282,8 @@ static bool uncompared_differ(const ComputedStyle *a, const ComputedStyle *b) {
         memcmp(a->border_style, b->border_style, sizeof a->border_style) ||
         memcmp(a->border_width, b->border_width, sizeof a->border_width) ||
         memcmp(a->border_color, b->border_color, sizeof a->border_color) || a->position != b->position ||
-        memcmp(a->border_radius, b->border_radius, sizeof a->border_radius) || animation_range_differ(a, b);
+        memcmp(a->border_radius, b->border_radius, sizeof a->border_radius) ||
+        !radius_axes_equal(radius_y(a), radius_y(b)) || animation_range_differ(a, b);
 }
 static bool can_rebase(const ComputedStyle *s, const CustomProps *old_parent,
         const CustomProps *new_parent, const CustomMask *changed, unsigned diff) {
@@ -9032,6 +9166,37 @@ static void len_str(SB *b, Length l, const char *au) {
     else if (l.pct || (l.pctu && !l.px)) sb_printf(b, "%g%%", l.pct);
     else sb_printf(b, "%gpx", l.px);
 }
+
+static void radius_axis_str(SB *out, char *const values[4]) {
+    int count = 4;
+    if (!strcmp(values[1], values[3])) {
+        count = 3;
+        if (!strcmp(values[0], values[2])) {
+            count = 2;
+            if (!strcmp(values[0], values[1])) count = 1;
+        }
+    }
+    for (int i = 0; i < count; i++) { if (i) sb_putc(out, ' '); sb_puts(out, values[i]); }
+}
+static void radius_str(SB *out, const ComputedStyle *s, int corner) {
+    const Length *vertical = radius_y(s);
+    char *x[4] = {0}, *y[4] = {0};
+    int first = corner == 4 ? 0 : corner, last = corner == 4 ? 4 : corner + 1;
+    for (int i = first; i < last; i++) {
+        SB text; sb_init(&text); len_str(&text, s->border_radius[i], "0px"); x[i] = sb_take(&text);
+        sb_init(&text); len_str(&text, vertical[i], "0px"); y[i] = sb_take(&text);
+    }
+    if (corner < 4) {
+        sb_puts(out, x[corner]);
+        if (strcmp(x[corner], y[corner])) { sb_putc(out, ' '); sb_puts(out, y[corner]); }
+    } else {
+        radius_axis_str(out, x);
+        bool same = true; for (int i = 0; i < 4; i++) if (strcmp(x[i], y[i])) same = false;
+        if (!same) { sb_puts(out, " / "); radius_axis_str(out, y); }
+    }
+    for (int i = first; i < last; i++) { free(x[i]); free(y[i]); }
+}
+
 static void tracks_str(SB *b, const GridTrack *t, int n) {
     if (!n) { sb_puts(b, "none"); return; }
     for (int i = 0; i < n; i++, t++) {
@@ -9460,7 +9625,7 @@ static bool computed_inset_native(Node *el, const ComputedStyle *s, int side, fl
     return false;
 }
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
-    prop = css_animation_property_name(prop);
+    prop = radius_property_name(css_animation_property_name(prop));
     if (s && animation_range_kind(prop)) return animation_range_computed(s, prop);
     SB b; sb_init(&b);
     if (s && (!strncmp(prop, "transition-", 11) || !strncmp(prop, "animation-", 10))) {
@@ -9711,13 +9876,14 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
                                    : (prop[6] == 'i' ? s->align_items : prop[6] == 's' ? s->align_self : s->align_content);
         sb_puts(&b, al[v % 12]);
     }
+    else if (radius_corner(prop) >= 0) radius_str(&b, s, radius_corner(prop));
     /* Border-image components keep their actual generic computed values;
        they are not physical border sides or corners. */
     else if (!strncmp(prop, "border-", 7) && strncmp(prop, "border-image-", 13) &&
              (strstr(prop, "-width") || strstr(prop, "-style") || strstr(prop, "-color") || strstr(prop, "-radius"))) {
         static const char *const sides[] = { "top-", "right-", "bottom-", "left-" }, *const corners[] = { "top-left-", "top-right-", "bottom-right-", "bottom-left-" };
         const char *q = prop + 7; int i = -1;
-        if (strstr(q, "-radius")) { for (int k = 0; k < 4; k++) if (!strncmp(q, corners[k], strlen(corners[k]))) i = k; if (i >= 0) len_str(&b, s->border_radius[i], "0px"); }
+        if (strstr(q, "-radius")) { for (int k = 0; k < 4; k++) if (!strncmp(q, corners[k], strlen(corners[k]))) i = k; if (i >= 0) radius_str(&b, s, i); }
         else {
             for (int k = 0; k < 4; k++) if (!strncmp(q, sides[k], strlen(sides[k]))) { i = k; q += strlen(sides[k]); }
             if (i >= 0 && !strcmp(q, "width")) sb_printf(&b, "%gpx", s->border_style[i] > BS_HIDDEN ? s->border_width[i] : 0);
