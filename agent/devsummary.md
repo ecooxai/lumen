@@ -937,3 +937,45 @@ Accepted candidate2007, source2de18b314abacd5a027496b715bb28b91d676191;813/1248U
 All per-stage start/end/duration/resource rows are preserved in `agent/ops/session20/session20-measured-stage-ledger.json`; individual source/review/publication and runtime receipts remain authoritative. Native/build times are distinct from17–23minute fullcampaigns. Original2007HOLD took1137.234s; its namespace51PASS/harnessTIMEOUT and diagnosticsetupfailure remain. Fourfixedvalidcomparisons and the sole preregistered fullreplay are separate records.
 
 Android source/APK23+RTC10/UID/install-r/restart, normaldisplay0 exactbinary/environment/profile, and36s4:3clean-profilevideo are recorded in `agent/ops/session20/final-delivery-seal.json` SHA256d020771c3099d680c36331630fcab079e3c6ced0443b7c144a3767cbe07f52b2. Source/publicbranch:https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2007-20261104; pendingpatches:https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-pending-review-session20-20261104/PENDING-REVIEW-session20. Canonical documentation updated only after delivery/showcase guards. X remains unresolved.
+
+
+## Session21 final measured iterations — 2026-11-10
+
+Session start11:52:26UTC; final required acceptance evidence16:24:59.641836UTC. Wall time through the last accepted iteration is **272.560697 minutes (4h32m33.642s)**. Individual iteration intervals are not summed as total wall time. Post-iteration publication and handoff verification are recorded separately below. Same-model built-in agents were engine_owner_1110 (source/Git/build), wpt_qa_1110 (independent review/browser gates), delivery_perf_1110 (CSSOM/delivery), and root (project manager).
+
+The selected unprefixed parsing/computed group (3 files/48 assertions) began21/48 (43.75/100) and0/3 complete, versus Chromium48/48. Its final48/48 is100/100 only in that selected scope. Whole-WPT/Chromium parity and the requested global98/100 goal remain unmet.
+
+| Candidate | UTC start | UTC end | Iteration min | Cumulative wall min | Selected group score | Native observedPASS/selected | Decision |
+|---|---|---|---:|---:|---|---|---|
+| 2101 | 2026-11-10T12:30:45.624888+00:00 | 2026-11-10T13:25:35.034271+00:00 | 54.823 | 93.151 | 100/100 (48/48) | 220/222 | HOLD |
+| 2102 | 2026-11-10T13:29:10+00:00 | 2026-11-10T14:02:00.388098+00:00 | 32.840 | 129.573 | 100/100 (48/48) | 221/222 | HOLD |
+| 2103 | 2026-11-10T14:10:19.877089+00:00 | 2026-11-10T14:20:16.405055+00:00 | 9.942 | 147.840 | Not rerun | 179/222 | HOLD |
+| 2104 | 2026-11-10T14:22:17.031205+00:00 | 2026-11-10T15:14:24.887231+00:00 | 52.131 | 201.981 | 100/100 (48/48) | 222/222 | ACCEPTED_SELECTED_TARGET |
+| 2105 | 2026-11-10T15:23:18.826262+00:00 | 2026-11-10T16:24:59.641836+00:00 | 61.680 | 272.561 | 100/100 (48/48) | 222/222 | ACCEPTED_SELECTED_TARGET_AND_REQUIRED_PRESERVATION_GATES |
+
+Native completion fractions are220/222=99.10,221/222=99.55,179/222=80.63 and222/222=100 for the final two candidates. Required failures blocked acceptance regardless of a high fraction.2101 retains original119/122 ownership,52/55 rendering and91/94 authored results; its sanitizer assertion exit1 is not a pass.2102 retains the fixed-hit escape failure.2103 is179PASS,2FAIL and41unexecuted of222, not221/222; both old affine failures remain recorded. The final rectangle correction retained all121 prior render/hit checks plus36 independent checks, for157. Strict singleton warmups replaced no counter reset or tolerance.
+
+Final accepted2105 source20a7/binary2d38 has222/222 native identities,133/157 scoped sanitizer checks, internal30 background checks and9 actual-main hash checks, all ten fast and fourteen inherited groups, the full fixed sample and owned actual-window proof. Corea6cccfbf, window442e781d and visualff7391ae are separately retained. The full collection ran once and ended16:07:10.165552UTC; its metadata-schema audit correction is additive and did not change or rerun tests.
+
+The1,248-entry frozen WPT sample contains1,247 unique source files:820 complete entries and23,365/26,245PASS (89.02648%). Assertions retain2,852FAIL,7TIMEOUT and21NOTRUN; harnesses retain1,238OK,1ERROR and9TIMEOUT. Relative to accepted2007 this is+7 complete entries/+36 passing identities, with exact registrations and every prior pass preserved. Radius accounts for35 gains; callback exception-global reporting adds one. There is no inferred upstream background gain. Authored callbacks improve8/13→12/13, retaining the foreign-constructor failure. All16 selected upstream MO assertion files improve157/163→158/163; the separate nested crash guard was unexecuted.
+
+## Measured hit-cost tradeoff
+
+The same frozen5000-node diagnostic ran20 warmups and300 queries per case. Each cell below is p50 / p95 in microseconds. These are retained single-run observations, not a browser-speed benchmark.
+
+| Case | Held2102 | Accepted2104 | Accepted2105 |
+|---|---:|---:|---:|
+| outside_clipped_no_fixed | 0.158 / 0.166 | 293.956 / 689.316 | 396.422 / 1449.901 |
+| inside_same_tree | 535.161 / 814.839 | 571.592 / 1113.764 | 689.493 / 1963.158 |
+| outside_inline_fixed | 0.199 / 0.231 | 134.223 / 242.154 | 211.897 / 793.991 |
+
+The old no-fixed outside result was correct and very fast; the conservative escaped-descendant search has a real O(n) cost. The old escaped-inline-fixed case was incorrect0/300, whereas2104 and2105 hit300/300. Inside results remain correct.2105's slower single-run values are retained without a rerun or causal claim; its hit production source is unchanged from2104. Exact reports/raw CSVs remain under `agent/ops/session21/engine/hit-perf2102-v1`, `hit-perf2104-v1` and `hit-perf2105-v1`.
+
+
+### Delivery, provenance and retained limits
+
+The source branch/checkpoint and whole latest task text were preserved. Canonical source remains tested20a7 even after a later ordinary docs commit. The2105 post-commit Path.exists predicate falsely flagged eight dangling historical lock links; lstat/lexists reconciliation preserved all14,760 entries without following targets or replaying mutation. Held candidates, original2007HOLD/reliability replay, originalChrome/startup diagnostic and all additive metadata corrections remain separate.
+
+The frozen show-case badge is historical88.89; the current measured fraction is89.02648%. The existing display0 process is an out-of-project sibling release and was not restarted. Manual instructions use a new build/lumen-2105-profile.XXXXXXXX directory, supported XDG variables, pinned ICU and immutable2105 about:blank. No manual desktop launch, HOME/DISPLAY override or guessed profile occurred.
+
+Public source commit:f2ea72ff37b6e52b9eef1e08bf902979f6fbdccf; tree:acb04c8f4ff3de8e92350356a076a75efa85a74b; archive SHA256:978143cd6ba5fb39b0eb65cc2bd8e0f5af7bb51c97c240d1364985d41078aef9; report:https://raw.githubusercontent.com/ecooxai/lumen/f2ea72ff37b6e52b9eef1e08bf902979f6fbdccf/docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md. Public verification completed at2026-11-10T16:35:50.279970+00:00, 283.404666 minutes from session start. Final documentation update/equivalence receipts separately record the later docsHEAD and exact748-input/default/immutable/ICU equality. All historical dependency documents remain intact; the new attributed build guide is a separately reviewed curated public path, not an independently rebuilt binary package.
