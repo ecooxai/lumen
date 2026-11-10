@@ -2,7 +2,7 @@
 const CSS_LEGACY_ANIMATION_NAMES = /^(?:animation(?:-(?:delay|direction|duration|fill-mode|iteration-count|name|play-state|timing-function))?|transition(?:-(?:delay|duration|property|timing-function))?)$/;
 function cssAnimationPropertyName(property) {
     const name = property.startsWith('-webkit-') ? property.slice(8) : property;
-    return name !== property && CSS_LEGACY_ANIMATION_NAMES.test(name) ? name : property;
+    return name !== property && (CSS_LEGACY_ANIMATION_NAMES.test(name) || /^border(?:-(?:top-left|top-right|bottom-right|bottom-left))?-radius$/.test(name)) ? name : property;
 }
 /* Descriptor declarations keep descriptor names, even where this engine still
  * preserves an unsupported descriptor. Private brands avoid public owner hooks. */
@@ -115,7 +115,7 @@ function parseDecls(s, fontFace = false, keyframe = false, supportedNames = true
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'object-position') { cssObjectPositionSet(m, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (!fontFace && CSS_ANIMATION_LONGHAND.test(lk)) { cssAnimationLonghandSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) { v = cssScalarSpecified(lk, v); const previous = m.get(lk); if (previous && previous[1] && !imp) continue; } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k || keyframe && cssKeyframeImportant(rawValue)) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const rawProperty = k.startsWith('--') ? k : k.replace(/[A-Z]/g, c => c.toLowerCase()), lk = fontFace ? rawProperty : cssAnimationPropertyName(rawProperty); if (supportedNames && !fontFace && !lk.startsWith('--') && !cssPropKnown(lk)) continue; if (keyframe && !cssKeyframePropertyAllowed(lk)) continue; if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (!fontFace && cssRandomSizeRelevant(lk, v) && N.cssMinSize(v) === null) continue; if (!fontFace && CSS_LEGACY_ANIMATION_NAMES.test(lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; } if (supportedNames && !fontFace && CSS_SIZE_SHORTHAND.test(lk)) { cssSizeShorthandSet(m, lk, v, imp, true); continue; } if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (CSS_EASING_LONGHAND.test(lk)) { cssEasingSet(m, lk, v, imp, true); continue; } if (!fontFace && lk === 'object-position') { cssObjectPositionSet(m, v, imp, true); continue; } if (!fontFace && lk === 'transition') { cssTransitionSet(m, v, imp, true); continue; } if (!fontFace && cssAnimationRangeRelevant(lk)) { cssAnimationRangeSet(m, lk, v, imp, true); continue; } if (!fontFace && CSS_ANIMATION_LONGHAND.test(lk)) { cssAnimationLonghandSet(m, lk, v, imp, true); continue; } if (CSS_IMAGE_LONGHAND.test(lk)) { cssImageLonghandSet(m, lk, v, imp, true); continue; } if (!fontFace && cssRadiusRelevant(lk)) { cssRadiusSet(m, lk, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'z-index' || lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) { v = cssScalarSpecified(lk, v); const previous = m.get(lk); if (previous && previous[1] && !imp) continue; } m.set(lk, [v, imp]); }
     return m;
 }
 /* The native enum parser owns acceptance; authored pending tokens remain opaque. */
@@ -345,6 +345,122 @@ function cssBorderRemove(m, p) {
     for (const shorthand of CSS_BORDER_SHORTHANDS) if (cssBorderChildren(shorthand).every(name => names.includes(name))) m.delete(shorthand);
     return value;
 }
+/* Radius declarations share native whole-value validation and retain both axes.
+ * Pending substitution stays opaque; expanding var() text as corner values can
+ * change its grammar. Computed values remain entirely on the native route. */
+const CSS_RADIUS_CORNERS = ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-right-radius', 'border-bottom-left-radius'];
+const cssRadiusRelevant = p => p === 'border-radius' || CSS_RADIUS_CORNERS.includes(p);
+const cssRadiusPending = value => cssBorderPending(value.includes('\\') ? cssGridDecode(value) : value);
+const cssRadiusExpand = v => [v[0], v[1] ?? v[0], v[2] ?? v[0], v[3] ?? v[1] ?? v[0]];
+function cssRadiusCompress(values) {
+    const [a, b, c, d] = values;
+    return b === d ? a === c ? a === b ? a : a + ' ' + b : a + ' ' + b + ' ' + c : values.join(' ');
+}
+function cssRadiusParse(p, value) {
+    const text = String(value).trim();
+    if (!text || !cssVarSyntax(text) || !N.cssSupports('(' + p + ':' + text + ')')) return null;
+    if (cssRadiusPending(text)) return { names: [p], values: [text], pending: true };
+    /* CSS Syntax closes math blocks at EOF. Preserve the existing native math
+     * canonicalization before the balanced token splitter checks the result. */
+    const normalized = CSS_MATH_VALUE.test(text) ? cssMathValueText(text) : text;
+    if (normalized === null) return null;
+    const tokens = cssGridTokens(normalized);
+    if (!tokens || !tokens.length) return null;
+    const names = p === 'border-radius' ? CSS_RADIUS_CORNERS : [p];
+    if (tokens.length === 1 && cssBorderWide(cssGridDecode(tokens[0]))) {
+        return { names, values: names.map(() => cssGridDecode(tokens[0]).toLowerCase()) };
+    }
+    const component = token => {
+        let value = cssGridDecode(token).toLowerCase();
+        if (CSS_MATH_VALUE.test(value)) {
+            value = cssMathValueText(value);
+            if (value === null) return null;
+        }
+        return specNormalize('border-top-left-radius', value);
+    };
+    let x, y;
+    if (p === 'border-radius') {
+        const slash = tokens.indexOf('/');
+        const horizontal = slash < 0 ? tokens : tokens.slice(0, slash);
+        const vertical = slash < 0 ? horizontal : tokens.slice(slash + 1);
+        if (!horizontal.length || horizontal.length > 4 || !vertical.length || vertical.length > 4 ||
+            horizontal.includes('/') || vertical.includes('/') || tokens.includes(',')) return null;
+        x = horizontal.map(component); y = vertical.map(component);
+        if (x.some(v => v === null) || y.some(v => v === null)) return null;
+        x = cssRadiusExpand(x); y = cssRadiusExpand(y);
+    } else {
+        if (tokens.length > 2 || tokens.includes('/') || tokens.includes(',')) return null;
+        x = [component(tokens[0])]; y = [tokens.length === 2 ? component(tokens[1]) : x[0]];
+        if (x[0] === null || y[0] === null) return null;
+    }
+    return { names, values: x.map((v, i) => v === y[i] ? v : v + ' ' + y[i]) };
+}
+function cssRadiusValue(m, p, priority = false) {
+    const direct = m.get(p);
+    if (p !== 'border-radius') return direct ? direct[priority ? 1 : 0] : '';
+    if (direct) {
+        let after = false;
+        for (const [name, entry] of m) {
+            if (name === p) { after = true; continue; }
+            if (CSS_RADIUS_CORNERS.includes(name) &&
+                (entry[1] && !direct[1] || after && (!direct[1] || entry[1]))) return '';
+        }
+        return direct[priority ? 1 : 0];
+    }
+    const entries = CSS_RADIUS_CORNERS.map(name => m.get(name));
+    if (entries.some(e => !e) || entries.some(e => e[1] !== entries[0][1])) return '';
+    if (priority) return entries[0][1];
+    const values = entries.map(e => e[0]);
+    if (values.some(cssBorderWide)) return values.every(v => v === values[0]) ? values[0] : '';
+    if (values.some(cssRadiusPending)) return '';
+    const pairs = values.map(cssGridTokens);
+    if (pairs.some(v => !v || !v.length || v.length > 2)) return '';
+    const x = cssRadiusCompress(pairs.map(v => v[0]));
+    const y = cssRadiusCompress(pairs.map(v => v[1] ?? v[0]));
+    return x === y ? x : x + ' / ' + y;
+}
+function cssRadiusSet(m, p, value, priority, cascading = false) {
+    const parsed = cssRadiusParse(p, value);
+    if (!parsed) return false;
+    if (cascading && !priority && (m.get(p)?.[1] || m.get('border-radius')?.[1])) return true;
+    if (p === 'border-radius') {
+        m.delete(p);
+        if (parsed.pending) for (const name of CSS_RADIUS_CORNERS) {
+            if (!cascading || !m.get(name)?.[1] || priority) m.delete(name);
+        }
+    }
+    for (let i = 0; i < parsed.names.length; i++) {
+        const name = parsed.names[i];
+        if (cascading && !priority && m.get(name)?.[1]) continue;
+        /* A CSSOM update keeps its position unless a later logical corner
+         * requires re-appending in the shared logical property group. */
+        const keys = [...m.keys()], at = keys.indexOf(name);
+        if (cascading || at >= 0 && keys.slice(at + 1).some(k => /^border-(?:start|end)-(?:start|end)-radius$/.test(k))) m.delete(name);
+        m.set(name, [parsed.values[i], priority]);
+    }
+    return true;
+}
+function cssRadiusRemove(m, p) {
+    const value = cssRadiusValue(m, p);
+    m.delete(p);
+    if (p === 'border-radius') for (const name of CSS_RADIUS_CORNERS) m.delete(name);
+    return value;
+}
+function cssRadiusPacks(m) {
+    const selected = new SMap();
+    if (m.has('border-radius')) return selected;
+    const value = cssRadiusValue(m, 'border-radius');
+    if (!value) return selected;
+    const keys = [...m.keys()], positions = CSS_RADIUS_CORNERS.map(p => keys.indexOf(p));
+    const start = Math.min(...positions), end = Math.max(...positions);
+    for (let i = start; i <= end; i++) {
+        const name = keys[i];
+        if (name === 'all' || /^border-(?:start|end)-(?:start|end)-radius$/.test(name)) return selected;
+    }
+    const packed = { name: 'border-radius', value, priority: m.get(CSS_RADIUS_CORNERS[0])[1], first: keys[start] };
+    for (const name of CSS_RADIUS_CORNERS) selected.set(name, packed);
+    return selected;
+}
 function cssBorderPacks(m) {
     const keys = [...m.keys()], selected = new SMap(), used = new SSet();
     for (const shorthand of CSS_BORDER_SHORTHANDS) {
@@ -516,9 +632,9 @@ function serDecls(m) {
     const out = [], flex = mergeFlex ? cssFlexValue(m, 'flex') : '';
     let flexWritten = false, rangeWritten = false;
     const range = mergeRange ? cssAnimationRangePack(m) : '';
-    const borderPacks = cssBorderPacks(m);
+    const borderPacks = cssBorderPacks(m), radiusPacks = cssRadiusPacks(m);
     for (const [k, [v, i]] of m) {
-        const packed = borderPacks.get(k);
+        const packed = borderPacks.get(k) || radiusPacks.get(k);
         if (packed) {
             if (k === packed.first) out.push(packed.name + ': ' + packed.value + (packed.priority ? ' !important' : '') + ';');
         } else if (CSS_ANIMATION_RANGE_PARTS.includes(k) && range && !m.has('animation-range')) {
@@ -1376,6 +1492,7 @@ function mathValid(p, v) {
     if (cssAnimationRangeRelevant(p)) return N.cssAnimationRange(p, v) !== null;
     if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
     if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
+    if (cssRadiusRelevant(p)) return cssRadiusParse(p, v) !== null;
     if (cssBorderRelevant(p)) return cssBorderParse(p, v) !== null;
     if (CSS_MIN_SIZE.test(p)) return N.cssSupports('(' + p + ':' + v + ')');
     if (CSS_NUMERIC_DIMENSION.test(p)) return N.cssNumericDimension(p, v) !== null;
@@ -2009,8 +2126,8 @@ class CSSStyleDeclaration {
     get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
-    getPropertyValue(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p); return e ? e[0] : shorthandPart(m, p); }
-    getPropertyPriority(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p, true); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
+    getPropertyValue(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(), e = m.get(p); if (cssRadiusRelevant(p) && !cssDescriptorStyleHas(this)) return cssRadiusValue(m, p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p); return e ? e[0] : shorthandPart(m, p); }
+    getPropertyPriority(p) { p = cssStylePropertyName(this, String(p)); const m = this._m(); if (cssRadiusRelevant(p) && !cssDescriptorStyleHas(this)) return cssRadiusValue(m, p, true); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) return cssAnimationRangeValue(m, p, true); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = cssStylePropertyName(this, p);
         v = v == null ? '' : String(v);
         pri = pri == null ? '' : String(pri);
@@ -2068,6 +2185,12 @@ class CSSStyleDeclaration {
             if (value !== '') m.set(p, [value, pri ? 'important' : '']);
             this._el.setAttribute('style', serDecls(m)); return;
         }
+        if (cssRadiusRelevant(p) && !cssDescriptorStyleHas(this)) {
+            const m = new SMap(this._m());
+            if (v === '') cssRadiusRemove(m, p);
+            else if (!cssRadiusSet(m, p, v, pri ? 'important' : '')) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
         if (cssBorderRelevant(p)) {
             const m = new SMap(this._m());
             if (v === '') cssBorderRemove(m, p);
@@ -2115,7 +2238,7 @@ class CSSStyleDeclaration {
         }
         if (v !== '' && !p.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null) return; }
         if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    removeProperty(p) { p = cssStylePropertyName(this, String(p)); const m = new SMap(this._m()); if (cssRadiusRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssRadiusRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssAnimationRangeRelevant(p) && !cssDescriptorStyleHas(this)) { const size = m.size, value = cssAnimationRangeRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 cssDeclarationInlineOperations = cssDeclarationCaptureOperations(CSSStyleDeclaration.prototype);
 cssDeclarationInstall(CSSStyleDeclaration.prototype);

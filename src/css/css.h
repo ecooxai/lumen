@@ -244,7 +244,8 @@ typedef struct ComputedStyle {
     float border_width[4];
     float border_spacing[2]; /* computed absolute horizontal and vertical gaps; inherited */
     Color border_color[4];
-    Length border_radius[4]; /* tl tr br bl */
+    Length border_radius[4]; /* horizontal, tl tr br bl */
+    Length *border_radius_y; /* owned optional vertical[4]; NULL means same computed values */
     float outline_width, outline_offset; Color outline_color;
     Color color, bg_color;
     const char *color_ser, *bg_ser;  /* atoms: computed values of colours that 8-bit sRGB can't express, else NULL */
@@ -544,6 +545,9 @@ ComputedStyle *style_new_default(void);
 ComputedStyle *style_inherit(const ComputedStyle *parent);
 void style_ref(ComputedStyle *s);
 void style_free(ComputedStyle *s);
+/* Width/height percentage references; mask absent fragment corners before overlap. */
+void css_used_border_radii(const ComputedStyle *s, float width, float height,
+                           unsigned corners, float x[4], float y[4]);
 bool css_parse_color(const char *s, Color *out, Color current);
 bool css_parse_length(const char *s, Length *out, float em, float rem, const MediaCtx *mc);
 /* an <img>'s source by srcset/sizes and its <picture>'s <source>s (HTML "select an image source"): the chosen URL

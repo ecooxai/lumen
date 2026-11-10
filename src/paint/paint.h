@@ -2,6 +2,7 @@
 #define LUMEN_PAINT_H
 #include "../layout/layout.h"
 #include "regions.h"
+#include "../base/rounded-rect.h"
 
 /* Decoded image: premultiplied 0xAARRGGBB pixels */
 typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; uint8_t *yuv; int yuv_mat; /* NV12 video frame; mat: 1 = BT.709, 2 = full range */ uint64_t content_version; /* images updated in place, e.g. iframe canvases */ bool translucent; /* a canvas frame with alpha below 1 somewhere: blended, not shown through a hole */ struct ImgGpu *gpu; } Image;
@@ -26,7 +27,7 @@ typedef struct DItem {
     uint8_t op;
     float x, y, w, h;           /* viewport CSS px */
     BackgroundTile tile;
-    float r[4];                 /* corner radii tl tr br bl */
+    float r[4], ry[4];          /* used horizontal/optional vertical tl tr br bl */
     Color color;
     float bw[4]; Color bc[4]; uint8_t bs[4];
     DGlyph *g; int ng;
@@ -36,11 +37,17 @@ typedef struct DItem {
     float ox, oy;               /* DO_SHADOW offset: the border box is at (x - ox, y - oy) */
     bool inset, fixed; /* fixed items keep their viewport position during document scrolling */
     bool sticky;                /* fixed only because inside a position:sticky box that still moves with the page scroll */
+    bool has_ry;                /* false keeps legacy circular UI primitives */
     const void *mv;             /* innermost scroller box the item moves with when it scrolls; NULL = the document */
     const void *sc;             /* DO_PUSH_CLIP: the scroller box whose clip this is */
     struct DTransform *transform; /* frame-arena-owned subtree or transformed primitive source; takes precedence over op */
     bool precise_text_ink;      /* resized primitive text envelope is refreshed at the actual canvas scale */
 } DItem;
+static inline const float *ditem_y_radii(const DItem *item) { return item->has_ry ? item->ry : item->r; }
+static inline void ditem_set_radii(DItem *item, const float x[4], const float y[4]) {
+    memcpy(item->r, x, sizeof item->r); memcpy(item->ry, y, sizeof item->ry);
+    item->has_ry = rounded_axes_differ(x, y);
+}
 #include "affine-ink.h"
 
 typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; PaintRegions fixed; int fixed_first; } DisplayList;

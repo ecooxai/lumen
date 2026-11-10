@@ -8,7 +8,10 @@
 #define IMAGE_NEON 1
 #endif
 
-typedef struct { int x0, y0, x1, y1; float fx, fy, fw, fh, r[4]; bool round; } Clip;
+typedef struct {
+    int x0, y0, x1, y1; float fx, fy, fw, fh, r[4], ry[4];
+    bool round, general; uint8_t round_index, round_parent;
+} Clip;
 typedef struct { int x0, y0, x1, y1; } LayerRect;
 typedef struct { uint32_t *px; float alpha; int origin_x, origin_y, stride, height; } LayerSave;
 typedef struct { size_t used, limit; } AffineScratch;
@@ -108,11 +111,29 @@ static float sd_rrect(float px, float py, float x0, float y0, float x1, float y1
     float ox = LMAX(ax, 0), oy = LMAX(ay, 0);
     return LMIN(LMAX(ax, ay), 0) + sqrtf(ox * ox + oy * oy) - rr;
 }
+
+static inline float sd_rrect_axes(float px, float py, float x0, float y0, float x1, float y1,
+                                  const float rx[4], const float ry[4], bool general, float band) {
+    return general ? rounded_rect_distance(px, py, x0, y0, x1, y1, rx, ry, band)
+                   : sd_rrect(px, py, x0, y0, x1, y1, rx);
+}
+static inline float one_clip_cov(const Clip *c, float px, float py) {
+    float d = sd_rrect_axes(px, py, c->fx, c->fy, c->fx + c->fw, c->fy + c->fh,
+                           c->r, c->ry, c->general, .5f);
+    return LCLAMP(.5f - d, 0, 1);
+}
+
 static inline float clip_cov(R *r, float px, float py) {
-    const Clip *c = clip(r);
-    if (!c->round) return 1;
-    float d = sd_rrect(px, py, c->fx, c->fy, c->fx + c->fw, c->fy + c->fh, c->r);
-    return LCLAMP(0.5f - d, 0, 1);
+    unsigned index = clip(r)->round_index;
+    if (!index) return 1;
+    const Clip *c = &r->clips[index];
+    float coverage = one_clip_cov(c, px, py);
+    /* Shape indices bypass rectangular ancestors. Min preserves identical
+       contours; at crossing AA edges this is a bounded coverage approximation. */
+    for (index = c->round_parent; index && coverage > 0; index = c->round_parent) {
+        c = &r->clips[index]; coverage = LMIN(coverage, one_clip_cov(c, px, py));
+    }
+    return coverage;
 }
 static inline float span_cov(float a0, float a1, int p) { float lo = LMAX(a0, (float)p), hi = LMIN(a1, (float)p + 1); return hi > lo ? hi - lo : 0; }
 bool raster_pixel_rows;   /* test hook: evaluate every pixel of rounded rows and replay every item, the reference for the spans and culling below */
@@ -190,14 +211,87 @@ static void fill(R *r, float x0, float y0, float x1, float y1, const float rad[4
     }
 }
 
+
+/* Preserve circular span rasterization. General ellipses only solve at the
+ * corner edges; a clear center interval still paints as one constant span. */
+static void fill_axes(R *r, float x0, float y0, float x1, float y1,
+                      const float rx[4], const float ry[4], Color col) {
+    if (!rounded_rect_general(x1 - x0, y1 - y0, rx, ry)) {
+        fill(r, x0, y0, x1, y1, rx, col); return;
+    }
+    if (!COLOR_A(col) || !(x1 > x0 && y1 > y0)) return;
+    const Clip *c = clip(r);
+    int ix0 = pixel_floor(x0, c->x0, c->x1), ix1 = pixel_ceil(x1, c->x0, c->x1);
+    int iy0 = pixel_floor(y0, c->y0, c->y1), iy1 = pixel_ceil(y1, c->y0, c->y1);
+    uint32_t solid = premul(col, 1);
+    for (int y = iy0; y < iy1; y++) {
+        float fy = y + .5f;
+        int ml = ix1, mr = ix1;
+        if (!c->round && !raster_pixel_rows) {
+            float left = 0, right = 0;
+            if (fy <= y0 + ry[0] + 1) left = rx[0];
+            if (fy >= y1 - ry[3] - 1) left = LMAX(left, rx[3]);
+            if (fy <= y0 + ry[1] + 1) right = rx[1];
+            if (fy >= y1 - ry[2] - 1) right = LMAX(right, rx[2]);
+            ml = pixel_ceil((double)x0 + left + 1, ix0, ix1);
+            mr = pixel_floor((double)x1 - right - 1, ix0, ix1);
+            if (mr < ml) ml = mr = ix1;
+        }
+        const int cut[4] = {ix0, ml, mr, ix1};
+        uint32_t *row = raster_row(r, y);
+        for (int k = 0; k < 3; k++) {
+            int a = cut[k], b = cut[k + 1];
+            if (a >= b) continue;
+            for (int x = a; x < b; x++) {
+                float cov = LCLAMP(.5f - rounded_rect_distance(x + .5f, fy, x0, y0, x1, y1, rx, ry, .5f), 0, 1);
+                cov *= clip_cov(r, x + .5f, fy);
+                if (k == 1) {
+                    if (cov > 0) over_span(row + a - r->origin_x, b - a, cov >= .999f ? solid : premul(col, cov));
+                    break;
+                }
+                if (cov > 0) over(&row[x - r->origin_x], cov >= .999f ? solid : premul(col, cov));
+            }
+        }
+    }
+}
+static void border_axes(R *r, float x0, float y0, float x1, float y1, const float rx[4],
+                        const float ry[4], const float bw[4], Color color) {
+    float inner_x[4], inner_y[4]; rounded_radii_inset(rx, ry, bw, inner_x, inner_y);
+    float ix0 = x0 + bw[3], iy0 = y0 + bw[0], ix1 = x1 - bw[1], iy1 = y1 - bw[2];
+    bool inner = ix1 > ix0 && iy1 > iy0;
+    bool outer_general = rounded_rect_general(x1 - x0, y1 - y0, rx, ry);
+    bool inner_general = rounded_rect_general(ix1 - ix0, iy1 - iy0, inner_x, inner_y);
+    const Clip *c = clip(r);
+    int px0 = pixel_floor(x0, c->x0, c->x1), px1 = pixel_ceil(x1, c->x0, c->x1);
+    int py0 = pixel_floor(y0, c->y0, c->y1), py1 = pixel_ceil(y1, c->y0, c->y1);
+    for (int y = py0; y < py1; y++) {
+        uint32_t *row = raster_row(r, y);
+        for (int x = px0; x < px1; x++) {
+            float fx = x + .5f, fy = y + .5f;
+            float outer = LCLAMP(.5f - sd_rrect_axes(fx, fy, x0, y0, x1, y1, rx, ry, outer_general, .5f), 0, 1);
+            if (!(outer > 0)) continue;
+            float hole = inner ? LCLAMP(.5f - sd_rrect_axes(fx, fy, ix0, iy0, ix1, iy1,
+                inner_x, inner_y, inner_general, .5f), 0, 1) : 0;
+            float coverage = LMAX(0, outer - hole) * clip_cov(r, fx, fy);
+            if (coverage > 0) over(&row[x - r->origin_x], premul(color, coverage));
+        }
+    }
+}
+
 static void border(R *r, const DItem *it) {
     float s = r->s, x0 = raster_x(r, it->x), y0 = raster_y(r, it->y), x1 = raster_x(r, (double)it->x + it->w), y1 = raster_y(r, (double)it->y + it->h);
-    float rad[4]; for (int i = 0; i < 4; i++) rad[i] = it->r[i] * s;
+    float rad[4], vertical[4]; const float *item_y = ditem_y_radii(it);
+    for (int i = 0; i < 4; i++) { rad[i] = it->r[i] * s; vertical[i] = item_y[i] * s; }
     float bw[4]; for (int i = 0; i < 4; i++) bw[i] = it->bw[i] > 0 ? LMAX(1, roundf(it->bw[i] * s)) : 0;
     bool round = rad[0] > 0 || rad[1] > 0 || rad[2] > 0 || rad[3] > 0;
     if (round) {
         /* ring: outer rrect minus inner rrect, single color */
         Color col = it->bc[0]; for (int i = 0; i < 4; i++) if (bw[i] > 0) { col = it->bc[i]; break; }
+        float inner_x[4], inner_y[4]; rounded_radii_inset(rad, vertical, bw, inner_x, inner_y);
+        if (rounded_rect_general(x1 - x0, y1 - y0, rad, vertical) ||
+            rounded_rect_general(x1 - x0 - bw[1] - bw[3], y1 - y0 - bw[0] - bw[2], inner_x, inner_y)) {
+            border_axes(r, x0, y0, x1, y1, rad, vertical, bw, col); return;
+        }
         float ir[4] = { LMAX(0, rad[0] - LMAX(bw[0], bw[3])), LMAX(0, rad[1] - LMAX(bw[0], bw[1])), LMAX(0, rad[2] - LMAX(bw[2], bw[1])), LMAX(0, rad[3] - LMAX(bw[2], bw[3])) };
         float ix0 = x0 + bw[3], iy0 = y0 + bw[0], ix1 = x1 - bw[1], iy1 = y1 - bw[2];
         const Clip *c = clip(r);
@@ -270,14 +364,17 @@ static void border(R *r, const DItem *it) {
     }
 }
 
-typedef struct { float x0, y0, x1, y1, bl, bx0, by0, bx1, by1, rad[4], brad[4]; Color color; } ShadowGeom;
+typedef struct {
+    float x0, y0, x1, y1, bl, bx0, by0, bx1, by1, rad[4], brad[4], ry[4], bry[4];
+    Color color; bool general, box_general;
+} ShadowGeom;
 /* One shadow pixel: its premultiplied color, 0 when it adds nothing. */
 static inline uint32_t shadow_px(R *r, const ShadowGeom *g, int x, float fy, bool box_row) {
     float fx = x + 0.5f;
-    float d = sd_rrect(fx, fy, g->x0, g->y0, g->x1, g->y1, g->rad);
+    float d = sd_rrect_axes(fx, fy, g->x0, g->y0, g->x1, g->y1, g->rad, g->ry, g->general, g->bl);
     float t = LCLAMP((d + g->bl) / (2 * g->bl), 0, 1);
     float cov = 1 - t * t * (3 - 2 * t);
-    if (box_row && fx > g->bx0 - 0.5f && fx < g->bx1 + 0.5f) cov *= 1 - LCLAMP(0.5f - sd_rrect(fx, fy, g->bx0, g->by0, g->bx1, g->by1, g->brad), 0, 1);
+    if (box_row && fx > g->bx0 - 0.5f && fx < g->bx1 + 0.5f) cov *= 1 - LCLAMP(0.5f - sd_rrect_axes(fx, fy, g->bx0, g->by0, g->bx1, g->by1, g->brad, g->bry, g->box_general, .5f), 0, 1);
     if (cov <= 0.002f) return 0;
     cov *= clip_cov(r, fx, fy);
     return cov > 0.002f ? premul(g->color, cov) : 0;
@@ -285,15 +382,22 @@ static inline uint32_t shadow_px(R *r, const ShadowGeom *g, int x, float fy, boo
 static void shadow(R *r, const DItem *it) {
     float s = r->s, sp = it->spread * s, bl = LMAX(0.5f, it->blur * s);
     float x0 = raster_x(r, it->x) - sp, y0 = raster_y(r, it->y) - sp, x1 = raster_x(r, (double)it->x + it->w) + sp, y1 = raster_y(r, (double)it->y + it->h) + sp;
-    float rad[4]; for (int i = 0; i < 4; i++) rad[i] = LMAX(0, it->r[i] * s + sp);
+    float rad[4], vertical[4]; const float *item_y = ditem_y_radii(it);
+    for (int i = 0; i < 4; i++) { rad[i] = LMAX(0, it->r[i] * s + sp); vertical[i] = LMAX(0, item_y[i] * s + sp); }
+    rounded_square_corners(rad, vertical);
     /* An outer shadow is clipped out inside the border box. Skipping its
      * straight interior avoids a distance evaluation for most pixels. */
     float bx0 = raster_x(r, (double)it->x - it->ox), by0 = raster_y(r, (double)it->y - it->oy), bx1 = bx0 + it->w * s, by1 = by0 + it->h * s;
-    float brad[4], bmax = 0; for (int i = 0; i < 4; i++) { brad[i] = it->r[i] * s; bmax = LMAX(bmax, brad[i]); }
+    float brad[4], bvertical[4], bmax = 0;
+    for (int i = 0; i < 4; i++) { brad[i] = it->r[i] * s; bvertical[i] = item_y[i] * s; bmax = LMAX(bmax, LMAX(brad[i], bvertical[i])); }
     const Clip *c = clip(r);
     int px0 = pixel_floor((double)x0 - bl, c->x0, c->x1), py0 = pixel_floor((double)y0 - bl, c->y0, c->y1), px1 = pixel_ceil((double)x1 + bl, c->x0, c->x1), py1 = pixel_ceil((double)y1 + bl, c->y0, c->y1);
     if (px0 >= px1) return;
-    ShadowGeom g = { x0, y0, x1, y1, bl, bx0, by0, bx1, by1, {rad[0], rad[1], rad[2], rad[3]}, {brad[0], brad[1], brad[2], brad[3]}, it->color };
+    ShadowGeom g = {.x0=x0, .y0=y0, .x1=x1, .y1=y1, .bl=bl, .bx0=bx0, .by0=by0, .bx1=bx1, .by1=by1, .color=it->color};
+    memcpy(g.rad, rad, sizeof rad); memcpy(g.brad, brad, sizeof brad);
+    memcpy(g.ry, vertical, sizeof vertical); memcpy(g.bry, bvertical, sizeof bvertical);
+    g.general = rounded_rect_general(x1 - x0, y1 - y0, rad, vertical);
+    g.box_general = rounded_rect_general(bx1 - bx0, by1 - by0, brad, bvertical);
     /* Pixels a pixel clear of the corner radii and of the blur see one horizontal edge (or are fully
        covered), and pixels clear of the border box's corners one of its edges. Where both hold, or the
        box is not in the way, a row's coverage is the same on each side of either box's middle. */
@@ -368,10 +472,12 @@ static void gradient(R *r, const DItem *it) {
     float tx = x0 + it->tile.x * s, ty = y0 + it->tile.y * s;
     float stepx = it->tile.step_x * s, stepy = it->tile.step_y * s;
     if (!(w > 0) || !(h > 0) || !isfinite(w) || !isfinite(h)) return;
-    float rad[4]; for (int i = 0; i < 4; i++) rad[i] = it->r[i] * s;
+    float rad[4], vertical[4]; const float *item_y = ditem_y_radii(it);
+    for (int i = 0; i < 4; i++) { rad[i] = it->r[i] * s; vertical[i] = item_y[i] * s; }
     bool round = rad[0] > 0 || rad[1] > 0 || rad[2] > 0 || rad[3] > 0;
     float clipx = tiled ? x0 + it->tile.clip_x * s : x0, clipy = tiled ? y0 + it->tile.clip_y * s : y0;
     float clipr = tiled ? clipx + it->tile.clip_w * s : x1, clipb = tiled ? clipy + it->tile.clip_h * s : y1;
+    bool general = rounded_rect_general(clipr - clipx, clipb - clipy, rad, vertical);
     float a = g->angle * (float)M_PI / 180.f, dxv = sinf(a), dyv = -cosf(a);
     /* Cardinal directions stay exact, including the fast vertical row path. */
     float angle = fmodf(g->angle, 360.f); if (angle < 0) angle += 360.f;
@@ -413,7 +519,7 @@ static void gradient(R *r, const DItem *it) {
             float t = g->type == 1 ? sqrtf(gx * gx + gy * gy) / LMAX(1, R2) : (gx * dxv + gy * dyv) / L + .5f;
             float cov = span_cov(x0, x1, x) * span_cov(y0, y1, y);
             if (round) {
-                float rounded_cov = LCLAMP(.5f - sd_rrect(fx, fy, clipx, clipy, clipr, clipb, rad), 0, 1);
+                float rounded_cov = LCLAMP(.5f - sd_rrect_axes(fx, fy, clipx, clipy, clipr, clipb, rad, vertical, general, .5f), 0, 1);
                 cov = tiled ? LMIN(cov, rounded_cov) : rounded_cov;
             }
             cov *= qx.cov * qy.cov * clip_cov(r, fx, fy);
@@ -561,10 +667,11 @@ static void image(R *r, const DItem *it) {
     double tile_kx = tiled ? im->w / (double)tw : kx, tile_ky = tiled ? im->h / (double)th : ky;
     bool down = tile_kx > 1.5 || tile_ky > 1.5, rclip = c->round;
     int inner0 = span_bound(ceilf(x0), px0, px1), inner1 = span_bound(floorf(x1), px0, px1);
-    float rad[4]; bool background_round = false;
-    for (int i = 0; i < 4; i++) { rad[i] = it->r[i] * s; if (tiled && rad[i] > 0) background_round = true; }
+    float rad[4], vertical[4]; bool background_round = false; const float *item_y = ditem_y_radii(it);
+    for (int i = 0; i < 4; i++) { rad[i] = it->r[i] * s; vertical[i] = item_y[i] * s; if (tiled && rad[i] > 0) background_round = true; }
     float clipx = x0 + it->tile.clip_x * s, clipy = y0 + it->tile.clip_y * s;
     float clipr = clipx + it->tile.clip_w * s, clipb = clipy + it->tile.clip_h * s;
+    bool general = rounded_rect_general(clipr - clipx, clipb - clipy, rad, vertical);
     int width = px1 - px0;
     ImgCol *cols = xmalloc((sizeof *cols + (down ? 0 : 2 * sizeof(uint32_t))) * (size_t)width);
     /* Upscaled thumbnails reuse each source row several times. Cache just the
@@ -620,7 +727,7 @@ static void image(R *r, const DItem *it) {
             if (down) p = ra[k->a];
             else p = image_lerp_px(ra[x - px0], rb[x - px0], wy);
             float cov = k->cov * cy;
-            if (background_round) cov = LMIN(cov, LCLAMP(.5f - sd_rrect(x + .5f, y + .5f, clipx, clipy, clipr, clipb, rad), 0, 1));
+            if (background_round) cov = LMIN(cov, LCLAMP(.5f - sd_rrect_axes(x + .5f, y + .5f, clipx, clipy, clipr, clipb, rad, vertical, general, .5f), 0, 1));
             cov *= k->gap * q.cov;
             if (rclip) cov *= clip_cov(r, x + .5f, y + .5f);
             if (cov < 0.999f) p = scale_px(p, (uint32_t)(cov * 256));
@@ -764,7 +871,7 @@ static void raster_window(Canvas *cv, const DisplayList *dl, const CullBox *cb, 
     bool covered = !offset_x && !offset_y && bg && !bg->transform && bg->op == DO_RECT && COLOR_A(bg->color) == 255 && !bg->r[0] && !bg->r[1] && !bg->r[2] && !bg->r[3] &&
         bg->x * r.s <= rx0 && bg->y * r.s <= ry0 && (bg->x + bg->w) * r.s >= rx1 && (bg->y + bg->h) * r.s >= ry1;
     for (int y = ry0; !covered && y < ry1; y++) store_span(canvas_row(cv, y) + rx0, rx1 - rx0, cl);
-    r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
+    r.clips[0] = (Clip){.x0=rx0, .y0=ry0, .x1=rx1, .y1=ry1, .fw=(float)cv->w, .fh=(float)cv->h}; r.nclip = 1;
     float s = r.s;
     LayerRect band = {rx0, ry0, rx1, ry1};
     LayerRect *bounds = private_layers ? NULL : layer_bounds(dl, cb, s, band);
@@ -774,7 +881,12 @@ static void raster_window(Canvas *cv, const DisplayList *dl, const CullBox *cb, 
         if (it->op <= DO_TRANSFORM && cull_miss(cb, i, band)) continue;
         if (it->transform) { affine_draw(&r, it); continue; }
         switch (it->op) {
-        case DO_RECT: case DO_LINE: { float rad[4]; for (int k = 0; k < 4; k++) rad[k] = it->r[k] * s; fill(&r, raster_x(&r, it->x), raster_y(&r, it->y), raster_x(&r, (double)it->x + it->w), raster_y(&r, (double)it->y + it->h), rad, it->color); break; }
+        case DO_RECT: case DO_LINE: {
+            float rad[4], vertical[4]; const float *item_y = ditem_y_radii(it);
+            for (int k = 0; k < 4; k++) { rad[k] = it->r[k] * s; vertical[k] = item_y[k] * s; }
+            fill_axes(&r, raster_x(&r, it->x), raster_y(&r, it->y), raster_x(&r, (double)it->x + it->w),
+                raster_y(&r, (double)it->y + it->h), rad, vertical, it->color); break;
+        }
         case DO_BORDER: border(&r, it); break;
         case DO_SHADOW: shadow(&r, it); break;
         case DO_GRADIENT: gradient(&r, it); break;
@@ -783,13 +895,17 @@ static void raster_window(Canvas *cv, const DisplayList *dl, const CullBox *cb, 
         case DO_TRANSFORM: affine_draw(&r, it); break;
         case DO_PUSH_CLIP: {
             if (r.nclip >= 64) break;
-            const Clip *p = clip(&r); Clip c;
+            const Clip *p = clip(&r); Clip c = {0};
             c.x0 = pixel_floor((double)it->x * s - offset_x, p->x0, p->x1); c.y0 = pixel_floor((double)it->y * s - offset_y, p->y0, p->y1);
             c.x1 = pixel_ceil(((double)it->x + it->w) * s - offset_x, p->x0, p->x1); c.y1 = pixel_ceil(((double)it->y + it->h) * s - offset_y, p->y0, p->y1);
             if (c.x1 < c.x0) c.x1 = c.x0; if (c.y1 < c.y0) c.y1 = c.y0;
             c.fx = raster_x(&r, it->x); c.fy = raster_y(&r, it->y); c.fw = it->w * s; c.fh = it->h * s;
-            c.round = false; for (int k = 0; k < 4; k++) { c.r[k] = it->r[k] * s; if (c.r[k] > 0) c.round = true; }
-            if (!c.round && p->round) { c.round = true; c.fx = p->fx; c.fy = p->fy; c.fw = p->fw; c.fh = p->fh; memcpy(c.r, p->r, sizeof c.r); }
+            bool owns_shape = false; const float *item_y = ditem_y_radii(it);
+            for (int k = 0; k < 4; k++) { c.r[k] = it->r[k] * s; c.ry[k] = item_y[k] * s; if (c.r[k] > 0) owns_shape = true; }
+            c.general = rounded_rect_general(c.fw, c.fh, c.r, c.ry);
+            c.round_index = owns_shape ? (uint8_t)r.nclip : p->round_index;
+            c.round_parent = owns_shape ? p->round_index : 0;
+            c.round = c.round_index != 0;
             r.clips[r.nclip++] = c; break;
         }
         case DO_POP_CLIP: if (r.nclip > 1) r.nclip--; break;
