@@ -869,6 +869,19 @@ else()
         target_compile_options(test_css_background_position_types PRIVATE -UNDEBUG)
         add_test(NAME css_background_position_types COMMAND test_css_background_position_types)
         if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+            add_executable(test_css_border_radius_damage tests/test_css_border_radius_damage.c)
+            add_dependencies(test_css_border_radius_damage lumen_embedded)
+            target_include_directories(test_css_border_radius_damage PRIVATE
+                "$<TARGET_PROPERTY:lumen,INCLUDE_DIRECTORIES>")
+            target_compile_definitions(test_css_border_radius_damage PRIVATE
+                "$<TARGET_PROPERTY:lumen,COMPILE_DEFINITIONS>")
+            target_compile_options(test_css_border_radius_damage PRIVATE
+                "$<TARGET_PROPERTY:lumen,COMPILE_OPTIONS>"
+                -UNDEBUG -ffunction-sections -fdata-sections)
+            target_link_libraries(test_css_border_radius_damage PRIVATE lumen_engine)
+            target_link_options(test_css_border_radius_damage PRIVATE
+                "$<TARGET_PROPERTY:lumen,LINK_OPTIONS>" -Wl,--gc-sections)
+            add_test(NAME css_border_radius_damage COMMAND test_css_border_radius_damage)
             target_compile_definitions(test_css_border_radius PRIVATE RADIUS_WRAP_MALLOC=1)
             target_link_options(test_css_border_radius PRIVATE -Wl,--wrap=malloc)
             # This explicit target instruments style ownership and its native
