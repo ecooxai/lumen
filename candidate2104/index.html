@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Lumen Linux · accepted radius checkpoint 2104</title>
+<style>
+:root{--paper:#f2f7fc;--ink:#132e47;--muted:#51677b;--line:#cbdbe8;--blue:#0d5b9a;--navy:#09283f;--good:#17653d}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.65 system-ui,-apple-system,sans-serif}
+a{color:var(--blue);text-underline-offset:3px}a:hover{text-decoration-thickness:2px}a:focus-visible{outline:3px solid #e8a800;outline-offset:5px}
+.wrap{max-width:1140px;margin:auto;padding:0 28px}header{background:var(--navy);color:white;border-bottom:7px solid #4a9bd1}
+nav{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 0;flex-wrap:wrap}nav strong{font-size:20px;letter-spacing:.02em}nav a{color:#d7ebfa;margin-left:18px}
+.hero{padding:56px 0 58px;max-width:910px}.eyebrow{font-size:14px;font-weight:750;letter-spacing:.12em;text-transform:uppercase;color:#9bcff2}
+h1{font-size:clamp(38px,6vw,66px);line-height:1.08;letter-spacing:-.035em;margin:17px 0 24px;font-weight:760}
+.hero p{color:#d7e7f3;max-width:790px;font-size:20px;line-height:1.6}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.button{display:inline-block;text-decoration:none;font-weight:700;border:1px solid #8cbde0;padding:11px 18px;border-radius:8px;background:#fff;color:#103955}.button.secondary{background:transparent;color:white}
+main{padding-bottom:100px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:30px 0}
+.card{background:white;border:1px solid var(--line);border-radius:12px;padding:24px}.stat{font-size:38px;font-weight:760;line-height:1.2;color:var(--navy)}.label{font-size:15px;color:var(--muted);margin-top:8px}.pass{color:var(--good);font-size:14px;font-weight:750;text-transform:uppercase;letter-spacing:.05em}
+section{padding:32px 0;border-top:1px solid var(--line)}h2{font-size:31px;line-height:1.25;letter-spacing:-.025em;margin:0 0 18px}h3{font-size:21px;line-height:1.35;margin:0 0 10px}p{margin:0 0 16px}.muted,small{color:var(--muted)}.two{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:white}table{width:100%;border-collapse:collapse;font-size:16px}th,td{text-align:left;padding:15px 18px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:14px;color:var(--muted);background:#eaf2f9}tr:last-child td{border:0}td strong{color:var(--good)}
+.note{background:#e4f0fa;border-left:4px solid #397ba8;padding:18px 20px;margin:20px 0}.downloads{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.downloads a{display:block;background:white;border:1px solid var(--line);border-radius:9px;padding:18px 20px;text-decoration:none}.downloads strong{display:block;font-size:18px}.downloads small{display:block;margin-top:5px;font-size:14px}
+code,pre{font:14px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}pre{overflow-x:auto;padding:20px;background:var(--navy);color:#e7f4fc;border-radius:9px;white-space:pre-wrap;word-break:break-word}code.hash{word-break:break-all}
+video{display:block;width:100%;aspect-ratio:4/3;background:#051624;border:1px solid var(--line);border-radius:10px}figure{margin:0}figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:9px}figcaption{font-size:14px;color:var(--muted);padding-top:8px}
+ul{padding-left:23px;margin:12px 0}li{margin:8px 0}.identity{font-size:14px;display:grid;grid-template-columns:160px 1fr;gap:10px 16px}.identity dt{color:var(--muted)}.identity dd{margin:0}
+footer{background:var(--navy);color:#d5e9f7;padding:30px 0 100px;font-size:14px}.badge{position:fixed;right:18px;bottom:16px;max-width:calc(100vw - 36px);background:#09283f;color:white;border:1px solid #82b5d8;border-radius:9px;padding:11px 16px;box-shadow:0 4px 24px #09283f25;font-size:13px;z-index:2}.badge strong{display:block;font-size:15px}.badge span{color:#c8e3f5}
+@media(max-width:720px){.wrap{padding:0 18px}.hero{padding:32px 0 38px}.hero p{font-size:18px}.stats,.two,.downloads{grid-template-columns:1fr}.stats{gap:10px}.card{padding:19px}.stat{font-size:33px}.identity{grid-template-columns:1fr;gap:4px}.identity dd{margin-bottom:12px}nav{gap:12px}nav a{margin:0 12px 0 0}section{padding:26px 0}h2{font-size:27px}.badge{font-size:12px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<nav aria-label="Main navigation"><strong>LUMEN / LINUX</strong><div><a href="#results">Results</a><a href="#downloads">Downloads</a><a href="#showcase">Real browser recording</a></div></nav>
+<div class="hero"><div class="eyebrow">Verified engine checkpoint 2104 · 10 November 2026</div>
+<h1>Rounded corners that preserve both dimensions.</h1>
+<p>Lumen now carries horizontal and vertical border radii through CSS parsing, computed styles, painting, clipping and hit testing. This release closes the selected radius parsing and computed-value group, with broader regressions checked independently.</p>
+<div class="actions"><a class="button" href="https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md">Read the qualification report</a><a class="button secondary" href="https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz">Open live progress</a></div>
+</div></div></header>
+<main class="wrap">
+<div class="stats">
+<div class="card"><div class="pass">Selected upstream group</div><div class="stat">48 / 48</div><div class="label">Unprefixed radius assertions<br>Baseline: 21 / 48</div></div>
+<div class="card"><div class="pass">Independent native checks</div><div class="stat">222 / 222</div><div class="label">Required engine regression tests<br>Original checks and new controls retained</div></div>
+<div class="card"><div class="pass">Rendering comparisons</div><div class="stat">17 / 17</div><div class="label">Original upstream comparisons<br>Original fuzzy metadata preserved</div></div>
+</div>
+<section id="results"><h2>Measured against Chromium</h2>
+<p>The main comparison uses the same frozen upstream files and assertion identities. Each row names its scope; these numbers are not a whole-WPT completion score.</p>
+<div class="table-wrap"><table><thead><tr><th>Frozen group</th><th>Lumen baseline 2007</th><th>Lumen 2104</th><th>Chromium 150.0.7871.114</th></tr></thead><tbody>
+<tr><td>Unprefixed radius parsing and computed values<br><small>3 files · 48 assertions</small></td><td>21 / 48</td><td><strong>48 / 48</strong></td><td>48 / 48</td></tr>
+<tr><td>Prefixed radius companion<br><small>1 file · 25 assertions; reported separately</small></td><td>20 / 25</td><td><strong>25 / 25</strong></td><td>24 / 25</td></tr>
+<tr><td>Selected expanded cohort<br><small>Complete files / 1,248 selected files</small></td><td>813 / 1,248<br><small>Historical accepted replay</small></td><td>819 / 1,248<br><small>Fresh exact-candidate run</small></td><td>1,060 / 1,248<br><small>Original raw run; 3 startup failures</small></td></tr>
+</tbody></table></div>
+<div class="note"><strong>Keep the original evidence visible.</strong> The Lumen2007 original full run was held; its later accepted replay is identified separately. Chromium’s original full run recorded 24,517 / 25,969 assertions, with three startup failures. A separate diagnostic recovered 95 registrations (24 PASS, 71 FAIL); that diagnostic is not silently merged into the original run.</div>
+<p class="muted">Lumen 2104 recorded 23,364 / 26,245 passing assertions in the expanded cohort (89.02267%). The report preserves exact registered identities, raw outcomes, prior-PASS comparisons, process cleanup and resource receipts.</p>
+<h3>Compare the same assertion identities</h3>
+<p>The original Chromium run and accepted Lumen 2104 share <strong>25,909 exact URL, assertion-name and occurrence identities</strong>. Lumen passes 23,118 of those and Chromium passes 24,457. The table below uses only that common set; unequal raw denominators are not treated as a ranking.</p>
+<div class="table-wrap"><table><thead><tr><th>Outcome in the original common set</th><th>Assertions</th></tr></thead><tbody><tr><td>Both pass</td><td>22,496</td></tr><tr><td>Only Lumen passes</td><td>622</td></tr><tr><td>Only Chromium passes</td><td>1,961</td></tr><tr><td>Neither passes</td><td>830</td></tr></tbody></table></div>
+<p class="muted" style="margin-top:14px">The separate diagnostic-qualified view is retained in the downloadable report. Sampled Chromium-only pass gaps include CSS values (1,124), CSSOM (340), backgrounds (151), variables (111) and DOM nodes (89). These are sampled path-group observations, not complete feature-family conformance or estimates of repair effort.</p>
+</section>
+<section><h2>What changed in the engine</h2><div class="two">
+<div class="card"><h3>CSS values and CSSOM</h3><p>Radius shorthand and corner pairs now share strict, atomic validation. Specified values serialize canonically; computed values come from the native style representation, including separate horizontal and vertical values.</p><p class="muted">Negative math, relative lengths, percentages, declaration priority and invalid-value retention have explicit controls.</p></div>
+<div class="card"><h3>Actual geometry</h3><p>Painting and clipping use elliptical corners, the correct width and height percentage references, and a shared overlap rule. Hit testing preserves the corresponding clip geometry and positioned-descendant behavior.</p><p class="muted">The real-window check below verifies a vertical-only change through the linked application’s automatic redraw path. A separate bounded 1×1 mask-repeat repair stays within the existing background-colour approximation; it does not claim complete CSS Masking support.</p></div>
+</div></section>
+<section id="showcase"><h2>One vertical change, in the real Linux browser</h2>
+<p>The horizontal radius stays 80px. A single timer changes only the top-left vertical radius from 20px to 80px. The captures use the same owned native window, with no intervening input, toolbar changes or forced repaint.</p>
+<video controls preload="metadata" playsinline poster="https://ecooxai.github.io/lumen/candidate2104/lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_showcase_8s.png" aria-label="Real Lumen Linux vertical-radius redraw recording"><source src="https://ecooxai.github.io/lumen/candidate2104/lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2104_showcase_4x3.mp4" type="video/mp4"><a href="https://ecooxai.github.io/lumen/candidate2104/lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2104_showcase_4x3.mp4">Download the real browser recording</a></video>
+<p class="muted" style="margin-top:12px">25-second 4:3 recording · software rendering · separate credited presentation copy. No generated imagery. The page timer changes the corner at READY +12.016 seconds; recording was launched at READY +5.001811 seconds, so recording timestamps and page timestamps differ. The raw before/after images remain unchanged.</p>
+<div class="two"><figure><a href="https://ecooxai.github.io/lumen/candidate2104/lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_before.png"><img src="https://ecooxai.github.io/lumen/candidate2104/lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_before.png" alt="Actual native Lumen window before the vertical-radius change" loading="lazy"></a><figcaption>Before: 80px horizontal, 20px vertical.</figcaption></figure><figure><a href="https://ecooxai.github.io/lumen/candidate2104/lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_after.png"><img src="https://ecooxai.github.io/lumen/candidate2104/lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_after.png" alt="Same native Lumen window after the vertical-radius change" loading="lazy"></a><figcaption>After: 80px horizontal, 80px vertical.</figcaption></figure></div>
+<p class="muted" style="margin-top:16px">Independent pixel result: 10 / 10 patch checks pass; 1,127 changed pixels inside the shape and 0 outside. The fixed fiducial and all pixels outside the target shape remain unchanged. This application check is separate from WPT rendering comparisons and native damage-signature tests.</p>
+</section>
+<section id="downloads"><h2>Download, inspect and run</h2>
+<div class="downloads"><a href="https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2104_src.tar.gz"><strong>Reviewed source archive</strong><small>Public Git ancestry and exact accepted engine blobs</small></a><a href="https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2104-20261110"><strong>Public source branch</strong><small>Inspect the accepted source and curated qualification metadata</small></a><a href="https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md"><strong>Readable qualification report</strong><small>Results, decisions, limitations and continuation context</small></a><a href="https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json"><strong>Machine-readable report</strong><small>Exact candidate, source, binary, test and artifact identities</small></a><a href="https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json"><strong>All 1,248 comparison rows</strong><small>Standard WPT paths and measured per-file counts, with raw runs kept separate</small></a><a href="https://ecooxai.github.io/lumen/candidate2104/SHA256SUMS"><strong>Artifact checksums</strong><small>Verify the complete downloaded files</small></a><a href="https://ecooxai.github.io/lumen/candidate2104/release-manifest.json"><strong>Release manifest</strong><small>Accepted source, public export, archive, report and real-media identities</small></a><a href="https://ecooxai.github.io/lumen/candidate234-before-session21.html"><strong>Earlier published checkpoint 234</strong><small>Historical page and its pinned archive remain available</small></a></div>
+<h3 style="margin-top:28px">Run on the existing Linux development host</h3>
+<p>The command selects the immutable accepted binary by candidate name, so it remains usable while later development builds advance. The normal build output can advance during later work; this command continues to select the immutable accepted binary. The host already contains the recorded runtime dependencies; the source archive does not include those external dependencies.</p>
+<pre>cd /mnt/p3/project/browser/lumen-android/lumen-android
+lumen_2104_profile=&quot;$(mktemp -d &quot;$PWD/build/lumen-2104-profile.XXXXXXXX&quot;)&quot;
+mkdir -m 700 &quot;$lumen_2104_profile/config&quot; &quot;$lumen_2104_profile/data&quot; \
+  &quot;$lumen_2104_profile/cache&quot; &quot;$lumen_2104_profile/downloads&quot; &quot;$lumen_2104_profile/tmp&quot;
+XDG_CONFIG_HOME=&quot;$lumen_2104_profile/config&quot; \
+XDG_DATA_HOME=&quot;$lumen_2104_profile/data&quot; \
+XDG_CACHE_HOME=&quot;$lumen_2104_profile/cache&quot; \
+XDG_DOWNLOAD_DIR=&quot;$lumen_2104_profile/downloads&quot; \
+TMPDIR=&quot;$lumen_2104_profile/tmp&quot; \
+LUMEN_NO_SESSION=1 \
+LUMEN_ICU_DATA=&quot;$PWD/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/icudtl.dat&quot; \
+./build/codex-native/lumen-astra-i2104 about:blank</pre>
+<dl class="identity"><dt>Accepted engine source</dt><dd><code class="hash">3edec1c75b9e332f16e2e5b0943eb881c3c00e1f</code></dd><dt>Immutable Linux binary</dt><dd><code class="hash">0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9</code></dd><dt>Public export commit</dt><dd><code class="hash">54999c2cfe6b159167b89c1b5b98427e9eaf5370</code></dd><dt>Source archive SHA256</dt><dd><code class="hash">6a3f09b3fec48846effeb8a21adbd37acc023953c7916d8e19ebb9bf9435b017</code></dd></dl>
+</section>
+<section id="limits"><h2>Scope and remaining work</h2>
+<ul><li>Standalone URL conformance work remains deferred, as requested. Existing required regression gates were preserved.</li><li>The selected radius parsing/computed group is complete; this does not establish Chromium parity across HTML, all CSS, networking, storage, workers, media or the full WPT suite.</li><li>Radius animation with mismatched one-value/two-value endpoints remains a separately recorded limitation. The complete named animation family and computed-endpoint work are planned separately.</li><li>Opaque pending variable shorthands retain the existing broader partial-mutation provenance limitation.</li><li>Correct escaped-fixed hit testing adds a measured traversal cost: the 5,000-node no-fixed outside probe rose from 0.158 to 293.956 microseconds p50. The old fixed-descendant result was incorrect (0/300 target hits); accepted 2104 returns 300/300. The report preserves both p50 and p95 values and the exact limited benchmark scope.</li><li>Targeted sanitizers instrument specific style and hit-test units; they are not full-engine/V8 sanitizer coverage. Short single-sample executions do not establish CPU peaks.</li></ul>
+<div class="note"><strong>Live progress and feedback.</strong> The <a href="https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz">HTTPS progress dashboard</a> supplies 2-second CPU, RAM and disk telemetry. Its plain public link is read-only; feedback requires the current session message key and an active session. Posting expires at 16:52 UTC on 10 November 2026 (00:52 on 11 November, Shanghai time). This static release page does not replicate those authenticated controls.</div>
+<p class="muted">Prepared 2026-11-10T15:43:39.783445+00:00. All held 2101, 2102 and 2103 results remain preserved in the qualification history. Later optional candidate results are excluded from this immutable 2104 release.</p>
+</section>
+</main>
+<footer><div class="wrap"><strong>GPT-6 Astra Pro · built-in agents · RubyWebTerm</strong><br>Measured engine work, independent qualification and real browser capture.<br>Source, reports and historical artifacts are retained with exact identities.</div></footer>
+<div class="badge" aria-label="Current scoped iteration score"><strong>Iteration 2104 · ACCEPTED</strong><span>100 /100 · selected 48 radius assertions</span></div>
+</body></html>

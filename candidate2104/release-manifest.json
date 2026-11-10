@@ -1,0 +1,97 @@
+{
+  "schema": "lumen-session21-accepted2104-public-release-manifest-v1",
+  "created_utc": "2026-11-10T15:43:39.783445+00:00",
+  "candidate": 2104,
+  "tested_engine_commit": "3edec1c75b9e332f16e2e5b0943eb881c3c00e1f",
+  "tested_engine_tree": "db46f32170a4ecca76c5d3c82aca369c9fa63cfa",
+  "tested_binary_sha256": "0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9",
+  "public_source_commit": "54999c2cfe6b159167b89c1b5b98427e9eaf5370",
+  "public_source_tree": "29698665cc0ee8211d2490a4e18793ef498ec16c",
+  "public_source_branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2104-20261110",
+  "public_git_history_bundle_sha256": "634ddc2b74757b3a25745963d2cdd341c547cfece68ff35299232a6b9feefeb5",
+  "source_archive_offline_restore": {
+    "tested_without_network": true,
+    "all851_blobs_and_modes_identical": true,
+    "receipt_sha256": "b69174bac3b20de14907c2a82cae4c0ee695eab6f61c94d9cd077e230a35fef4"
+  },
+  "acceptance": {
+    "selected_main": {
+      "files": 3,
+      "passed": 48,
+      "registered": 48
+    },
+    "expanded_sample": {
+      "complete_files": 819,
+      "files": 1248,
+      "passed": 23364,
+      "registered": 26245,
+      "rate_percent": 89.02267098494951
+    },
+    "core_sha256": "7e41f44b5faf042c4e0cdf9234f4b944b8b0e2019301991a0fd9b6d778edf068",
+    "window_sha256": "8b7f09c9cb204e188fb2d67e459b849d00959e7a953f3b675c652a875ea07a1e",
+    "root_visual_sha256": "df5092a4f2e22c8f0db7b38a49270665f8c6597edc505d9ec431ec3491c87966",
+    "whole_wpt_or_global98_claim": false
+  },
+  "artifacts": {
+    "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json": {
+      "bytes": 53600,
+      "sha256": "68e089240c6a4a711d292438040aaad23dbff1a943a3be06e832dea4e923a903",
+      "kind": "curated_public_report"
+    },
+    "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md": {
+      "bytes": 23492,
+      "sha256": "f15dbfed9bb851eb1c1f0be0984355b5559948ccf6b4650dcb73c94157399c2c",
+      "kind": "curated_public_report"
+    },
+    "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json": {
+      "bytes": 1000933,
+      "sha256": "80bef1da9b031b3a13c2d7785a74a31b20d4d4336e2cf25c7394e5fbdc0a4f95",
+      "kind": "curated_public_report"
+    },
+    "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2104_src.tar.gz": {
+      "bytes": 11683058,
+      "sha256": "6a3f09b3fec48846effeb8a21adbd37acc023953c7916d8e19ebb9bf9435b017",
+      "kind": "reviewed_source_and_public_git_history"
+    },
+    "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2104_showcase_4x3.mp4": {
+      "bytes": 99162,
+      "sha256": "6a35568d63ffbff63b0d25135db6188dc1f03d03e3812e970aa7ea877f9422e0",
+      "kind": "reviewed_actual_native_window_media"
+    },
+    "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_before.png": {
+      "bytes": 43517,
+      "sha256": "cba41a229ae31faa9293a9e0ae9c25a32e9bd5c61f6a54eb4fb206b653b6f94c",
+      "kind": "reviewed_actual_native_window_media"
+    },
+    "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_after.png": {
+      "bytes": 43892,
+      "sha256": "ad71cdd4ed8c47fc08ccf5952d8ced4faf452d9cf3b5a9d9a1f7be6a60ba20cc",
+      "kind": "reviewed_actual_native_window_media"
+    },
+    "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_showcase_8s.png": {
+      "bytes": 133964,
+      "sha256": "3f807ab9e16ff4b11ce466e6538c24fd490876c7a7127b6ac91d7e3f73b5411a",
+      "kind": "reviewed_actual_native_window_media"
+    },
+    "index.html": {
+      "bytes": 18531,
+      "sha256": "856f25967be56125fa259a7973c3227dd512b9bad75a6742f24a3d3bcf772737",
+      "kind": "immutable_static_release_page"
+    }
+  },
+  "pages": {
+    "base": "https://ecooxai.github.io/lumen/",
+    "immutable_release_page": "https://ecooxai.github.io/lumen/candidate2104/",
+    "previous_tip": "bb9562d265d2d09f5a10bf4a069299713353e69a",
+    "final_pages_commit_and_http_readbacks_recorded_separately": true,
+    "configuration_auth_unchanged": true
+  },
+  "preservation": {
+    "original2007_public_branch_and_archives": true,
+    "previous234_page_and_source_retained_under_pinned_names": true,
+    "held_candidates_and_failed_first_capture_retained_in_qualification": true,
+    "optional_later_candidates_excluded": true
+  },
+  "private_payloads_included": false,
+  "source_archive_contains_external_dependencies_or_portable_binary": false
+}
