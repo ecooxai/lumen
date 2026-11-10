@@ -894,6 +894,15 @@ else()
                 -UNDEBUG -fsanitize=address,undefined -fno-omit-frame-pointer)
             target_link_options(test_css_border_radius_sanitized PRIVATE
                 -fsanitize=address,undefined -Wl,--wrap=malloc)
+            # Instrument the changed hit traversal and its real DOM/raster/hit
+            # controls. Display/raster/style archive objects and V8 stay ordinary.
+            add_executable(test_css_border_radius_hit_sanitized EXCLUDE_FROM_ALL
+                tests/test_css_border_radius_rendering.c src/layout/block.c)
+            target_link_libraries(test_css_border_radius_hit_sanitized PRIVATE lumen_engine)
+            target_compile_options(test_css_border_radius_hit_sanitized PRIVATE
+                -UNDEBUG -fsanitize=address,undefined -fno-omit-frame-pointer)
+            target_link_options(test_css_border_radius_hit_sanitized PRIVATE
+                -fsanitize=address,undefined)
         endif()
         add_executable(test_css_viewport_units tests/test_css_viewport_units.c)
         target_link_libraries(test_css_viewport_units PRIVATE lumen_engine)

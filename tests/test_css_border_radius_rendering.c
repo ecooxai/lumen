@@ -285,6 +285,120 @@ static void deep_deferred_contexts(void) {
     destroy(&f);
 }
 
+static void fixed_hit_paths(Fixture *f) {
+    const char *clip = "left:20px;top:20px;width:100px;height:100px;border-radius:50px / 30px;overflow:hidden";
+    const char *fixed = "display:block;position:fixed;left:0;top:0;width:100px;height:100px;background:red";
+    f->parent->scroll_x = f->parent->scroll_y = 0;
+    f->target->scroll_x = f->target->scroll_y = 0;
+
+    setup(f, "position:static;width:240px;height:240px;background:transparent");
+    node_set_attr(f->parent, "style", clip); node_set_attr(f->child, "style", fixed);
+    recalc(f);
+    hit(f, f->child, 2, 2, true, "fixed descendant behind ordinary intermediary hits before paint");
+    draw(f);
+    pixel(f, 2, 2, red, "fixed descendant behind ordinary intermediary paints outside clip");
+    hit(f, f->child, 2, 2, true, "fixed descendant behind ordinary intermediary hits after paint");
+    f->parent->scroll_x = 30; f->parent->scroll_y = 40; draw(f);
+    pixel(f, 2, 2, red, "viewport-fixed descendant does not follow ancestor scroll offsets");
+    hit(f, f->child, 2, 2, true, "viewport-fixed hit uses viewport coordinates after ancestor scrolling");
+    f->parent->scroll_x = f->parent->scroll_y = 0;
+
+    setup(f, "display:inline;position:static;background:transparent");
+    node_set_attr(f->parent, "style", clip); node_set_attr(f->child, "style", fixed);
+    recalc(f);
+    yes(f->target->box && f->target->box->kind == BX_INLINE &&
+        f->child->box && box_fixed_to_viewport(f->child->box),
+        "inline-only intermediary contains a viewport-fixed child");
+    printf("radius inline-only fixture: target_nir=%d containing_block_nfrags=%d\n",
+        f->target->box ? f->target->box->nir : -1,
+        f->target->box && f->target->box->cb ? f->target->box->cb->nfrags : -1);
+    hit(f, f->child, 2, 2, true, "inline-only fixed descendant hits before paint metadata exists");
+    draw(f);
+    pixel(f, 2, 2, red, "inline-only fixed descendant paints outside ancestor clipping");
+    hit(f, f->child, 2, 2, true, "inline-only fixed descendant hits after paint metadata exists");
+
+    setup(f, "position:static;width:240px;height:240px;background:transparent;overflow:hidden");
+    node_set_attr(f->parent, "style", clip);
+    node_set_attr(f->child, "style", "display:block;left:-20px;top:-20px;width:100px;height:100px");
+    recalc(f); draw(f);
+    pixel(f, 2, 2, white, "ordinary absolute content remains clipped outside its retained containing block");
+    hit(f, f->child, 2, 2, false, "ordinary absolute content cannot escape a retained clipping containing block");
+
+    setup(f, "position:static;width:240px;height:240px;background:transparent");
+    node_set_attr(f->parent, "style", "left:20px;top:20px;width:100px;height:100px;border-radius:50px / 30px;"
+                                      "overflow:hidden;transform:matrix(1,0,0,1,0,0)");
+    node_set_attr(f->child, "style", fixed);
+    recalc(f);
+    yes(f->child->box && f->child->box->cb == f->parent->box && !box_fixed_to_viewport(f->child->box),
+        "existing identity-transform fixed containing block is retained");
+    draw(f);
+    pixel(f, 2, 2, white, "element-contained fixed descendant does not paint in viewport coordinates");
+    hit(f, f->child, 2, 2, false, "element-contained fixed descendant cannot escape its ancestor clip");
+    pixel(f, 70, 70, red, "element-contained fixed descendant paints its independent interior");
+    hit(f, f->child, 70, 70, true, "element-contained fixed descendant hits its independent interior");
+
+    setup(f, "position:static;width:240px;height:240px;background:transparent");
+    node_set_attr(f->parent, "style", "left:20px;top:20px;width:100px;height:100px;overflow:hidden;content-visibility:hidden");
+    node_set_attr(f->child, "style", fixed);
+    recalc(f); draw(f);
+    pixel(f, 2, 2, white, "existing hidden-contents barrier suppresses fixed descendant paint");
+    hit(f, f->child, 2, 2, false, "existing hidden-contents barrier suppresses fixed descendant hits");
+
+    setup(f, "position:static;width:240px;height:240px;background:transparent;overflow:hidden");
+    node_set_attr(f->parent, "style", "position:static;margin:20px;width:100px;height:100px;border-radius:50px / 30px;overflow:hidden");
+    node_set_attr(f->child, "style", "display:block;left:0;top:0;width:100px;height:100px");
+    recalc(f);
+    yes(f->child->box && f->child->box->cb == f->layout->root,
+        "absolute escape fixture resolves its containing block outside both clipping ancestors");
+    f->parent->scroll_x = 30; f->parent->scroll_y = 40; draw(f);
+    pixel(f, 2, 2, red, "escaped absolute descendant ignores inapplicable clipping and scrolling");
+    hit(f, f->child, 2, 2, true, "escaped absolute hit restores pre-scroll ancestor coordinates");
+    f->parent->scroll_x = f->parent->scroll_y = 0;
+
+    setup(f, "position:static;width:240px;height:240px;background:transparent;overflow:hidden");
+    node_set_attr(f->parent, "style", "position:relative;margin:20px;width:100px;height:100px;border-radius:50px / 30px;overflow:hidden");
+    node_set_attr(f->child, "style", "display:block;left:0;top:0;width:200px;height:200px");
+    recalc(f);
+    yes(f->child->box && f->child->box->cb == f->parent->box,
+        "absolute retained fixture resolves to the outer clipping containing block");
+    f->parent->scroll_x = 30; f->parent->scroll_y = 40; draw(f);
+    pixel(f, 2, 2, white, "retained absolute containing block still clips scrolled exterior");
+    hit(f, f->child, 2, 2, false, "retained absolute containing block rejects scrolled exterior hit");
+    pixel(f, 70, 70, red, "retained absolute containing block paints scrolled interior");
+    hit(f, f->child, 70, 70, true, "retained absolute containing block accepts scrolled interior hit");
+    f->parent->scroll_x = f->parent->scroll_y = 0;
+
+    setup(f, "position:static;width:100px;height:100px;background:transparent");
+    node_set_attr(f->parent, "style", clip);
+    node_set_attr(f->child, "style", "display:block;position:fixed;left:0;top:0;width:100px;height:100px;background:red;z-index:1");
+    const char *overlay = "display:block;position:fixed;left:0;top:0;width:20px;height:20px;background:blue;z-index:2";
+    node_set_attr(f->image, "style", overlay); recalc(f); draw(f);
+    pixel(f, 2, 2, blue, "higher viewport-fixed overlay retains painting order");
+    hit(f, f->image, 2, 2, true, "higher viewport-fixed overlay retains hit order");
+    node_set_attr(f->image, "style", "display:block;position:fixed;left:0;top:0;width:20px;height:20px;"
+                                  "background:blue;z-index:2;pointer-events:none");
+    recalc(f); draw(f);
+    pixel(f, 2, 2, blue, "pointer-events none does not hide the higher overlay");
+    hit(f, f->child, 2, 2, true, "pointer-events none exposes the escaped fixed hit below");
+}
+
+static void clipped_text_hit(void) {
+    Fixture f = {0}; f.doc = doc_new("https://radius-rendering.test/clipped-text");
+    const char *html = "<!doctype html><html><body><div id=clip>MMMMMMMM</div></body></html>";
+    html_parse(f.doc, html, strlen(html));
+    f.engine = style_engine_new(f.doc); f.engine->media = (MediaCtx){W, H, 1, false};
+    const char *css = "html,body{margin:0;padding:0;border:0}#clip{position:absolute;left:20px;top:20px;"
+        "width:100px;height:100px;border-radius:50px / 30px;overflow:hidden;font:20px/20px sans-serif;background:red}";
+    style_engine_add_sheet(f.engine, css_parse_sheet(css, strlen(css), f.doc->url, 1, &f.engine->media));
+    f.layout = layout_new(); canvas_init(&f.canvas, W, H, 1); recalc(&f);
+    Node *clip = doc_get_element_by_id(f.doc, "clip");
+    hit(&f, clip, 22, 22, false, "clipped own text fragment cannot bypass rounded clipping before paint");
+    draw(&f);
+    pixel(&f, 22, 22, white, "own text remains outside the independent rounded corner");
+    hit(&f, clip, 22, 22, false, "clipped own text fragment cannot bypass rounded clipping after paint");
+    destroy(&f);
+}
+
 static void fragments(Fixture *f) {
     setup(f, "height:140px;border-radius:30px / 15px");
     Box *b = f->target->box;
@@ -329,8 +443,8 @@ static void rows_and_damage(Fixture *f) {
 int main(void) {
     dom_init(); font_init(); Fixture f = create_fixture();
     basic_geometry(&f); image_and_gradient(&f); nested_clips(&f);
-    rows_and_damage(&f); deferred_clip_boundaries(&f); fragments(&f);
-    destroy(&f); deep_deferred_contexts();
+    rows_and_damage(&f); deferred_clip_boundaries(&f); fixed_hit_paths(&f); fragments(&f);
+    destroy(&f); deep_deferred_contexts(); clipped_text_hit();
     printf("radius native rendering: %u/%u independently specified pixel/hit/damage checks passed\n",
            checks - failures, checks);
     return failures ? 1 : 0;
