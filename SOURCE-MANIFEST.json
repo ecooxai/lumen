@@ -1,12 +1,12 @@
 {
-  "candidate": 2104,
-  "tested_source_commit": "3edec1c75b9e332f16e2e5b0943eb881c3c00e1f",
-  "tested_binary_sha256": "0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9",
-  "recorded_input_digest": "b8b0e73ddfba95353cf9d3dda57437341fad3698258eeebdd3c2978a5f1a17ff",
+  "candidate": 2105,
+  "tested_source_commit": "20a7dd4b54f1a4e587168f10875e43f307a76fb8",
+  "tested_binary_sha256": "2d38085828206f384aeafc3afc38c63009fda483c55f0fcd057e0df9255ffcb3",
+  "recorded_input_digest": "944c86116893691f5d186a716f2132aa85fe7347225791cdb633eefde8a06798",
   "recorded_input_count": 748,
-  "source_manifest_file_sha256": "fd173faf1a2a5c941bb12e07bd01c6b5f7a193a8828eeff915d5606931e6fbab",
-  "public_parent": "e7569b9a15d4f323c5edb66ee7a79f9f0e85473a",
-  "public_branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2104-20261110",
+  "source_manifest_file_sha256": "28197dd8284c3a6b257a45f537fd5b16319adb7eef28942f5378cadfe3d87701",
+  "public_parent": "54999c2cfe6b159167b89c1b5b98427e9eaf5370",
+  "public_branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2105-20261110",
   "recorded_inputs": {
     "CMakeLists.txt": {
       "mode": "100644",
@@ -455,8 +455,8 @@
     },
     "src/js/prelude/01-events.js": {
       "mode": "100644",
-      "blob": "be7747c495ff93b4a6be9e2667affa40a8bbf785",
-      "sha256": "1b86d9c780b92418b90fb7c8b4d5057bac24529317eda002026657bac682e2e2"
+      "blob": "8593c97ada876789070ef257aa3d7d1fa01abb3f",
+      "sha256": "8bce4d34cb93e9809acb36627df4da28a95834c9195175276d968bfcaecee231"
     },
     "src/js/prelude/02-node.js": {
       "mode": "100644",
@@ -4230,21 +4230,28 @@
   },
   "curated_reports": {
     "docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json": {
-      "sha256": "68e089240c6a4a711d292438040aaad23dbff1a943a3be06e832dea4e923a903",
-      "bytes": 53600
+      "sha256": "8b1c468c88bb5fed142fe135263f745065f979a8ab11a0f7914f60439a32d189",
+      "bytes": 115500
     },
     "docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md": {
-      "sha256": "f15dbfed9bb851eb1c1f0be0984355b5559948ccf6b4650dcb73c94157399c2c",
-      "bytes": 23492
+      "sha256": "3fc0f0ff2333f61cae71370cbbe33004faacdee00420d433a59b9ffe0da83fd1",
+      "bytes": 19328
     },
     "docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json": {
-      "sha256": "80bef1da9b031b3a13c2d7785a74a31b20d4d4336e2cf25c7394e5fbdc0a4f95",
-      "bytes": 1000933
+      "sha256": "bb2e5cd75086db5db0d8d20c4d4112d0c64710308bef2abc1b352c3364fe310b",
+      "bytes": 1300096
     }
   },
   "independent_rebuild_performed": false,
   "external_dependencies_included": false,
   "private_history_included": false,
-  "source_inventory_sha256": "272f462719025205e8472df3532191620f6e932bebb28cba3119d003618f6f4d",
-  "qualification": "The same748 recorded inputs were built/tested in the canonical project and match these pinned public blobs; archive restoration is separately verified, not claimed to be a new independent browser rebuild."
+  "source_inventory_sha256": "055f8f6b675780fb8b35bdb0e9b8440485beab423ac55276d64b19917604e0e2",
+  "qualification": "The same748 recorded inputs were built/tested in the canonical project and match these pinned public blobs; archive restoration is separately verified, not claimed to be a new independent browser rebuild.",
+  "curated_build_guide": {
+    "docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_build_and_run_20261110.md": {
+      "sha256": "fab7355e455628e6f31d4bb69756c2c25cc99a7d9fd4ade061aa8dcef87146e5",
+      "bytes": 10594,
+      "part_of_tested815_source": false
+    }
+  }
 }
