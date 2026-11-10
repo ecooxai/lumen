@@ -1,7 +1,7 @@
 {
   "schema": "lumen-linux-session21-accepted-qualification-v1",
   "title": "Lumen Linux candidate2104: accepted two-axis radius parsing, computed values and rendering checkpoint",
-  "created_utc": "2026-11-10T15:30:49.607826+00:00",
+  "created_utc": "2026-11-10T15:37:35.625828+00:00",
   "model": "GPT-6 Astra Pro",
   "agents": [
     "root project manager",
@@ -111,7 +111,7 @@
     }
   },
   "fresh_chromium_reference": {
-    "browser": "Chromium150.0.7871.114",
+    "browser": "Chromium 150.0.7871.114",
     "original_full_run": {
       "selected_files": 1248,
       "complete_files": 1060,
@@ -646,10 +646,12 @@
       "Strict whole-value validation and atomic CSSOM shorthand/corner expansion with correct specified serialization",
       "Elliptical paint and clipping, side-specific insets, shared overlap scaling and actual hit/damage consumers",
       "Bounded background-position numeric grammar correction",
-      "Radius-local constant math folding after CSS Syntax EOF closure, preserving native computed clamping"
+      "Radius-local constant math folding after CSS Syntax EOF closure, preserving native computed clamping",
+      "Bounded default 1x1 image-mask repeat repair within the existing background-colour approximation"
     ],
     "computed_route": "Computed values continue to come from the actual native engine; no stored-string getter facade.",
-    "source_ownership": "Separate same-model engine and JavaScript agents; independent QA; one Git steward and one monitored heavy lane."
+    "source_ownership": "Separate same-model engine and JavaScript agents; independent QA; one Git steward and one monitored heavy lane.",
+    "mask_repeat_scope": "Within the existing background-colour mask approximation, intrinsically sized image masks use one tiled DItem for absent or initial-resolved repeat, repeat, or repeat repeat, so a 1x1 mask covers the intended box. Explicit no-repeat and other authored modes, and fitted contain/cover, retain their previous paths. No per-tile allocation or full CSS Masking conformance is claimed; the original failure and nonuniform-alpha/no-repeat/fitted guards remain preserved."
   },
   "held_development_candidates": [
     {
@@ -905,8 +907,9 @@
     "first_attempt": {
       "result": "CAPTURE_TRANSPORT_TIMING_FAIL",
       "receipt_sha256": "75d56c0e6ba367baf0c7a9df206dc71b11e6baef07ebc0925701a7e30c9e41ff",
-      "reason": "The original1fps one-shot capture took~3.1seconds and failed the frozen before+11.5second completion guard; no pixel or engine failure verdict was inferred.",
-      "preserved": true
+      "reason": "The original 1fps one-shot capture took about3.1seconds and failed the frozen before+11.5second completion guard. The first attempt has no accepted pixel verdict; no engine failure verdict was inferred.",
+      "preserved": true,
+      "accepted_pixel_verdict": false
     },
     "accepted_attempt": {
       "transport_only_change": "One-shot x11grab input1fps to30fps;15fps recording, fixture,12second setter,+10/+16 schedule and all original pixel/quiet guards unchanged",
@@ -1076,19 +1079,114 @@
       "One-second samples can miss subsecond peaks.",
       "Shared cgroup includes other tasks; throttling is not attributed solely to this browser.",
       "The repaired fixed-descendant hit path introduces a real O(n) traversal cost for outside queries on a5000-node tree; this diagnostic is not a general browser performance benchmark."
-    ]
+    ],
+    "native_hit_comparison": {
+      "scope": "Same actual layout_hit probe, 5000 ordinary nodes,20warmups,300queries; not a general browser benchmark.",
+      "probe_source_sha256": "8a14b416cdd03af6bed209036737bd164a13981308a2ace0fb5cf4ef24aa0071",
+      "held_2102": {
+        "report_sha256": "a69329573513e2d037b72b766ed9fd55a7b6754b0077bbe39a8f0acd57b46d05",
+        "candidate": 2102,
+        "measurements": [
+          {
+            "case": "clipped_without_fixed",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 0.157976,
+            "p95_us": 0.166008,
+            "max_us": 16.950071,
+            "wall_ms": 0.080143,
+            "process_cpu_ms": 0.064186,
+            "observed_fixed_hits": 0,
+            "expected_fixed_hits": 0
+          },
+          {
+            "case": "same_tree_inside_clip",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 535.161002,
+            "p95_us": 814.838917,
+            "max_us": 1083.121984,
+            "wall_ms": 173.306681,
+            "process_cpu_ms": 169.418083,
+            "observed_fixed_hits": 0,
+            "expected_fixed_hits": 0
+          },
+          {
+            "case": "clipped_with_inline_fixed",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 0.19907,
+            "p95_us": 0.230968,
+            "max_us": 0.276952,
+            "wall_ms": 0.073725,
+            "process_cpu_ms": 0.071527,
+            "observed_fixed_hits": 0,
+            "expected_fixed_hits": 300
+          }
+        ]
+      },
+      "accepted_2104": {
+        "report_sha256": "2c49d239e931005baf4ef6d599bd6074a3c1439a6e7996661b740ddf76e93906",
+        "candidate": 2104,
+        "measurements": [
+          {
+            "case": "clipped_without_fixed",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 293.956022,
+            "p95_us": 689.315959,
+            "max_us": 1235.584961,
+            "wall_ms": 102.459849,
+            "process_cpu_ms": 100.306819,
+            "observed_fixed_hits": 0,
+            "expected_fixed_hits": 0
+          },
+          {
+            "case": "same_tree_inside_clip",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 571.591896,
+            "p95_us": 1113.76401,
+            "max_us": 1867.298037,
+            "wall_ms": 195.712402,
+            "process_cpu_ms": 189.945567,
+            "observed_fixed_hits": 0,
+            "expected_fixed_hits": 0
+          },
+          {
+            "case": "clipped_with_inline_fixed",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 134.222908,
+            "p95_us": 242.153998,
+            "max_us": 521.801063,
+            "wall_ms": 45.810927,
+            "process_cpu_ms": 44.638412,
+            "observed_fixed_hits": 300,
+            "expected_fixed_hits": 300
+          }
+        ]
+      },
+      "interpretation": "The old no-fixed outside fast path was correct and much faster. The new escaped-fixed correctness adds a real O(n) traversal cost. Old escaped-fixed0/300 was incorrect; accepted2104 returns300/300. Inside timings are measured separately."
+    }
   },
   "delivery": {
     "pages_base": "https://ecooxai.github.io/lumen/candidate2104/",
-    "report_json_url": "https://ecooxai.github.io/lumen/candidate2104/docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json",
-    "report_markdown_url": "https://ecooxai.github.io/lumen/candidate2104/docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md",
-    "comparison_json_url": "https://ecooxai.github.io/lumen/candidate2104/docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json",
+    "report_json_url": "https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json",
+    "report_markdown_url": "https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md",
+    "comparison_json_url": "https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json",
     "source_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2104-20261110",
     "live_progress_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz",
     "public_message_posting": "The plain progress URL is read-only until the user enters the current session message key. No authenticated-post success is claimed.",
-    "posting_expiry": "00:52 on 11 November 2026 (Shanghai time)",
+    "posting_expiry": "16:52 UTC on 10 November 2026 \u2014 00:52 on 11 November 2026 (Shanghai time)",
     "normal_desktop": "The existing display0 browser belongs to a different sibling release and was preserved under the project ownership rule; no profile/account state was inspected.",
-    "manual_run": "Use the immutable accepted candidate executable and an explicitly isolated project profile; exact documented command is in the readable report.",
+    "manual_run": "Run the immutable accepted candidate with a new isolated project profile and explicit about:blank start URL; exact command is in the readable report.",
     "icu": {
       "path": "build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/icudtl.dat",
       "bytes": 10822000,
@@ -1235,5 +1333,18 @@
       "cause": "Read-only presentation used lowercase lookup keys for capitalized Chromium_only_PASS/Lumen_only_PASS labels. V1 totals/raw group fields were correct, but sort/display zeroed those two columns. V2 uses exact labels and asserts every column sum equals original25909 matrix. No tests, input rows or comparison outcomes changed."
     },
     "independent_source_sha256": "2f661c2d482f6a733185db2cab26ddcc57f27faaed896f53b7e147f71b0ca3d8"
+  },
+  "editorial_revision": {
+    "previous_report_sha256": "bf31b3637eca437c039669a3495b0b13e094ad189fe98d467fde69f7a9e9b0a2",
+    "previous_markdown_sha256": "eb91af4e7830fe5794cf9eb3736d98b4ad92d1e97fe9b93e686f7c964f57757b",
+    "raw_results_and_oracles_changed": false,
+    "changes": [
+      "Explicit about:blank launch",
+      "Measured held2102 and accepted2104 performance side by side",
+      "No accepted pixel verdict for original window attempt",
+      "Bounded mask-repeat scope",
+      "UTC-first posting expiry",
+      "Exact Chromium version"
+    ]
   }
 }

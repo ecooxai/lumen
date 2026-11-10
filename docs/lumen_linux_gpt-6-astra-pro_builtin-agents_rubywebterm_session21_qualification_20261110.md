@@ -8,7 +8,7 @@ This report qualifies **candidate 2104 only**. Subsequent optional work is exclu
 
 ## Results and the Chromium comparison
 
-| Scope | Accepted 2007 baseline | Accepted 2104 | Chromium 150 reference |
+| Scope | Accepted 2007 baseline | Accepted 2104 | Chromium 150.0.7871.114 reference |
 |---|---:|---:|---:|
 | Three unprefixed radius parsing/computed files | 21 / 48 | **48 / 48** | 48 / 48 |
 | Separate prefixed radius companion | 20 / 25 | **25 / 25** | 24 / 25 |
@@ -33,7 +33,7 @@ Raw assertion denominators differ, so they are not sufficient for ranking engine
 
 The separately labeled diagnostic-qualified intersection has 26,004 identities: 22,512 both PASS, 649 Lumen-only PASS, 1,969 Chromium-only PASS and 874 both non-PASS. It remains distinct from the original-run comparison.
 
-Download the [machine-readable qualification report](https://ecooxai.github.io/lumen/candidate2104/docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json) and the [sanitized 1,248-row comparison](https://ecooxai.github.io/lumen/candidate2104/docs/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json). The latter preserves standard WPT paths, per-file registration/pass counts, harness outcomes and aggregate common-identity matrices. It excludes browser capabilities, profile paths, process IDs, environment values and error-message payloads.
+Download the [machine-readable qualification report](https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json) and the [sanitized 1,248-row comparison](https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json). The latter preserves standard WPT paths, per-file registration/pass counts, harness outcomes and aggregate common-identity matrices. It excludes browser capabilities, profile paths, process IDs, environment values and error-message payloads.
 
 ## What changed in the engine
 
@@ -54,6 +54,10 @@ The native style representation now retains vertical radii as well as horizontal
 Painting and clipping consume both axes. Horizontal percentages use width and vertical percentages use height. Overlapping corners share the required normalization factor; the zero-axis and inset behavior retain the independently frozen geometry expectations. Inner border/padding curves use the corresponding side insets and clipped ellipse geometry rather than a second overlap normalization.
 
 The display and application damage paths include the vertical geometry, so a change confined to a vertical radius can invalidate the actual native window. Rounded clipping also propagates through the affected positioned descendants. Hit testing preserves both rounded and zero-radius rectangular clip boundaries, including the retained affine cases that caught an intermediate regression.
+
+### Bounded default image-mask repeat repair
+
+Within the existing background-colour mask approximation, intrinsically sized image masks use one tiled DItem for absent or initial-resolved repeat, repeat, or repeat repeat, so a 1x1 mask covers the intended box. Explicit no-repeat and other authored modes, and fitted contain/cover, retain their previous paths. No per-tile allocation or full CSS Masking conformance is claimed; the original failure and nonuniform-alpha/no-repeat/fitted guards remain preserved.
 
 ### Adjacent typed-length validation
 
@@ -100,7 +104,7 @@ The linked accepted application ran in a fresh isolated Xvfb display and task pr
 
 The accepted raw captures began at READY+10.000075s and READY+16.000073s. The first finished at +10.286942s, before the unchanged +11.5s guard. The mutation marker arrived at +12.016350s. All ten independently specified 3 by 3 pixel-patch checks passed. **Exactly 1,127 pixels changed inside the target shape and zero pixels changed outside it.** The fiducial, window geometry, text and toolbar remained stable. Capturing read existing X11 pixels and did not request an application repaint, layout result or computed-style read.
 
-The first capture attempt remains preserved as a timing failure. Its one-shot input rate was 1fps, and both captures took about 3.1 seconds, causing the first completion to cross the frozen boundary. The retry changed only that one input rate to 30fps. The fixture, 12-second setter, +10/+16 capture schedule, quiet interval, pixel oracle and 15fps recording remained unchanged. Correct-looking pixels in the failed attempt were not accepted as evidence.
+The first capture attempt remains preserved as a timing failure. Its one-shot input rate was 1fps, and both captures took about 3.1 seconds, causing the first completion to cross the frozen boundary. The retry changed only that one input rate to 30fps. The fixture, 12-second setter, +10/+16 capture schedule, quiet interval, pixel oracle and 15fps recording remained unchanged. The first attempt has no accepted pixel verdict: its timing guard failed before the pixel evidence could qualify.
 
 The separate credited video is **25.000 seconds, 1280 by 960 pixels, 4:3**, made from the real native window. The recorder process launched at page READY+5.001811s. The mutation therefore occurred about 7.014539s after recorder launch, so the 8-second video frame already shows the changed shape. The launch timestamp does not separately instrument the first encoded frame. The strict page-relative raw captures provide the pixel proof; the recording illustrates it.
 
@@ -127,13 +131,15 @@ The accepted window/media run took 36.072 seconds. Its sampled peak RSS was **64
 
 The native hit-test diagnostic used 5,000 ordinary nodes, 20 warmups and 300 measured queries:
 
-| Query case | Median | p95 | Correct fixed-descendant hits |
-|---|---:|---:|---:|
-| No fixed descendant, point outside the clip | 293.956 microseconds | 689.316 microseconds | 0 expected, 0 observed |
-| Same tree, point inside the clip | 571.592 microseconds | 1,113.764 microseconds | 0 expected, 0 observed |
-| Inline fixed descendant, point outside the ancestor clip | 134.223 microseconds | 242.154 microseconds | **300 expected, 300 observed** |
+| Query case | Held 2102 p50 / p95 (microseconds) | Accepted 2104 p50 / p95 (microseconds) | Correctness |
+|---|---:|---:|---|
+| No fixed descendant, point outside the clip | 0.157976 / 0.166008 | 293.956022 / 689.315959 | Both correct: 0 expected and observed fixed-target hits |
+| Same tree, point inside the clip | 535.161002 / 814.838917 | 571.591896 / 1,113.764010 | Both correct for the no-fixed tree |
+| Inline fixed descendant, point outside the ancestor clip | 0.199070 / 0.230968 | 134.222908 / 242.153998 | Old **0 / 300 incorrect**; accepted **300 / 300 correct** |
 
-The corrected escape-aware hit traversal has a real O(n) cost for the first case. The old fast path was correct for a tree without fixed descendants but returned the wrong result for the fixed-descendant case. The measurements document that tradeoff; they are not a general browser benchmark. A future optimization should preserve the fixed/affine behavior and independently measure the no-fixed fast path.
+The old no-fixed outside fast path was correct and much faster. The corrected escape-aware traversal has a real O(n) cost for that case. The old escaped-fixed measurement was fast because it returned the wrong target result; it is not a valid successful-hit baseline. These are the same frozen probe's measurements, not a general browser benchmark or an assertion that all latency improved. A future optimization should preserve the fixed/affine behavior while restoring and independently measuring a correct no-fixed fast path.
+
+Held 2102 report SHA256: `a69329573513e2d037b72b766ed9fd55a7b6754b0077bbe39a8f0acd57b46d05`. Accepted 2104 report SHA256: `2c49d239e931005baf4ef6d599bd6074a3c1439a6e7996661b740ddf76e93906`. Both use the same probe source SHA256 `8a14b416cdd03af6bed209036737bd164a13981308a2ace0fb5cf4ef24aa0071`.
 
 ## Sampled compatibility priorities
 
@@ -180,7 +186,7 @@ XDG_DOWNLOAD_DIR="$lumen_2104_profile/downloads" \
 TMPDIR="$lumen_2104_profile/tmp" \
 LUMEN_NO_SESSION=1 \
 LUMEN_ICU_DATA="$PWD/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/icudtl.dat" \
-./build/codex-native/lumen-astra-i2104
+./build/codex-native/lumen-astra-i2104 about:blank
 ```
 
 The isolation uses the engine's supported XDG/SDL storage path and session environment behavior, not an invented `--profile` option or a changed HOME. The capture profiles were removed after validation; their actual nested SDL path was not retained as an observation. The exact ICU data file is 10,822,000 bytes, SHA256 `319501bd0fdf9c9cb9926c0d0fd64ed95961118af700fbb4342981f088e73e8c`.
@@ -198,7 +204,7 @@ The source archive includes source and complete approved public Git history. It 
 - **Core independent seal SHA256:** `7e41f44b5faf042c4e0cdf9234f4b944b8b0e2019301991a0fd9b6d778edf068`
 - **Window independent seal SHA256:** `8b7f09c9cb204e188fb2d67e459b849d00959e7a953f3b675c652a875ea07a1e`
 - **Root visual record SHA256:** `df5092a4f2e22c8f0db7b38a49270665f8c6597edc505d9ec431ec3491c87966`
-- **Qualification JSON SHA256:** `bf31b3637eca437c039669a3495b0b13e094ad189fe98d467fde69f7a9e9b0a2`
+- **Qualification JSON SHA256:** `68e089240c6a4a711d292438040aaad23dbff1a943a3be06e832dea4e923a903`
 - **Sanitized comparison JSON SHA256:** `80bef1da9b031b3a13c2d7785a74a31b20d4d4336e2cf25c7394e5fbdc0a4f95`
 
 The [public source branch](https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2104-20261110) is a new descendant of the previously approved public 2007 source history. It contains 815 exact tested source paths, 28 preserved historical public files, five refreshed metadata files and three curated reports: 851 tracked paths. The canonical private Git history, profiles, inbox, capabilities and unreviewed runtime files are excluded.
@@ -207,7 +213,7 @@ The archive's `PUBLIC-HISTORY.bundle`, `RESTORE-GIT.md` and `ARCHIVE-PROVENANCE.
 
 The prior 2007 public source branch and retained archive queries remain intact. The previous Pages checkpoint 234 page and source archive are preserved under pinned historical names. New 2104 artifacts use an immutable candidate-specific Pages directory.
 
-The [live HTTPS progress page](https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz) provides two-second telemetry. Its plain link is read-only for messages until the current session key is entered; authenticated posting is not claimed. The human-readable posting expiry is **00:52 on 11 November 2026 (Shanghai time)**.
+The [live HTTPS progress page](https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz) provides two-second telemetry. Its plain link is read-only for messages until the current session key is entered; authenticated posting is not claimed. The human-readable posting expiry is **16:52 UTC on 10 November 2026 — 00:52 on 11 November 2026 (Shanghai time)**.
 
 The existing Surge CLI was unauthenticated and ordinary Fileharbor access returned 403. No account, authentication or network workaround was used. The existing project GitHub Pages destination supplies the public release page. The initial separately saved progress report remains its original version because the supported transfer executor stayed unavailable after the requested retries; current durable engineering and report checkpoints use the authorized project Git/public-report path.
 
