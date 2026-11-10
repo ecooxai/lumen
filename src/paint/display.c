@@ -129,6 +129,18 @@ static void paint_background_source(PB *p, const ComputedStyle *s, const BgArea 
                                clip_area->x - x, clip_area->y - y, clip_area->w, clip_area->h};
 }
 
+/* Generic mask-repeat values are retained even though masks use the existing
+ * background-colour approximation. Change only the initial/repeat operation;
+ * explicit no-repeat and other authored modes keep their previous path. */
+static bool mask_default_repeat(const ComputedStyle *s) {
+    const char *value = custom_get(s->gen_n, "mask-repeat");
+    if (!value || !*value) return true;
+    char a[16], b[16], extra[2];
+    int n = sscanf(value, "%15s %15s %1s", a, b, extra);
+    return (n == 1 && str_ieq(a, "repeat")) ||
+           (n == 2 && str_ieq(a, "repeat") && str_ieq(b, "repeat"));
+}
+
 static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, bool l_edge, bool r_edge) {
     const ComputedStyle *s = b->st;
     if (!visible(p, x - 64, y - 64, w + 128, h + 128)) return;
@@ -143,6 +155,12 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
         if (s->mask_fit) { float k = s->mask_fit == 1 ? LMIN(w / iw, h / ih) : LMAX(w / iw, h / ih); iw *= k; ih *= k; ox += (w - iw) / 2; oy += (h - ih) / 2; }
         DItem *c = emit(p, DO_PUSH_CLIP); c->x = x; c->y = y; c->w = w; c->h = h; ditem_set_radii(c, r, ry);
         DItem *it = emit(p, DO_IMAGE); it->x = ox; it->y = oy; it->w = iw; it->h = ih; it->img = tinted(mk, s->bg_color);
+        if (!s->mask_fit && mask_default_repeat(s)) {
+            /* Tile at intrinsic CSS size through the existing image lattice,
+               without allocating a display item for each repeated image. */
+            it->x = x; it->y = y; it->w = w; it->h = h;
+            it->tile = (BackgroundTile){0, 0, iw, ih, iw, ih, 0, 0, w, h};
+        }
         emit(p, DO_POP_CLIP);
         return;
     }
@@ -562,6 +580,50 @@ static int def_cmp(const void *a, const void *b) {
     return x->order - y->order;
 }
 
+/* Find the already-active scroller prefix using the existing snapshot chains.
+ * A false clip is an affine boundary: its inherited contours are outside that
+ * group's coordinate system. No extra state or ancestor allocation is needed. */
+static unsigned deferred_clip_depth(const PB *state) {
+    unsigned depth = 0;
+    for (; state && state->clip && state->sb && state->outer; state = state->outer) depth++;
+    return depth;
+}
+static const Box *deferred_active_clip_prefix(const PB *state, const PB *active) {
+    if (!state->clip || !active->clip || !state->sb || !active->sb) return NULL;
+    if (state->sb == active->sb) return state->sb;
+    unsigned a = deferred_clip_depth(state), b = deferred_clip_depth(active);
+    while (a > b) { state = state->outer; a--; }
+    while (b > a) { active = active->outer; b--; }
+    while (a--) {
+        if (state->sb == active->sb) return state->sb;
+        state = state->outer; active = active->outer;
+    }
+    return NULL;
+}
+/* Deferred descendants keep an aggregate rectangular clip. Re-emit only the
+ * rounded padding contours between their state and the active common prefix;
+ * contexts must not duplicate contours already enclosing their paint. */
+static unsigned paint_deferred_rounded_clips(PB *p, const PB *state, const Box *active) {
+    if (!state || !state->clip || !state->sb || !state->outer || state->sb == active) return 0;
+    const PB *outer = state->outer;
+    unsigned count = paint_deferred_rounded_clips(p, outer, active);
+    const Box *b = state->sb;
+    if (!b->node || !rounded(b->st)) return count;
+    float x[4], y[4], ix[4], iy[4];
+    radii(b, b->w, b->h, 15u, x, y);
+    rounded_radii_inset(x, y, b->b, ix, iy);
+    if (!(ix[0] || ix[1] || ix[2] || ix[3])) return count;
+    DItem *c = emit(p, DO_PUSH_CLIP);
+    c->x = b->x + outer->dx + b->b[3];
+    c->y = b->y + outer->dy + b->b[0];
+    c->w = b->w - b->b[1] - b->b[3];
+    c->h = b->h - b->b[0] - b->b[2];
+    c->sc = b; c->mv = outer->mv;
+    c->fixed = outer->fixed; c->sticky = outer->sticky;
+    ditem_set_radii(c, ix, iy);
+    return count + 1;
+}
+
 static void paint_deferred(PB *p, Deferred *d) {
     PB saved = *p;
     *p = d->state; p->order = saved.order;
@@ -571,7 +633,10 @@ static void paint_deferred(PB *p, Deferred *d) {
     } else if (d->b->abs && d->b->cb == p->L->root) p->clip = false;
     bool clipped = p->clip;
     if (clipped) { DItem *c = emit(p, DO_PUSH_CLIP); c->x = p->cx; c->y = p->cy; c->w = p->cw; c->h = p->ch; }
+    const Box *active = clipped ? deferred_active_clip_prefix(p, &saved) : NULL;
+    unsigned rounded_clips = clipped ? paint_deferred_rounded_clips(p, p, active) : 0;
     paint_stacking(p, d->b, makes_context(d->b));
+    for (unsigned i = 0; i < rounded_clips; i++) emit(p, DO_POP_CLIP);
     if (clipped) emit(p, DO_POP_CLIP);
     int order = p->order; *p = saved; p->order = order;
 }

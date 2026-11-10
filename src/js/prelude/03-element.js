@@ -375,6 +375,9 @@ function cssRadiusParse(p, value) {
         if (CSS_MATH_VALUE.test(value)) {
             value = cssMathValueText(value);
             if (value === null) return null;
+            /* Fold constant calc components after EOF closure. Relative units,
+             * percentages and pending values retain their native semantics. */
+            value = specFoldMath(value);
         }
         return specNormalize('border-top-left-radius', value);
     };

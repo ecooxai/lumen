@@ -105,6 +105,25 @@ static void syntax_and_computed(void) {
     free(before); style_free(s);
 }
 
+static void all_radius_registration(void) {
+    ComputedStyle *parent = style_new_default(), *s = style_new_default();
+    apply(parent, NULL, "border-radius", "8px / 12px");
+    apply(s, NULL, "border-radius", "19px / 23px");
+    apply(s, parent, "all", "initial");
+    value_is(s, "border-radius", "0px", "ordinary all initial resets both radius axes");
+    yes(!s->border_radius_y, "ordinary all initial releases optional radius storage");
+    apply(s, parent, "all", "inherit");
+    value_is(s, "border-radius", "8px / 12px", "ordinary all inherit copies both radius axes");
+    yes(s->border_radius_y && s->border_radius_y != parent->border_radius_y,
+        "ordinary all inherit owns a distinct optional allocation");
+    apply(s, parent, "all", "unset");
+    value_is(s, "border-radius", "0px", "ordinary all unset resets noninherited radius");
+    apply(s, NULL, "border-radius", "8px / 12px");
+    apply(s, NULL, "all", "nonsense");
+    value_is(s, "border-radius", "8px / 12px", "invalid all leaves radius unchanged");
+    style_free(s); style_free(parent);
+}
+
 static void ownership(void) {
     long initial = g_styles_live;
     ComputedStyle *parent = style_new_default();
@@ -276,6 +295,17 @@ static void real_style_lifetime(void) {
     yes(adopted, "200 paint-only adoptions retain identity and valid transferred Y");
     yes(anonymous_valid && anonymous_observations >= 800,
         "detached mixed inline/block wrappers retain initial radii across parent adoption");
+    struct { const char *style, *expected; } all_order[] = {
+        {"border-radius:8px / 12px;all:initial", "0px"},
+        {"all:initial;border-radius:8px / 12px", "8px / 12px"},
+        {"border-radius:8px / 12px!important;all:initial", "8px / 12px"},
+        {"border-radius:8px / 12px;all:initial!important", "0px"},
+    };
+    for (unsigned i = 0; i < sizeof all_order / sizeof *all_order; i++) {
+        node_set_attr(target, "style", all_order[i].style);
+        style_recalc(engine, &doc->node, false);
+        value_is(target->style, "border-radius", all_order[i].expected, all_order[i].style);
+    }
     node_set_attr(target, "style", "border-radius:7px / 9px");
     style_recalc(engine, &doc->node, false);
     css_set_anim_style(target, "border-top-left-radius:20px 40px");
@@ -288,10 +318,35 @@ static void real_style_lifetime(void) {
     style_engine_free(engine); doc_free(doc);
     yes(g_styles_live == initial, "real style and pseudo ownership returns to initial live count");
 }
+/* These process-lifetime caches predate radius ownership: CSS-wide initial
+ * values and the layout root style. Initialize them through the same public
+ * entrypoints used below, then measure strict per-fixture balance. */
+static void warm_process_style_caches(void) {
+    ComputedStyle *s = style_new_default();
+    apply(s, NULL, "border-radius", "initial");
+    style_free(s);
+    Document *doc = doc_new("https://radius-native.test/warmup");
+    const char *html = "<!doctype html><html><body><div></div></body></html>";
+    html_parse(doc, html, strlen(html));
+    StyleEngine *engine = style_engine_new(doc);
+    engine->media = (MediaCtx){320, 240, 1, false};
+    style_recalc(engine, &doc->node, false);
+    Layout *layout = layout_new();
+    layout_run(layout, doc, 320, 240);
+    layout_free(layout);
+    style_engine_free(engine);
+    doc_free(doc);
+}
 int main(void) {
     dom_init(); font_init();
+    long cold = g_styles_live;
+    warm_process_style_caches();
     long initial = g_styles_live;
-    syntax_and_computed(); ownership(); used_geometry(); real_style_lifetime();
+    warm_process_style_caches();
+    yes(g_styles_live == initial, "repeated production cache warmup has zero live-style delta");
+    printf("radius style cache warmup: cold=%ld established=%ld repeated=%ld\n",
+           cold, initial, g_styles_live);
+    syntax_and_computed(); all_radius_registration(); ownership(); used_geometry(); real_style_lifetime();
     yes(g_styles_live == initial, "all radius regression fixtures release their styles");
     printf("radius native: %u/%u checks passed; ownership stress 1000 cycles, pseudo/adoption 200 cycles\n",
            checks - failures, checks);

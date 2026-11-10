@@ -5580,6 +5580,7 @@ static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, co
                 css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
                 if (contain_intrinsic_projection_style != st) {
                     css_apply_decl(st, par, "border", val, e, el);
+                    css_apply_decl(st, par, "border-radius", val, e, el);
                     css_apply_decl(st, par, "animation-range", val, e, el);
                 }
             }

@@ -106,13 +106,18 @@ static void basic_geometry(Fixture *f) {
 }
 static uint32_t red_texel = 0xffff0000u, white_texel = 0xffffffffu;
 static Image red_image = {1, 1, 1, &red_texel, 1}, white_image = {1, 1, 1, &white_texel, 1};
+static uint32_t checker_texels[64];
+static Image checker_image = {8, 8, 1, checker_texels, 1};
 static Image *url_image(const char *url) {
+    if (strstr(url, "radius-checker")) return &checker_image;
     if (strstr(url, "radius-red")) return &red_image;
     if (strstr(url, "radius-white")) return &white_image;
     return NULL;
 }
 static Image *node_image(Node *node) { return node->tag == A_img ? &red_image : NULL; }
 static void image_and_gradient(Fixture *f) {
+    for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
+        checker_texels[y * 8 + x] = ((x < 4) == (y < 4)) ? white : 0;
     paint_url_image_hook = url_image; paint_image_hook = node_image;
     const char *styles[] = {
         "width:200px;height:100px;border-radius:50%;background:linear-gradient(red,red)",
@@ -124,6 +129,45 @@ static void image_and_gradient(Fixture *f) {
         pixel(f, 40, 32, white, "gradient/image/mask honors elliptical exterior");
         pixel(f, 65, 55, red, "gradient/image/mask preserves elliptical interior");
     }
+    setup(f, "width:200px;height:100px;border-radius:50%;mask-image:url(radius-white);mask-size:cover");
+    pixel(f, 40, 32, white, "explicit cover mask retains elliptical exterior");
+    pixel(f, 65, 55, red, "explicit cover mask retains elliptical interior");
+    setup(f, "width:200px;height:100px;border-radius:0;mask-image:url(radius-white);mask-repeat:no-repeat");
+    pixel(f, 20, 20, red, "explicit no-repeat preserves the intrinsic first mask pixel");
+    pixel(f, 65, 55, white, "explicit no-repeat does not tile an authored single image");
+    const char *reset_repeat[] = {"initial", "unset"};
+    for (unsigned i = 0; i < sizeof reset_repeat / sizeof *reset_repeat; i++) {
+        char style[224];
+        snprintf(style, sizeof style, "width:200px;height:100px;border-radius:0;mask-image:url(radius-white);"
+                 "mask-repeat:no-repeat;mask-repeat:%s", reset_repeat[i]);
+        setup(f, style);
+        const char *stored = custom_get(f->target->style->gen_n, "mask-repeat");
+        yes(stored && !*stored, "generic CSS-wide mask reset stores the existing empty initial sentinel");
+        pixel(f, 65, 55, red, "resolved initial mask repeat tiles beyond the first intrinsic image");
+    }
+    const char *unsupported_repeat[] = {"space", "round"};
+    for (unsigned i = 0; i < sizeof unsupported_repeat / sizeof *unsupported_repeat; i++) {
+        char style[192];
+        snprintf(style, sizeof style, "width:200px;height:100px;border-radius:0;mask-image:url(radius-white);mask-repeat:%s",
+                 unsupported_repeat[i]);
+        setup(f, style);
+        bool ordinary_image = false, tiled_image = false;
+        for (int j = 0; j < f->list.items.n; j++) {
+            const DItem *it = &f->list.items.v[j];
+            if (it->op == DO_IMAGE && it->img) {
+                ordinary_image = true;
+                tiled_image = tiled_image || (it->tile.w > 0 && it->tile.h > 0);
+            }
+        }
+        yes(ordinary_image && !tiled_image,
+            "unsupported explicit mask-repeat mode keeps its previous producer path (not conformance)");
+    }
+    setup(f, "width:200px;height:100px;border-radius:20px / 10px;mask-image:url(radius-checker);mask-repeat:repeat  repeat");
+    pixel(f, 22, 62, red, "nonuniform mask opaque quadrant is painted");
+    pixel(f, 26, 62, white, "nonuniform mask transparent quadrant stays clear");
+    pixel(f, 30, 62, red, "nonuniform mask repeats at its intrinsic horizontal period");
+    pixel(f, 22, 66, white, "nonuniform mask transparent vertical quadrant stays clear");
+    pixel(f, 22, 70, red, "nonuniform mask repeats at its intrinsic vertical period");
     setup(f, "display:none");
     node_set_attr(f->image, "style", "display:block;border-radius:50%");
     recalc(f); draw(f);
@@ -165,6 +209,82 @@ static void nested_clips(Fixture *f) {
     pixel(f, 22, 22, red, "overflow-visible child is not clipped by parent's rounded border");
     hit(f, f->child, 22, 22, true, "overflow-visible child remains independently hittable");
 }
+static void deferred_clip_boundaries(Fixture *f) {
+    /* The inner clip moves with the outer scroller, while neither clip moves
+       with its own content. Independent boxes: outer=(20,20,100,100),
+       inner=(40,20,100,100), red child=(40,10,200,200). */
+    setup(f, "left:30px;top:0;background:transparent;border-radius:30px / 50px;overflow:hidden");
+    node_set_attr(f->parent, "style", "left:20px;top:20px;width:100px;height:100px;border-radius:50px / 30px;overflow:hidden");
+    node_set_attr(f->child, "style", "display:block;width:200px;height:200px");
+    recalc(f);
+    f->parent->scroll_x = 10; f->target->scroll_y = 10;
+    draw(f);
+    pixel(f, 70, 45, red, "scrolled deferred clip intersection interior");
+    pixel(f, 45, 30, white, "inner rounded clip uses its pre-scroll position");
+    pixel(f, 100, 25, white, "outer rounded clip stays stationary during child scrolling");
+    hit(f, f->child, 70, 45, true, "scrolled nested clip hit interior");
+    hit(f, f->child, 45, 30, false, "scrolled inner clip excludes descendant hit");
+    f->parent->scroll_x = 0; f->target->scroll_y = 0;
+
+    /* The outer contour remains in document space. The transformed inner
+       ellipse has X=60,Y=50, but the outer ellipse stays X=50,Y=30. */
+    setup(f, "left:0;top:0;background:transparent;border-radius:30px / 50px;overflow:hidden;"
+             "transform:matrix(2,0,0,1,0,0);transform-origin:0 0");
+    node_set_attr(f->parent, "style", "left:20px;top:20px;width:100px;height:100px;border-radius:50px / 30px;overflow:hidden");
+    node_set_attr(f->child, "style", "display:block");
+    recalc(f); draw(f);
+    pixel(f, 60, 30, red, "affine child remains visible in both contours");
+    pixel(f, 110, 30, white, "outer rounded contour is not transformed a second time");
+    pixel(f, 24, 45, white, "transformed inner contour independently excludes its corner");
+
+    setup(f, "left:0;top:0;border-radius:0");
+    node_set_attr(f->parent, "style", "position:static;width:100px;height:100px;border-radius:50px / 30px;overflow:hidden");
+    recalc(f); draw(f);
+    yes(f->target->box->cb == f->layout->root, "absolute fixture uses a containing block outside the clipping ancestor");
+    pixel(f, 2, 2, red, "absolute containing-block escape is not clipped by the rounded ancestor");
+    hit(f, f->target, 2, 2, true, "absolute containing-block escape remains hittable");
+
+    setup(f, "position:fixed;left:0;top:0;border-radius:0");
+    node_set_attr(f->parent, "style", "left:20px;top:20px;width:100px;height:100px;border-radius:50px / 30px;overflow:hidden");
+    recalc(f); draw(f);
+    pixel(f, 2, 2, red, "viewport-fixed descendant escapes unrelated rounded clipping");
+    hit(f, f->target, 2, 2, true, "viewport-fixed escaped descendant remains hittable");
+}
+
+static void deep_deferred_contexts(void) {
+    enum { DEPTH = 16 };
+    Fixture f = {0};
+    f.doc = doc_new("https://radius-rendering.test/deep");
+    char html[4096] = "<!doctype html><html><body>";
+    for (int i = 0; i < DEPTH; i++) strcat(html, "<div class=layer>");
+    strcat(html, "<div id=deep-ink></div>");
+    for (int i = 0; i < DEPTH; i++) strcat(html, "</div>");
+    strcat(html, "</body></html>");
+    html_parse(f.doc, html, strlen(html));
+    f.engine = style_engine_new(f.doc); f.engine->media = (MediaCtx){W, H, 1, false};
+    const char *css = "html,body{margin:0;border:0}body{padding:20px}"
+        ".layer{position:relative;z-index:0;width:100px;height:100px;overflow:hidden;border-radius:50px / 30px}"
+        "#deep-ink{position:absolute;inset:0;background:red}";
+    style_engine_add_sheet(f.engine, css_parse_sheet(css, strlen(css), f.doc->url, 1, &f.engine->media));
+    f.layout = layout_new(); canvas_init(&f.canvas, W, H, 1);
+    recalc(&f); draw(&f);
+    Node *ink = doc_get_element_by_id(f.doc, "deep-ink");
+    pixel(&f, 22, 22, white, "sixteen nested rounded contexts retain their exterior clipping");
+    pixel(&f, 70, 70, red, "sixteen nested rounded contexts retain their common interior");
+    hit(&f, ink, 22, 22, false, "deep rounded context exterior excludes descendant hit");
+    hit(&f, ink, 70, 70, true, "deep rounded context interior accepts descendant hit");
+    int depth = 0, peak = 0; bool balanced = true;
+    for (int i = 0; i < f.list.items.n; i++) {
+        if (f.list.items.v[i].op == DO_PUSH_CLIP) { depth++; if (depth > peak) peak = depth; }
+        if (f.list.items.v[i].op == DO_POP_CLIP && --depth < 0) balanced = false;
+    }
+    yes(balanced && depth == 0 && peak <= 2 * DEPTH + 8,
+        "nested contexts keep balanced linear clip depth without duplicating active prefixes");
+    printf("radius nested contexts: depth=%d peak_active_clips=%d display_items=%d\n",
+           DEPTH, peak, f.list.items.n);
+    destroy(&f);
+}
+
 static void fragments(Fixture *f) {
     setup(f, "height:140px;border-radius:30px / 15px");
     Box *b = f->target->box;
@@ -209,8 +329,8 @@ static void rows_and_damage(Fixture *f) {
 int main(void) {
     dom_init(); font_init(); Fixture f = create_fixture();
     basic_geometry(&f); image_and_gradient(&f); nested_clips(&f);
-    rows_and_damage(&f); fragments(&f);
-    destroy(&f);
+    rows_and_damage(&f); deferred_clip_boundaries(&f); fragments(&f);
+    destroy(&f); deep_deferred_contexts();
     printf("radius native rendering: %u/%u independently specified pixel/hit/damage checks passed\n",
            checks - failures, checks);
     return failures ? 1 : 0;
