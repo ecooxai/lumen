@@ -1566,7 +1566,10 @@ static bool hit_radius_rect(const Box *b, float px, float py, float x, float y,
     return rounded_rect_contains(px, py, x, y, x + width, y + height, rx, ry);
 }
 static bool hit_radius_padding(const Box *b, float px, float py) {
-    if (!b->scroller || !b->node || !hit_has_radius(b)) return true;
+    if (!b->scroller || !b->node) return true;
+    if (!(px >= b->x + b->b[3] && px < b->x + b->w - b->b[1] &&
+          py >= b->y + b->b[0] && py < b->y + b->h - b->b[2])) return false;
+    if (!hit_has_radius(b)) return true;
     float outer_x[4], outer_y[4], rx[4], ry[4];
     css_used_border_radii(b->st, b->w, b->h, 15u, outer_x, outer_y);
     rounded_radii_inset(outer_x, outer_y, b->b, rx, ry);

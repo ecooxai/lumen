@@ -382,6 +382,86 @@ static void fixed_hit_paths(Fixture *f) {
     hit(f, f->child, 2, 2, true, "pointer-events none exposes the escaped fixed hit below");
 }
 
+static void rectangular_clip_paths(Fixture *f) {
+    /* Independent zero-radius controls keep rectangular clipping distinct from
+     * the ellipse fast path. Probe centers are away from every contour. */
+    const char *clip = "overflow:hidden;border-radius:0;background:transparent";
+    const char *fixed = "display:block;position:fixed;left:0;top:0;width:100px;height:100px;background:red";
+    f->parent->scroll_x = f->parent->scroll_y = 0;
+    f->target->scroll_x = f->target->scroll_y = 0;
+
+    setup(f, clip);
+    node_set_attr(f->child, "style", "display:block;left:-20px;top:-20px;width:160px;height:160px");
+    recalc(f);
+    hit(f, f->child, 2, 2, false, "zero-radius clip rejects retained absolute exterior before paint");
+    hit(f, f->child, 70, 70, true, "zero-radius clip accepts retained absolute interior before paint");
+    draw(f);
+    pixel(f, 2, 2, white, "zero-radius retained absolute exterior is not painted");
+    pixel(f, 70, 70, red, "zero-radius retained absolute interior is painted");
+    hit(f, f->child, 2, 2, false, "zero-radius clip rejects retained absolute exterior after paint");
+    hit(f, f->child, 70, 70, true, "zero-radius clip accepts retained absolute interior after paint");
+
+    setup(f, clip);
+    node_set_attr(f->child, "style", "display:block;position:static;width:160px;height:160px");
+    recalc(f);
+    hit(f, f->child, 130, 70, false, "zero-radius clip rejects ordinary child exterior before paint");
+    hit(f, f->child, 70, 70, true, "zero-radius clip accepts ordinary child interior before paint");
+    draw(f);
+    pixel(f, 130, 70, white, "zero-radius ordinary child exterior is not painted");
+    pixel(f, 70, 70, red, "zero-radius ordinary child interior is painted");
+    hit(f, f->child, 130, 70, false, "zero-radius clip rejects ordinary child exterior after paint");
+    hit(f, f->child, 70, 70, true, "zero-radius clip accepts ordinary child interior after paint");
+
+    setup(f, clip);
+    node_set_attr(f->child, "style", fixed); recalc(f);
+    hit(f, f->child, 2, 2, true, "zero-radius direct viewport-fixed escape hits before paint");
+    draw(f);
+    pixel(f, 2, 2, red, "zero-radius direct viewport-fixed escape paints outside clip");
+    hit(f, f->child, 2, 2, true, "zero-radius direct viewport-fixed escape hits after paint");
+
+    setup(f, "position:static;width:240px;height:240px;background:transparent");
+    node_set_attr(f->parent, "style", "left:20px;top:20px;width:100px;height:100px;overflow:hidden;border-radius:0");
+    node_set_attr(f->child, "style", fixed); recalc(f);
+    hit(f, f->child, 2, 2, true, "zero-radius indirect viewport-fixed escape hits before paint");
+    draw(f);
+    pixel(f, 2, 2, red, "zero-radius indirect viewport-fixed escape paints outside clip");
+    hit(f, f->child, 2, 2, true, "zero-radius indirect viewport-fixed escape hits after paint");
+
+    setup(f, "left:90px;top:80px;width:40px;height:20px;transform:rotate(90deg);transform-origin:0 0");
+    node_set_attr(f->parent, "style", "left:100px;top:100px;width:100px;height:100px;overflow:hidden;border-radius:0");
+    recalc(f);
+    hit(f, f->target, 180, 210, false, "zero-radius destination clip excludes rotated child before paint");
+    hit(f, f->target, 180, 190, true, "zero-radius destination clip includes rotated child interior before paint");
+    draw(f);
+    pixel(f, 180, 210, white, "zero-radius destination clip excludes rotated child pixels");
+    pixel(f, 180, 190, red, "zero-radius destination clip retains rotated child interior pixels");
+    hit(f, f->target, 180, 210, false, "zero-radius destination clip excludes rotated child after paint");
+    hit(f, f->target, 180, 190, true, "zero-radius destination clip includes rotated child interior after paint");
+
+    setup(f, "left:80px;top:20px;width:50px;height:20px");
+    node_set_attr(f->parent, "style", "left:100px;top:100px;width:100px;height:100px;overflow:hidden;"
+                                      "border-radius:0;transform:rotate(90deg);transform-origin:0 0");
+    recalc(f);
+    hit(f, f->target, 70, 220, false, "zero-radius transformed owner clips its child before paint");
+    hit(f, f->target, 70, 190, true, "zero-radius transformed owner retains child interior before paint");
+    draw(f);
+    pixel(f, 70, 220, white, "zero-radius transformed owner clips child pixels in local coordinates");
+    pixel(f, 70, 190, red, "zero-radius transformed owner retains child interior pixels");
+    hit(f, f->target, 70, 220, false, "zero-radius transformed owner clips its child after paint");
+    hit(f, f->target, 70, 190, true, "zero-radius transformed owner retains child interior after paint");
+
+    setup(f, "overflow:hidden;border-radius:0;border:10px solid blue;background:transparent");
+    node_set_attr(f->child, "style", "display:block;left:-10px;top:-10px;width:160px;height:160px");
+    recalc(f);
+    hit(f, f->child, 25, 70, false, "zero-radius padding clip excludes child under border before paint");
+    hit(f, f->child, 70, 70, true, "zero-radius padding clip retains child interior before paint");
+    draw(f);
+    pixel(f, 25, 70, blue, "zero-radius padding clip preserves the independently colored border");
+    pixel(f, 70, 70, red, "zero-radius padding clip retains child interior pixels");
+    hit(f, f->child, 25, 70, false, "zero-radius padding clip excludes child under border after paint");
+    hit(f, f->child, 70, 70, true, "zero-radius padding clip retains child interior after paint");
+}
+
 static void clipped_text_hit(void) {
     Fixture f = {0}; f.doc = doc_new("https://radius-rendering.test/clipped-text");
     const char *html = "<!doctype html><html><body><div id=clip>MMMMMMMM</div></body></html>";
@@ -443,7 +523,7 @@ static void rows_and_damage(Fixture *f) {
 int main(void) {
     dom_init(); font_init(); Fixture f = create_fixture();
     basic_geometry(&f); image_and_gradient(&f); nested_clips(&f);
-    rows_and_damage(&f); deferred_clip_boundaries(&f); fixed_hit_paths(&f); fragments(&f);
+    rows_and_damage(&f); deferred_clip_boundaries(&f); fixed_hit_paths(&f); rectangular_clip_paths(&f); fragments(&f);
     destroy(&f); deep_deferred_contexts(); clipped_text_hit();
     printf("radius native rendering: %u/%u independently specified pixel/hit/damage checks passed\n",
            checks - failures, checks);
