@@ -1,0 +1,66 @@
+{
+  "created_utc": "2026-11-10T16:36:19.774803+00:00",
+  "candidate": 2105,
+  "state": "ACCEPTED_ENGINE_AND_REVIEWED_PUBLIC_EXPORT; Pages commit/readbacks recorded separately",
+  "tested_engine_source_commit": "20a7dd4b54f1a4e587168f10875e43f307a76fb8",
+  "tested_binary_sha256": "2d38085828206f384aeafc3afc38c63009fda483c55f0fcd057e0df9255ffcb3",
+  "public_source_commit": "f2ea72ff37b6e52b9eef1e08bf902979f6fbdccf",
+  "public_source_tree": "acb04c8f4ff3de8e92350356a076a75efa85a74b",
+  "source_archive_sha256": "978143cd6ba5fb39b0eb65cc2bd8e0f5af7bb51c97c240d1364985d41078aef9",
+  "source_archive_bytes": 11748544,
+  "source_archive_complete_public_history": true,
+  "offline_restore_exact852_paths": true,
+  "source_inventory_paths": 815,
+  "recorded_build_inputs": 748,
+  "public_tracked_paths": 852,
+  "curated_build_guide_outside_source815": true,
+  "core_seal_sha256": "a6cccfbf608ca25d3f9cb3cd776519ff3ca8fe7a78fc0daa2e2f7c9da7f29186",
+  "window_seal_sha256": "442e781d175d99450344cfeff73c33985d8fb15b165c6a750760b7c3d47fc553",
+  "root_visual_sha256": "ff7391aeed729f5b77f8601e3323c1161464f1c3e5d1a65a0a1b91033f0b3dc1",
+  "artifacts": {
+    "index.html": {
+      "sha256": "6180733c48d9c53947e165489591e2edb7d99a7013cd21e6b99a5fe1aea244be",
+      "bytes": 20069
+    },
+    "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2105_src.tar.gz": {
+      "sha256": "978143cd6ba5fb39b0eb65cc2bd8e0f5af7bb51c97c240d1364985d41078aef9",
+      "bytes": 11748544
+    },
+    "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json": {
+      "sha256": "7e168a336a6c6879691ced617efccfbc745f7def71b58aea0a7b9b8857ab5c4c",
+      "bytes": 115747
+    },
+    "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json": {
+      "sha256": "bb2e5cd75086db5db0d8d20c4d4112d0c64710308bef2abc1b352c3364fe310b",
+      "bytes": 1300096
+    },
+    "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_build_and_run_20261110.md": {
+      "sha256": "fab7355e455628e6f31d4bb69756c2c25cc99a7d9fd4ade061aa8dcef87146e5",
+      "bytes": 10594
+    },
+    "lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md": {
+      "sha256": "38f864f581671a0f4d41e8358ef73356b9183edc2b2d1092fb838c056f6810f2",
+      "bytes": 19328
+    },
+    "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2105_showcase_4x3.mp4": {
+      "sha256": "fdf01c56395f86eee5f2d5b79d195274e14df1296f1ad24f2dd4ba4383985ae2",
+      "bytes": 99113
+    },
+    "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_before.png": {
+      "sha256": "f099c25b2c4646f58344caf65ce0852fa0a4015a5cb9f3f865c70f94e2155e20",
+      "bytes": 43732
+    },
+    "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_after.png": {
+      "sha256": "702ab68f998e0f2a4626bc4fc400676240fca3d190f936e6888f4a2a1606444e",
+      "bytes": 44114
+    },
+    "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_showcase_8s.png": {
+      "sha256": "177a0ab73b22ac5c17648407c738a23db28469cbdf61073d9704e542394d2c5c",
+      "bytes": 134030
+    }
+  },
+  "historical_candidate2104_namespace_preserved": true,
+  "historical_candidate234_copies_preserved": true,
+  "no_private_runtime_or_auth_material": true,
+  "self_manifest_and_checksum_hashes_recorded_externally": true
+}

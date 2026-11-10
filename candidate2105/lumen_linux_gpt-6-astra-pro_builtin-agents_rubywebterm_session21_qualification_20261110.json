@@ -1,0 +1,2787 @@
+{
+  "schema": "lumen-session21-public-qualification-v2",
+  "title": "Lumen Linux accepted candidate 2105: radius repair and callback exception realm",
+  "created_utc": "2026-11-10T16:29:00.175845+00:00",
+  "model": "GPT-6 Astra Pro",
+  "agents": [
+    "root project manager",
+    "engine_owner_1110",
+    "wpt_qa_1110",
+    "delivery_perf_1110"
+  ],
+  "tools": [
+    "built-in agents",
+    "RubyWebTerm",
+    "V8",
+    "Chromium150",
+    "Xvfb",
+    "FFmpeg"
+  ],
+  "status": "ACCEPTED selected radius target and bounded callback routing; not whole-WPT or global98",
+  "session": {
+    "id": "20261110-session21",
+    "started_utc": "2026-11-10T11:52:26Z",
+    "normal_deadline_utc": "2026-11-10T16:52:26Z",
+    "acceptance_recorded_utc": "2026-11-10T16:24:59.641836+00:00",
+    "elapsed_minutes_at_this_record": 276.57042985000004,
+    "canonical_branch": "gpt-6-astra-pro_builtin-engine-owner_rubywebterm_session21-wpt-20261110",
+    "session_still_active": true,
+    "later_optional_candidates_not_included": true
+  },
+  "scope": {
+    "selected_target": "Exactly three unprefixed upstream border-radius parsing/computed-value WPT files,48assertions",
+    "selected_score": 100,
+    "score_denominator": "48/48 registered assertions in those three files, not all border-radius behavior or all WPT",
+    "prefixed_companion": "One separate upstream file,25assertions",
+    "expanded_sample": "1,248 entries/URLs backed by 1,247 unique source files; not the whole WPT suite",
+    "url_conformance_work": "Deferred as requested; existing required native URL regressions were retained, not treated as newly completed URL conformance",
+    "standalone_ecmascript": "No new Test262 conformance claim",
+    "all_wpt_claimed": false,
+    "global98_goal_achieved": false
+  },
+  "accepted_release": {
+    "candidate": 2105,
+    "tested_engine_source_commit": "20a7dd4b54f1a4e587168f10875e43f307a76fb8",
+    "tested_engine_source_tree": "2b07ae05ef2adf0b91398d98adf3a082915ddfcd",
+    "binary_sha256": "2d38085828206f384aeafc3afc38c63009fda483c55f0fcd057e0df9255ffcb3",
+    "binary_bytes": 7756616,
+    "immutable_host_binary": "build/codex-native/lumen-astra-i2105",
+    "recorded_input_count": 748,
+    "recorded_input_digest": "944c86116893691f5d186a716f2132aa85fe7347225791cdb633eefde8a06798",
+    "input_manifest_file_sha256": "28197dd8284c3a6b257a45f537fd5b16319adb7eef28942f5378cadfe3d87701",
+    "build_state_sha256": "5c079621d8e06294f83cf21f9df4c151ab390fb7aa7b74f7e44a21f0b7210ca5",
+    "acceptance_record_sha256": "6062d5ff791fc6dfc09d0d4a32b4498a880f22f559c565333b30acab507373ba",
+    "core_seal_sha256": "a6cccfbf608ca25d3f9cb3cd776519ff3ca8fe7a78fc0daa2e2f7c9da7f29186",
+    "window_seal_sha256": "442e781d175d99450344cfeff73c33985d8fb15b165c6a750760b7c3d47fc553",
+    "root_visual_sha256": "ff7391aeed729f5b77f8601e3323c1161464f1c3e5d1a65a0a1b91033f0b3dc1",
+    "public_source_branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2105-20261110",
+    "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2105-20261110",
+    "public_source_commit_recorded_separately": true,
+    "archive_sha256_recorded_separately": true,
+    "source_inventory_sha256": "055f8f6b675780fb8b35bdb0e9b8440485beab423ac55276d64b19917604e0e2",
+    "source_path_count": 815,
+    "historical_public_paths_preserved": 28,
+    "planned_public_tracked_paths": 852,
+    "private_history_included": false,
+    "curated_build_guide_paths": 1,
+    "public_parent": "54999c2cfe6b159167b89c1b5b98427e9eaf5370"
+  },
+  "fresh_pre_edit_radius_baseline": {
+    "main_unprefixed": {
+      "files": 3,
+      "assertions": 48,
+      "lumen_pass": 21,
+      "chromium_pass": 48
+    },
+    "separate_prefixed": {
+      "files": 1,
+      "assertions": 25,
+      "lumen_pass": 20,
+      "chromium_pass": 24
+    },
+    "independent_receipt_sha256": "c305a7e416c63b1c73a77e40b55bb959de8bd6b910cd939d53a6a7a8950d7dad",
+    "authored94": {
+      "lumen_pass": 23,
+      "chromium_pass": 92,
+      "total": 94,
+      "independent_receipt_sha256": "3b55ea6d37f24962356e69a4074515ae9a85eb98d9faa323eed6efaa6362a77b"
+    }
+  },
+  "fresh_chromium_reference": {
+    "browser": "Chromium 150.0.7871.114",
+    "original_full_run": {
+      "selected_files": 1248,
+      "complete_files": 1060,
+      "passing_assertions": 24517,
+      "registered_assertions": 25969,
+      "startup_harness_errors": 3,
+      "independent_receipt_sha256": "7036d7f1fb8a1177ac03739f717a942e80f898f72be5865dcd4fd697f4377b02"
+    },
+    "separate_preregistered_startup_diagnostic": {
+      "files": 3,
+      "recovered_registrations": 95,
+      "passing_assertions": 24,
+      "failing_assertions": 71,
+      "historical_statuses_matched": true,
+      "raw_sha256": "1040995c3640b52490afe407c7093a6a11878482ae77e29f82d78fc239a8758f",
+      "replaces_original_run": false,
+      "creates_clean_full_run": false
+    },
+    "comparison_note": "Original denominators and startup failures remain visible. The separate diagnostic is never silently merged into the original full run."
+  },
+  "results": {
+    "main_unprefixed": {
+      "files": 3,
+      "baseline_passed": 21,
+      "passed": 48,
+      "registered": 48,
+      "chromium_passed": 48,
+      "gained_passes": 27
+    },
+    "prefixed_companion": {
+      "files": 1,
+      "baseline_passed": 20,
+      "passed": 25,
+      "registered": 25,
+      "chromium_passed": 24,
+      "gained_passes": 5
+    },
+    "expanded": {
+      "baseline_accepted_replay": {
+        "files": 1248,
+        "complete_files": 813,
+        "registered_assertions": 26245,
+        "passing_assertions": 23329,
+        "assertion_statuses": {
+          "PASS": 23329,
+          "FAIL": 2888,
+          "TIMEOUT": 7,
+          "NOTRUN": 21
+        },
+        "harness_statuses": {
+          "OK": 1238,
+          "ERROR": 1,
+          "TIMEOUT": 9
+        }
+      },
+      "current_fresh": {
+        "files": 1248,
+        "complete_files": 820,
+        "registered_assertions": 26245,
+        "passing_assertions": 23365,
+        "assertion_statuses": {
+          "PASS": 23365,
+          "FAIL": 2852,
+          "TIMEOUT": 7,
+          "NOTRUN": 21
+        },
+        "harness_statuses": {
+          "OK": 1238,
+          "ERROR": 1,
+          "TIMEOUT": 9
+        }
+      },
+      "raw_sha256": "1bd15804cf14215bdd8053f2f8f4c072312a3ce7532eab881ecec744dfa37d0b",
+      "complete_file_rate_percent": 65.7051282051282,
+      "assertion_rate_percent": 89.02648123452086,
+      "gained_assertion_passes": 36,
+      "gained_complete_files": 7,
+      "prior_pass_losses": 0,
+      "registration_losses": 0,
+      "unreviewed_new_registrations": 0,
+      "prior_complete_file_losses": 0,
+      "prior_harness_ok_losses": 0,
+      "group_counts": {
+        "css/css-animations": {
+          "registered": 574,
+          "PASS": 508,
+          "baseline_PASS": 508,
+          "gained_PASS": 0
+        },
+        "css/css-backgrounds": {
+          "registered": 920,
+          "PASS": 731,
+          "baseline_PASS": 731,
+          "gained_PASS": 0
+        },
+        "css/css-sizing": {
+          "registered": 183,
+          "PASS": 140,
+          "baseline_PASS": 140,
+          "gained_PASS": 0
+        },
+        "css/css-syntax": {
+          "registered": 444,
+          "PASS": 396,
+          "baseline_PASS": 396,
+          "gained_PASS": 0
+        },
+        "css/css-transitions": {
+          "registered": 252,
+          "PASS": 231,
+          "baseline_PASS": 231,
+          "gained_PASS": 0
+        },
+        "css/css-values": {
+          "registered": 8492,
+          "PASS": 6653,
+          "baseline_PASS": 6653,
+          "gained_PASS": 0
+        },
+        "css/css-variables": {
+          "registered": 584,
+          "PASS": 449,
+          "baseline_PASS": 449,
+          "gained_PASS": 0
+        },
+        "css/cssom": {
+          "registered": 3931,
+          "PASS": 3527,
+          "baseline_PASS": 3527,
+          "gained_PASS": 0
+        },
+        "dom/nodes": {
+          "registered": 10471,
+          "PASS": 10358,
+          "baseline_PASS": 10357,
+          "gained_PASS": 1
+        },
+        "dom/ranges": {
+          "registered": 394,
+          "PASS": 372,
+          "baseline_PASS": 372,
+          "gained_PASS": 0
+        }
+      },
+      "limits": "A frozen diagnostic sample; this is not a whole-WPT pass rate.",
+      "gained_assertion_passes_vs2104": 1,
+      "gained_complete_entries_vs2104": 1,
+      "entry_count": 1248,
+      "unique_source_files": 1247,
+      "group_counts_baseline_candidate": 2104,
+      "group_counts_baseline_note": "These group counts compare2105 with2104 and sum to one new pass. The adjacent accepted2007 replay is the earlier baseline for the overall gain of36 passes."
+    },
+    "common_chromium_comparison": {
+      "identity_rule": "Full URL, exact assertion name, zero-based occurrence within URL/name. Every registered identity is retained.",
+      "original_fresh_full": {
+        "common_registered": 25909,
+        "both_PASS": 22497,
+        "both_nonPASS": 830,
+        "Lumen_only_PASS": 622,
+        "Chromium_only_PASS": 1960,
+        "exact_status_pairs": [
+          {
+            "lumen": "FAIL",
+            "chromium": "FAIL",
+            "count": 830
+          },
+          {
+            "lumen": "FAIL",
+            "chromium": "PASS",
+            "count": 1932
+          },
+          {
+            "lumen": "NOTRUN",
+            "chromium": "PASS",
+            "count": 21
+          },
+          {
+            "lumen": "PASS",
+            "chromium": "FAIL",
+            "count": 619
+          },
+          {
+            "lumen": "PASS",
+            "chromium": "NOTRUN",
+            "count": 1
+          },
+          {
+            "lumen": "PASS",
+            "chromium": "PASS",
+            "count": 22497
+          },
+          {
+            "lumen": "PASS",
+            "chromium": "TIMEOUT",
+            "count": 2
+          },
+          {
+            "lumen": "TIMEOUT",
+            "chromium": "PASS",
+            "count": 7
+          }
+        ]
+      },
+      "separate_diagnostic_qualified": {
+        "common_registered": 26004,
+        "both_PASS": 22513,
+        "both_nonPASS": 874,
+        "Lumen_only_PASS": 649,
+        "Chromium_only_PASS": 1968,
+        "exact_status_pairs": [
+          {
+            "lumen": "FAIL",
+            "chromium": "FAIL",
+            "count": 874
+          },
+          {
+            "lumen": "FAIL",
+            "chromium": "PASS",
+            "count": 1940
+          },
+          {
+            "lumen": "NOTRUN",
+            "chromium": "PASS",
+            "count": 21
+          },
+          {
+            "lumen": "PASS",
+            "chromium": "FAIL",
+            "count": 646
+          },
+          {
+            "lumen": "PASS",
+            "chromium": "NOTRUN",
+            "count": 1
+          },
+          {
+            "lumen": "PASS",
+            "chromium": "PASS",
+            "count": 22513
+          },
+          {
+            "lumen": "PASS",
+            "chromium": "TIMEOUT",
+            "count": 2
+          },
+          {
+            "lumen": "TIMEOUT",
+            "chromium": "PASS",
+            "count": 7
+          }
+        ]
+      },
+      "source_matrix_sha256": "972e08037555490592a5edcf38e14f2059f5cac24b5d37701dbfef2af295a30f",
+      "lumen_passes_on_original_common": 23119,
+      "chromium_passes_on_original_common": 24457,
+      "raw_denominators_not_ranked": true,
+      "limits": [
+        "Browser-specific assertion registrations and denominators differ; only common identities are compared directly.",
+        "The diagnostic-qualified reference is a separately labeled composite of one approved startup replay, never a clean full run.",
+        "Native, authored, rendering, adjacent and optional feature controls are excluded from these1248 counts."
+      ]
+    },
+    "native": {
+      "test_executables_and_js_groups_passed": 222,
+      "selected": 222,
+      "all218prior_test_names_pass": true,
+      "new_tests": 4,
+      "nested_native_subchecks": {
+        "ownership": {
+          "passed": 133,
+          "total": 133
+        },
+        "render_hit": {
+          "passed": 157,
+          "total": 157
+        },
+        "background_types": {
+          "passed": 30,
+          "total": 30
+        },
+        "actual_main_damage_signature": {
+          "passed": 9,
+          "total": 9
+        }
+      },
+      "nested_counts_are_not_additional_wpt_assertions": true,
+      "closure_sha256": "5c1ac5a7ac634594b1f25007151cba220f48cc4b5c6364c2f39810c2382729f1"
+    },
+    "focused_browser_gates": {
+      "authored_cssom_review_geometry": {
+        "passed": 94,
+        "registered": 94,
+        "required": 93,
+        "retained_original_diagnostic": 1
+      },
+      "upstream_rendering_comparisons": {
+        "passed": 17,
+        "registered": 17,
+        "original_fuzzy_metadata_preserved": true
+      },
+      "adjacent_background_interpolation": {
+        "files": 5,
+        "passed": 770,
+        "registered": 770
+      },
+      "supplemental_math": {
+        "passed": 8,
+        "registered": 8,
+        "authored_after_initial_implementation_frozen_before_execution": true
+      },
+      "fixed_hit_controls": {
+        "passed": 5,
+        "registered": 5
+      },
+      "late_geometry": {
+        "passed": 9,
+        "registered": 9
+      },
+      "explicit_pair_animation": {
+        "passed": 1,
+        "registered": 1
+      },
+      "mixed_arity_animation": {
+        "passed": 0,
+        "registered": 1,
+        "known_limitation_retained": true
+      },
+      "background_controls": {
+        "required_passed": 37,
+        "registered": 40,
+        "retained_observations": 3
+      },
+      "fast_seal_sha256": "b4ec410629bbde48ddd477024f34d0d3b42901df81002e983deb3ed464c4e889",
+      "required_scope_results": {
+        "callback13": true,
+        "mutation16": true,
+        "radius4": true,
+        "radius-authored94": true,
+        "radius-late11": true,
+        "background40": true,
+        "radius-render17": true,
+        "background-adjacent5": true,
+        "radius-math8": true,
+        "fixed-hit-escape5": true
+      }
+    },
+    "historical_companion_stages": [
+      {
+        "label": "preserve-object62",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-object_units9",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-object_order2",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-object_empty2",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-object3",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-css26",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-transfer109",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-transfer109audit",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-animation50",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-animation53",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-reconcile7",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-auth80",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-auth19",
+        "required_gate_pass": true
+      },
+      {
+        "label": "preserve-messaging18",
+        "required_gate_pass": true
+      }
+    ],
+    "historical_seal_sha256": "f21350f551fcfbedc9b5127b98d6947b067fcbdca51c19320de33aa5bf234d70",
+    "scope_overlap_note": "Counts describe different overlapping scopes and units; do not add them into one conformance denominator.",
+    "historical_companion_scope_counts": "object75; upstream3 files/123; CSS26; transfer107/109 with106required; authored animation53+7; upstream animation50 files/618 with552PASS,41complete; auth80+19; messaging18 files/39 with34PASS,15complete",
+    "mutation_observer": {
+      "selected_assertion_files": 16,
+      "registered_assertions": 163,
+      "baseline2104_passes": 157,
+      "current2105_passes": 158,
+      "remaining_upstream_failures": 5,
+      "separate_nested_crash_guard_executed": false,
+      "authored_controls": {
+        "baseline2104": [
+          8,
+          13
+        ],
+        "current2105": [
+          12,
+          13
+        ],
+        "chromium": [
+          13,
+          13
+        ],
+        "normative": [
+          9,
+          10
+        ],
+        "exotic_runtime_preservation": [
+          3,
+          3
+        ],
+        "retained_normative_failure": "Foreign child observer constructor with host callback on host target does not invoke the callback; a later host observer still delivers.",
+        "exotic_associated_realms_are_observations_only": true
+      }
+    }
+  },
+  "implementation": {
+    "changes": [
+      "Real independent horizontal and vertical radius storage, parsing, computed values and geometry",
+      "Strict whole-value validation and atomic CSSOM shorthand/corner expansion with correct specified serialization",
+      "Elliptical paint and clipping, side-specific insets, shared overlap scaling and actual hit/damage consumers",
+      "Bounded background-position numeric grammar correction",
+      "Radius-local constant math folding after CSS Syntax EOF closure, preserving native computed clamping",
+      "Bounded default 1x1 image-mask repeat repair within the existing background-colour approximation",
+      "Bounded MutationObserver callback-exception reporting through the existing same-origin creation-realm lookup"
+    ],
+    "computed_route": "Computed values continue to come from the actual native engine; no stored-string getter facade.",
+    "source_ownership": "Separate same-model engine and JavaScript agents; independent QA; one Git steward and one monitored heavy lane.",
+    "mask_repeat_scope": "Within the existing background-colour mask approximation, intrinsically sized image masks use one tiled DItem for absent or initial-resolved repeat, repeat, or repeat repeat, so a 1x1 mask covers the intended box. Explicit no-repeat and other authored modes, and fitted contain/cover, retain their previous paths. No per-tile allocation or full CSS Masking conformance is claimed; the original failure and nonuniform-alpha/no-repeat/fitted guards remain preserved.",
+    "only_source_change_since2104": "src/js/prelude/01-events.js",
+    "native_realm_security_token_contract_unchanged": true
+  },
+  "held_development_candidates": [
+    {
+      "candidate": 2101,
+      "status": "HOLD \u2014 never accepted or published",
+      "source_commit": "09076811db6625db8d984cf3e78abc14bdd6361e",
+      "binary_sha256": "89b6b8c5c65cb94e9d1f09ad1162c1d05201bc033a9f409c9a723071b434cfc2",
+      "main_radius": {
+        "pass": 48,
+        "total": 48
+      },
+      "prefixed_radius": {
+        "pass": 25,
+        "total": 25
+      },
+      "renderer": {
+        "pass": 17,
+        "total": 17,
+        "original_fuzzy_metadata_preserved": true
+      },
+      "geometry": {
+        "pass": 34,
+        "total": 34
+      },
+      "late_geometry": {
+        "pass": 9,
+        "total": 9
+      },
+      "authored94": {
+        "pass": 91,
+        "total": 94,
+        "remaining_failures": [
+          "native all-after-radius reset",
+          "two constant-calc specified serializations"
+        ]
+      },
+      "native": {
+        "pass": 220,
+        "total": 222,
+        "failed_tests": [
+          "css_border_radius",
+          "css_border_radius_rendering"
+        ]
+      },
+      "background_neighbors": {
+        "files": 5,
+        "pass": 770,
+        "total": 770
+      },
+      "explicit_pair_animation": {
+        "pass": 1,
+        "total": 1
+      },
+      "mixed_arity_animation": {
+        "pass": 0,
+        "total": 1,
+        "preexisting_observation": true
+      },
+      "full1248_run_performed": false,
+      "independent_fast_receipt_sha256": "06436df25d940108af2f19bf9c46534658c7762fb10f9139753f4d3bd0b6b471"
+    },
+    {
+      "candidate": 2102,
+      "status": "HOLD \u2014 native221/222 and independent fixed-hit2/5 versus Chromium5/5; fast diagnostics closed",
+      "source_commit": "280a31557a1d0a8551f9874e6c86b4ea31edb740",
+      "source_tree": "405d74a35bc00cc57c8eca5df0ccc841bb693fcc",
+      "binary_sha256": "2f25b411d906cf405992accc84ff90358ae35ba9bfc1bc5c984bf0f0fba95536",
+      "binary_bytes": 7756528,
+      "build_input_count": 748,
+      "build_input_manifest_sha256": "3820f148d6122b1677c7b949df0cd713a4ac23d1a5be7bd477eb18625f7f6db3",
+      "build_input_digest": "a5e3a70d1d45907aaadb9370b950f4345f7a974ecf25b343d53a1e705d3b5cd6",
+      "before_after_build_inputs_equal": true,
+      "native": {
+        "pass": 221,
+        "total": 222,
+        "remaining_observation": "New fixed-position descendant hit guard failed while paint passed",
+        "independent_closure_sha256": "7d112c0c2efc9cf4f68359ac9d42913fefc934f09819bde023924454cc4c910b",
+        "all218_prior_tests_pass": true,
+        "all222_names_preserved": true
+      },
+      "targeted_fast_results": {
+        "main_radius": {
+          "passed": 48,
+          "total": 48
+        },
+        "prefixed_radius": {
+          "passed": 25,
+          "total": 25
+        },
+        "original_authored": {
+          "passed": 94,
+          "total": 94
+        },
+        "supplemental_math": {
+          "passed": 8,
+          "total": 8,
+          "chromium_passed": 8
+        },
+        "renderer": {
+          "passed": 17,
+          "total": 17,
+          "original_fuzzy_metadata_preserved": true
+        },
+        "late_geometry": {
+          "passed": 9,
+          "total": 9
+        },
+        "explicit_pair_animation": {
+          "passed": 1,
+          "total": 1
+        },
+        "mixed_arity": {
+          "passed": 0,
+          "total": 1,
+          "unchanged_preexisting_observation": true
+        },
+        "background_neighbors": {
+          "passed": 770,
+          "total": 770,
+          "files": 5
+        },
+        "background_numeric": {
+          "required_passed": 37,
+          "required": 37,
+          "retained_observations": 3
+        },
+        "fixed_hit": {
+          "passed": 2,
+          "total": 5,
+          "chromium_passed": 5
+        },
+        "independent_receipt_sha256": "baa76e1190f2d36790dfd09e39a84fdf7e77463e69d13800b6e3ccda78b2ac92"
+      },
+      "targeted_sanitizer_result": {
+        "status": "PASS",
+        "passed": 133,
+        "total": 133,
+        "scope": "style.c and test translation unit only; layout/raster/V8 uninstrumented",
+        "runtime_receipt_sha256": "04240a565e1a5a2f3da74dd8bac521b358d247576b558d32371d7a9660158d25",
+        "sample_count": 1,
+        "cpu_peak_claimed": false
+      },
+      "full1248_run_performed": false,
+      "published": false
+    },
+    {
+      "candidate": 2103,
+      "source_commit": "523e20877da4beb1e9582ef9b839c40b5b315a44",
+      "binary_sha256": "068c250a2ce7389339a520b4c4ed21d1584ef2050d456a94597c3d38b47cb5ab",
+      "status": "HOLD_NATIVE_REGRESSION_INCOMPLETE",
+      "native": {
+        "selected": 222,
+        "observed": 181,
+        "pass": 179,
+        "failures": [
+          {
+            "name": "js_css_affine_rendering",
+            "status": "FAIL_RAW_EXIT",
+            "raw_return_code": 1
+          },
+          {
+            "name": "css_affine_rendering",
+            "status": "FAIL_RAW_EXIT",
+            "raw_return_code": -6
+          }
+        ],
+        "unexecuted_count": 41,
+        "prior218_pass_count": 179,
+        "prior218_unexecuted": [
+          "anon_block_size",
+          "break_spaces",
+          "button_center",
+          "css_calc_size_absolute",
+          "css_calc_size_constraints",
+          "css_calc_size_preferred",
+          "css_containment",
+          "css_fixed_affine_containing_block",
+          "css_if_queries",
+          "css_if_typed_dependencies",
+          "css_if_unregistered",
+          "css_interpolate_size",
+          "css_interpolate_size_cascade",
+          "css_min_size",
+          "css_numeric_dimensions",
+          "css_scale_primitives",
+          "css_stepped_math",
+          "css_stretch",
+          "css_text_paint_owner",
+          "css_text_spacing_computed",
+          "css_transition_scan_once",
+          "css_viewport_units",
+          "flex_alignment",
+          "flex_declaration",
+          "font_units",
+          "grid_absolute",
+          "grid_alignment",
+          "grid_item_width",
+          "grid_repeat_validation",
+          "js_viewport_runtime",
+          "keyboard_editing",
+          "logical_size",
+          "radius_inherit",
+          "starting_style_conditional",
+          "starting_style_nested",
+          "starting_style_reopen",
+          "starting_style_top"
+        ],
+        "all_observed_output_streams_and_groups_clean": true,
+        "reason": "Unchanged required runner stopped after retained css_affine_rendering assertion SIGABRT;41 unexecuted identities are not passes."
+      },
+      "sanitizers": {
+        "style133": {
+          "passed": true,
+          "scope": "style.c and ownership test only; remaining engine/V8 ordinary"
+        },
+        "hit121": {
+          "passed": true,
+          "scope": "block.c and actual rendering/hit test only; use-after-return detection enabled; remaining engine/V8 ordinary"
+        }
+      },
+      "closure_sha256": "0e2de19a1e78db3788a10b4d199db51d15087580574b72ea58e961c0b593291c",
+      "browser_or_full1248_run": false,
+      "qualification": "179 PASS,2 retained affine failures and41 unexecuted. Unexecuted identities are not passes."
+    }
+  ],
+  "remaining_limits_and_reference_exceptions": [
+    "Chromium's original CSSOM removeProperty return-value discrepancy remains visible; the normative authored oracle was not changed to match it.",
+    "The original fractional geometry diagnostic and original WPT fuzzy metadata remain intact.",
+    "Pending-variable shorthand partial mutation provenance remains a broader pre-existing limitation.",
+    "The original one-to-two-component radius animation midpoint remains a separately retained limitation unless a later independently qualified animation change resolves it.",
+    "Three background shorthand size/layer observations remain separate from37 required numeric grammar controls.",
+    "The broad1248 cohort is a selected sample, not the complete WPT corpus; rendering/manual/media/security/worker coverage cannot be inferred from its percentage.",
+    "Five failures remain in the16 selected MutationObserver assertion files: HTML parser3, XML parser1 and outerHTML1; separate nested crash guard unexecuted.",
+    "One authored normative foreign-constructor/no-callback failure remains; exotic associated realms are observations only."
+  ],
+  "sanitizers": {
+    "ownership_style": {
+      "passed_checks": 133,
+      "total_checks": 133,
+      "instrumented_scope": "style.c and ownership test; ASan/UBSan/leak detection",
+      "remaining_engine_and_v8_instrumented": false
+    },
+    "render_hit": {
+      "passed_checks": 157,
+      "total_checks": 157,
+      "instrumented_scope": "block.c and rendering/hit test; ASan/UBSan including stack-use-after-return",
+      "remaining_engine_and_v8_instrumented": false
+    },
+    "single_sample_runs_not_cpu_peak_proof": true
+  },
+  "real_window": {
+    "independent_window_seal_sha256": "442e781d175d99450344cfeff73c33985d8fb15b165c6a750760b7c3d47fc553",
+    "root_visual_sha256": "ff7391aeed729f5b77f8601e3323c1161464f1c3e5d1a65a0a1b91033f0b3dc1",
+    "controller_receipt_sha256": "28b5208906baecbcba9c0c23fa5d98cdc6702a78cc98267b8f61393be90bab64",
+    "first_attempt": {
+      "result": "CAPTURE_TRANSPORT_TIMING_FAIL",
+      "receipt_sha256": "75d56c0e6ba367baf0c7a9df206dc71b11e6baef07ebc0925701a7e30c9e41ff",
+      "reason": "The original 1fps one-shot capture took about3.1seconds and failed the frozen before+11.5second completion guard. The first attempt has no accepted pixel verdict; no engine failure verdict was inferred.",
+      "preserved": true,
+      "accepted_pixel_verdict": false,
+      "candidate": 2104,
+      "scope": "Preserved historical2104 transport failure, not an attempt on2105"
+    },
+    "accepted_attempt": {
+      "transport_only_change": "Unchanged accepted2104-v2 controller and frozen fixture/oracles",
+      "pixel_rows_passed": 10,
+      "pixel_rows_total": 10,
+      "patch_size": [
+        3,
+        3
+      ],
+      "changed_inside_shape_pixels": 1127,
+      "changed_outside_shape_pixels": 0,
+      "before_started_seconds_after_ready": 10.000088475062512,
+      "before_finished_seconds_after_ready": 10.215409239986911,
+      "after_started_seconds_after_ready": 16.000070914044045,
+      "after_finished_seconds_after_ready": 16.16846609604545,
+      "page_mutation_seconds_after_ready": 12.00980264309328,
+      "same_native_window": true,
+      "no_input_after_initial_quiet_cutoff": true,
+      "no_paint_or_layout_request_for_capture": true,
+      "candidate": 2105
+    },
+    "recording_timing": {
+      "page_ready_utc": "2026-11-10T16:20:42.802736+00:00",
+      "recording_command_started_utc": "2026-11-10T16:20:47.807100+00:00",
+      "recording_command_start_seconds_after_page_ready": 5.004364,
+      "page_mutation_marker_seconds_after_ready": 12.00980264309328,
+      "page_mutation_minus_recording_command_start_seconds": 7.005438643093281,
+      "video_duration_seconds": 25.0,
+      "qualification": "The measured offset timestamps the recording process launch, not a separately instrumented first encoded frame. The page setter is12seconds after READY; the illustrative video begins near page+5seconds, so the8second video frame already shows the changed shape. Pixel proof uses separate strict page-relative raw captures."
+    },
+    "software_rendering": true,
+    "video": {
+      "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2105_showcase_4x3.mp4",
+      "sha256": "fdf01c56395f86eee5f2d5b79d195274e14df1296f1ad24f2dd4ba4383985ae2",
+      "width": 1280,
+      "height": 960,
+      "duration_seconds": 25.0,
+      "real_browser_recording": true,
+      "generated_imagery": false,
+      "credited_copy": true,
+      "raw_recording_sha256": "57604a9963a663d4c5da0b660beaa58fa03056b7e6a14811560d02908d9c3ed9"
+    },
+    "images": [
+      {
+        "role": "before",
+        "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_before.png",
+        "sha256": "f099c25b2c4646f58344caf65ce0852fa0a4015a5cb9f3f865c70f94e2155e20"
+      },
+      {
+        "role": "after",
+        "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_after.png",
+        "sha256": "702ab68f998e0f2a4626bc4fc400676240fca3d190f936e6888f4a2a1606444e"
+      },
+      {
+        "role": "2s credited frame",
+        "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_showcase_2s.png",
+        "sha256": "1955fc78ed24ab21aa9fd0d3924185b437f6ed291ce7f2a2f98e080eae6bc557"
+      },
+      {
+        "role": "8s credited frame",
+        "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_showcase_8s.png",
+        "sha256": "177a0ab73b22ac5c17648407c738a23db28469cbdf61073d9704e542394d2c5c"
+      },
+      {
+        "role": "20s credited frame",
+        "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_showcase_20s.png",
+        "sha256": "e0f912d6491ddd863891cd8c89cc3d6472b3a08d6a80314f6bc548e4caf65881"
+      }
+    ],
+    "cleanup": {
+      "owned_processes_and_groups_gone": true,
+      "fresh_task_profile_removed": true,
+      "source_binary_icu_unchanged": true,
+      "no_existing_desktop_or_account_action": true
+    },
+    "scope": "Actual linked-app automatic redraw evidence; distinct from17upstream rendering comparisons and9native signature subchecks.",
+    "delivery_cleanup_sha256": "f78b20e69bd2a96be2cc3e17427b3ce073ac339743ceb509c82e2166681ced18",
+    "frozen_baseline_badge_retained": true
+  },
+  "performance": {
+    "units": "Resource monitor fields are labeled reported MB; no silent conversion toMiB.",
+    "full_sample": {
+      "samples": 1384,
+      "peak_rss_mb": 659.894,
+      "median_tree_cpu_pct": 49.0,
+      "peak_tree_cpu_pct": 199.799,
+      "duration_seconds": 1384.075873802998,
+      "resource_csv_sha256": "a22bb3f7f0df8ed8524d98db654a1561360ee7af925abdd1c52f6c60571cd4f4",
+      "cgroup_csv_sha256": "a95e498914ce4bc8a8ce5ac19e0c60584470ce879a8855977a50b377a5d9b9e8",
+      "scope": "Process-tree1-second samples can miss subsecond peaks; shared cgroup includes other tasks, so throttling is not attributed solely to Lumen.",
+      "shared_cgroup": {
+        "weighted_cpu_pct": 56.77193905754978,
+        "throttled_period_delta": 0,
+        "quota_usec": 480000,
+        "period_usec": 100000
+      }
+    },
+    "window": {
+      "samples": 36,
+      "duration_seconds": 36.08358285203576,
+      "peak_rss_reported_mb": 640.381,
+      "peak_tree_cpu_percent": 266.847,
+      "shared_weighted_cpu_percent": 48.19428043870483,
+      "additional_throttled_periods": 0,
+      "quota_percent": 480,
+      "sampling_limit": "One-second process samples can miss subsecond peaks; shared cgroup includes other tasks."
+    },
+    "native_hit_probe": {
+      "candidate": 2104,
+      "source_head": "3edec1c75b9e332f16e2e5b0943eb881c3c00e1f",
+      "source_sha256": "8a14b416cdd03af6bed209036737bd164a13981308a2ace0fb5cf4ef24aa0071",
+      "browser_binary_sha256": "0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9",
+      "engine_archive_sha256": "e53cea37003fe375bc029f81f11f63f581a41ad4f4384233cf94f1d3907668db",
+      "flags_sha256": "bef35205d2825e00fd2f92ce6c27710af40187218add917622d5053f02853053",
+      "original_link_recipe_sha256": "61b144a68b2ec6282612357e2eb26c734851316793de3eca8fd792f0c890b901",
+      "started_utc": "2026-11-10T14:28:29.383987+00:00",
+      "scope": "Supplemental actual layout_hit timing/semantics on fixed 5000-node fixtures; not a browser benchmark or score.",
+      "compile_return_code": 0,
+      "link_return_code": 0,
+      "probe_binary_sha256": "4df7ec22c8c983d67c7caa83187dc2bf2463bd3959a0b8dc29a745c44bf5b328",
+      "run_return_code": 0,
+      "measurements": [
+        {
+          "case": "clipped_without_fixed",
+          "ordinary_nodes": 5000,
+          "queries": 300,
+          "warmup": 20,
+          "p50_us": 293.956022,
+          "p95_us": 689.315959,
+          "max_us": 1235.584961,
+          "wall_ms": 102.459849,
+          "process_cpu_ms": 100.306819,
+          "observed_fixed_hits": 0,
+          "expected_fixed_hits": 0
+        },
+        {
+          "case": "same_tree_inside_clip",
+          "ordinary_nodes": 5000,
+          "queries": 300,
+          "warmup": 20,
+          "p50_us": 571.591896,
+          "p95_us": 1113.76401,
+          "max_us": 1867.298037,
+          "wall_ms": 195.712402,
+          "process_cpu_ms": 189.945567,
+          "observed_fixed_hits": 0,
+          "expected_fixed_hits": 0
+        },
+        {
+          "case": "clipped_with_inline_fixed",
+          "ordinary_nodes": 5000,
+          "queries": 300,
+          "warmup": 20,
+          "p50_us": 134.222908,
+          "p95_us": 242.153998,
+          "max_us": 521.801063,
+          "wall_ms": 45.810927,
+          "process_cpu_ms": 44.638412,
+          "observed_fixed_hits": 300,
+          "expected_fixed_hits": 300
+        }
+      ],
+      "measurements_sha256": "d53f1474657d3c0a16dd43a97a6d0890bc4665220c06c3e4c72828f23a1fc23f",
+      "raw_latencies_sha256": "a2be69ae3ea2dadeb196a49a92f4fc1fb34269dddf8c7a5e976b691b321fb77d",
+      "finished_utc": "2026-11-10T14:28:30.357286+00:00",
+      "source_still_pinned": true,
+      "engine_archive_unchanged": true
+    },
+    "notes": [
+      "One-second samples can miss subsecond peaks.",
+      "Shared cgroup includes other tasks; throttling is not attributed solely to this browser.",
+      "The repaired fixed-descendant hit path introduces a real O(n) traversal cost for outside queries on a5000-node tree; this diagnostic is not a general browser performance benchmark."
+    ],
+    "native_hit_comparison": {
+      "scope": "Same actual layout_hit probe, 5000 ordinary nodes,20warmups,300queries; not a general browser benchmark.",
+      "probe_source_sha256": "8a14b416cdd03af6bed209036737bd164a13981308a2ace0fb5cf4ef24aa0071",
+      "held_2102": {
+        "report_sha256": "a69329573513e2d037b72b766ed9fd55a7b6754b0077bbe39a8f0acd57b46d05",
+        "candidate": 2102,
+        "measurements": [
+          {
+            "case": "clipped_without_fixed",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 0.157976,
+            "p95_us": 0.166008,
+            "max_us": 16.950071,
+            "wall_ms": 0.080143,
+            "process_cpu_ms": 0.064186,
+            "observed_fixed_hits": 0,
+            "expected_fixed_hits": 0
+          },
+          {
+            "case": "same_tree_inside_clip",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 535.161002,
+            "p95_us": 814.838917,
+            "max_us": 1083.121984,
+            "wall_ms": 173.306681,
+            "process_cpu_ms": 169.418083,
+            "observed_fixed_hits": 0,
+            "expected_fixed_hits": 0
+          },
+          {
+            "case": "clipped_with_inline_fixed",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 0.19907,
+            "p95_us": 0.230968,
+            "max_us": 0.276952,
+            "wall_ms": 0.073725,
+            "process_cpu_ms": 0.071527,
+            "observed_fixed_hits": 0,
+            "expected_fixed_hits": 300
+          }
+        ]
+      },
+      "accepted_2104": {
+        "report_sha256": "2c49d239e931005baf4ef6d599bd6074a3c1439a6e7996661b740ddf76e93906",
+        "candidate": 2104,
+        "measurements": [
+          {
+            "case": "clipped_without_fixed",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 293.956022,
+            "p95_us": 689.315959,
+            "max_us": 1235.584961,
+            "wall_ms": 102.459849,
+            "process_cpu_ms": 100.306819,
+            "observed_fixed_hits": 0,
+            "expected_fixed_hits": 0
+          },
+          {
+            "case": "same_tree_inside_clip",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 571.591896,
+            "p95_us": 1113.76401,
+            "max_us": 1867.298037,
+            "wall_ms": 195.712402,
+            "process_cpu_ms": 189.945567,
+            "observed_fixed_hits": 0,
+            "expected_fixed_hits": 0
+          },
+          {
+            "case": "clipped_with_inline_fixed",
+            "ordinary_nodes": 5000,
+            "queries": 300,
+            "warmup": 20,
+            "p50_us": 134.222908,
+            "p95_us": 242.153998,
+            "max_us": 521.801063,
+            "wall_ms": 45.810927,
+            "process_cpu_ms": 44.638412,
+            "observed_fixed_hits": 300,
+            "expected_fixed_hits": 300
+          }
+        ]
+      },
+      "interpretation": "The old no-fixed outside fast path was correct and much faster. The new escaped-fixed correctness adds a real O(n) traversal cost. Old escaped-fixed0/300 was incorrect; accepted2104 returns300/300. Inside timings are measured separately."
+    },
+    "retained_measurement_notice": "The2102 and2104 measurements remain preserved; fresh2105 required diagnostic also ran once. All use the frozen5000-node,20-warmup,300-query probe.2105 native hit code is unchanged; slower absolute values are retained without rerun or causal/general-browser-speed claim.",
+    "fresh2105_hit_probe": {
+      "candidate": 2105,
+      "source_head": "20a7dd4b54f1a4e587168f10875e43f307a76fb8",
+      "source_sha256": "8a14b416cdd03af6bed209036737bd164a13981308a2ace0fb5cf4ef24aa0071",
+      "browser_binary_sha256": "2d38085828206f384aeafc3afc38c63009fda483c55f0fcd057e0df9255ffcb3",
+      "engine_archive_sha256": "07dc4b02f6ad20935865899ffdd0b9d927c8774a4cff4666a9738b732c1a7554",
+      "flags_sha256": "bef35205d2825e00fd2f92ce6c27710af40187218add917622d5053f02853053",
+      "original_link_recipe_sha256": "61b144a68b2ec6282612357e2eb26c734851316793de3eca8fd792f0c890b901",
+      "started_utc": "2026-11-10T15:31:55.470041+00:00",
+      "compile_command": [
+        "/usr/bin/clang",
+        "-DV8_COMPRESS_POINTERS",
+        "-D_DARWIN_C_SOURCE",
+        "-D_GNU_SOURCE",
+        "-I/mnt/p3/project/browser/lumen-android/lumen-android/src",
+        "-I/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/wgpu/include/webgpu",
+        "-I/usr/include/freetype2",
+        "-I/usr/include/harfbuzz",
+        "-I/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/include",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu11",
+        "-fPIE",
+        "-Wall",
+        "-Wextra",
+        "-Wno-unused-parameter",
+        "-Wno-sign-compare",
+        "-Wno-missing-field-initializers",
+        "-UNDEBUG",
+        "-iquote",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/tests",
+        "-o",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/session21/engine/hit-perf2105-v1/probe.o",
+        "-c",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/session21/engine-proposals/repair2103-v1/test_radius_fixed_hit_perf_v1.c"
+      ],
+      "link_command": [
+        "/usr/bin/clang++",
+        "-DV8_CPPGC_MICROTASK_QUEUE",
+        "-O3",
+        "-DNDEBUG",
+        "-Wl,-rpath-link,/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec",
+        "-Xlinker",
+        "--dependency-file=CMakeFiles/test_css_border_radius_rendering.dir/link.d",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/session21/engine/hit-perf2105-v1/probe.o",
+        "-o",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/session21/engine/hit-perf2105-v1/actual-hit-perf",
+        "-L/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/wgpu/lib",
+        "-Wl,-rpath,/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec:/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/wgpu/lib:/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/lib",
+        "liblumen_engine.a",
+        "liblumen_net.a",
+        "liblumen_base.a",
+        "/usr/lib/libicuuc.so",
+        "-ldl",
+        "-lm",
+        "/usr/lib/libz.so",
+        "/usr/lib/libbrotlidec.so",
+        "/usr/lib/libbrotlicommon.so",
+        "/usr/lib/libzstd.so",
+        "-lwgpu_native",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/lib/libv8.so",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/lib/libv8_libplatform.so",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/lib/libv8_libbase.so",
+        "/usr/lib/libfreetype.so",
+        "/usr/lib/libharfbuzz.so",
+        "/usr/lib/libavcodec.so",
+        "/usr/lib/libavformat.so",
+        "/usr/lib/libavutil.so",
+        "/usr/lib/libswscale.so",
+        "/usr/lib/libswresample.so",
+        "/usr/lib/libpng.so",
+        "/usr/lib/libjpeg.so",
+        "/usr/lib/libwebp.so",
+        "/usr/lib/libwebpdemux.so",
+        "/usr/lib/libgif.so",
+        "/usr/lib/libEGL.so",
+        "/usr/lib/libGLESv2.so",
+        "/usr/lib/libfontconfig.so",
+        "liblumen_rtc.a",
+        "/usr/lib/libSDL3.so.0.4.10",
+        "/usr/lib/libdatachannel.so",
+        "/usr/lib/libssl.so",
+        "/usr/lib/libcrypto.so",
+        "/usr/lib/libpsl.so",
+        "/usr/lib/libopus.so"
+      ],
+      "scope": "Supplemental actual layout_hit timing/semantics on fixed 5000-node fixtures; not a browser benchmark or score.",
+      "compile_return_code": 0,
+      "link_return_code": 0,
+      "probe_binary_sha256": "4df7ec22c8c983d67c7caa83187dc2bf2463bd3959a0b8dc29a745c44bf5b328",
+      "run_return_code": 0,
+      "measurements": [
+        {
+          "case": "clipped_without_fixed",
+          "ordinary_nodes": 5000,
+          "queries": 300,
+          "warmup": 20,
+          "p50_us": 396.421994,
+          "p95_us": 1449.901029,
+          "max_us": 4898.156039,
+          "wall_ms": 163.67862,
+          "process_cpu_ms": 146.822558,
+          "observed_fixed_hits": 0,
+          "expected_fixed_hits": 0
+        },
+        {
+          "case": "same_tree_inside_clip",
+          "ordinary_nodes": 5000,
+          "queries": 300,
+          "warmup": 20,
+          "p50_us": 689.49291,
+          "p95_us": 1963.158022,
+          "max_us": 3035.589005,
+          "wall_ms": 265.653257,
+          "process_cpu_ms": 250.47856,
+          "observed_fixed_hits": 0,
+          "expected_fixed_hits": 0
+        },
+        {
+          "case": "clipped_with_inline_fixed",
+          "ordinary_nodes": 5000,
+          "queries": 300,
+          "warmup": 20,
+          "p50_us": 211.897073,
+          "p95_us": 793.991028,
+          "max_us": 1444.436959,
+          "wall_ms": 96.70847,
+          "process_cpu_ms": 89.420011,
+          "observed_fixed_hits": 300,
+          "expected_fixed_hits": 300
+        }
+      ],
+      "measurements_sha256": "066bd389be54cc13f2e743c84d6ca104580df4f4365d4b5f3d90f0205aa94bd0",
+      "raw_latencies_sha256": "44efd0a3deadd36c531ad6c9cfc002c0c0bf32131ad1a7ae6988ed7641101cb4",
+      "finished_utc": "2026-11-10T15:31:56.855516+00:00",
+      "source_still_pinned": true,
+      "engine_archive_unchanged": true
+    },
+    "fresh2105_hit_probe_sha256": "db7061f1516c01bcdf8e33fa950e49293dadc4de33aee17d2d52126f905af5cb"
+  },
+  "delivery": {
+    "pages_base": "https://ecooxai.github.io/lumen/",
+    "report_json_url": "https://ecooxai.github.io/lumen/candidate2105/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json",
+    "report_markdown_url": "https://ecooxai.github.io/lumen/candidate2105/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md",
+    "comparison_json_url": "https://ecooxai.github.io/lumen/candidate2105/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json",
+    "source_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2105-20261110",
+    "live_progress_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz",
+    "public_message_posting": "The plain progress URL is read-only until the user enters the current session message key. No authenticated-post success is claimed.",
+    "posting_expiry": "16:52 UTC on 10 November 2026 \u2014 00:52 on 11 November 2026 (Shanghai time)",
+    "normal_desktop": "Existing sibling desktop release/profile untouched; no DISPLAY0 restart or system launcher mutation.",
+    "manual_run": "Run immutable lumen-astra-i2105 with a fresh build/lumen-2105-profile.XXXXXXXX XDG-only profile and explicit about:blank; exact command in the report and guide.",
+    "icu": {
+      "path": "build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/icudtl.dat",
+      "bytes": 10822000,
+      "sha256": "319501bd0fdf9c9cb9926c0d0fd64ed95961118af700fbb4342981f088e73e8c"
+    },
+    "external_dependencies_in_source_archive": false,
+    "surge": "Existing CLI is unauthenticated; no account or authentication workaround. Existing project GitHubPages is the authorized delivery path.",
+    "fileharbor": "Ordinary API access returned403; no access-control workaround.",
+    "standalone_report_checkpoint": "Managed file-transfer executor remained unavailable after20spaced retries and one later readiness check; the initial saved report remains version0, and current engineering/report checkpoints use the authorized project Git/public-report path.",
+    "publication_identity": "Public source commit/tree, archive hash and Pages commit recorded separately after this report-containing commit; previous2104 publication preserved.",
+    "pages_artifact_namespace": "candidate2105",
+    "manual_profile_isolation": {
+      "mechanism": "Supported XDG_CONFIG_HOME/XDG_DATA_HOME/XDG_CACHE_HOME/XDG_DOWNLOAD_DIR/TMPDIR plus LUMEN_NO_SESSION=1",
+      "home_unchanged": true,
+      "new_project_profile_created_by_user_command": true,
+      "actual_nested_sdl_path_observed": false,
+      "reason": "Owned capture profiles were removed after validation before a nested-path inventory was requested; only the source/API behavior is asserted."
+    },
+    "build_guide_url": "https://ecooxai.github.io/lumen/candidate2105/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_build_and_run_20261110.md",
+    "live_archive_mapping": "Historical2007 mapping remains unchanged; current source archive is on Pages."
+  },
+  "optional_follow_on": {
+    "radius_animation": "Deferred at a computed-endpoint isolation boundary; no animation/native resolver changes through2105.",
+    "mutation_observer": "Ordinary callback-exception routing is accepted in2105; parser/XML/outerHTML and foreign-constructor gaps remain. No claim of complete MutationObserver conformance.",
+    "outerhtml_and_parser_xml": "Not repaired by this checkpoint."
+  },
+  "public_artifact_policy": {
+    "source_paths": 815,
+    "recorded_inputs": 748,
+    "historical_paths": 28,
+    "metadata_paths": 5,
+    "reports": 3,
+    "curated_build_guide": 1,
+    "total_tracked_paths": 852,
+    "tested_source_from_pinned_blobs": true,
+    "private_history_profiles_inbox_capabilities_included": false,
+    "previous2007_and2104_public_branches_preserved": true,
+    "previous234_and2104_pages_assets_preserved": true,
+    "comparison_json_sha256": "bb2e5cd75086db5db0d8d20c4d4112d0c64710308bef2abc1b352c3364fe310b",
+    "build_guide_sha256": "fab7355e455628e6f31d4bb69756c2c25cc99a7d9fd4ade061aa8dcef87146e5",
+    "report_generation_precedes_public_export_commit": true
+  },
+  "editorial_revision": {
+    "previous2104_report_sha256": "68e089240c6a4a711d292438040aaad23dbff1a943a3be06e832dea4e923a903",
+    "previous2104_markdown_sha256": "f15dbfed9bb851eb1c1f0be0984355b5559948ccf6b4650dcb73c94157399c2c",
+    "raw_results_or_oracles_changed": false,
+    "scope": "Fresh2105 qualification plus verbatim historical2104 snapshot",
+    "fresh2105_performance_retained_without_rerun": true
+  },
+  "historical_candidate2104": {
+    "report_sha256": "68e089240c6a4a711d292438040aaad23dbff1a943a3be06e832dea4e923a903",
+    "immutable_public_source_commit": "54999c2cfe6b159167b89c1b5b98427e9eaf5370",
+    "immutable_pages_commit": "b855e58c8fd77a5126e9e16ee8a07ff8d7564c38",
+    "report_preserved_verbatim": {
+      "schema": "lumen-linux-session21-accepted-qualification-v1",
+      "title": "Lumen Linux candidate2104: accepted two-axis radius parsing, computed values and rendering checkpoint",
+      "created_utc": "2026-11-10T15:37:35.625828+00:00",
+      "model": "GPT-6 Astra Pro",
+      "agents": [
+        "root project manager",
+        "engine_owner_1110",
+        "wpt_qa_1110",
+        "delivery_perf_1110"
+      ],
+      "tools": [
+        "built-in agents",
+        "RubyWebTerm",
+        "V8",
+        "Chromium150",
+        "Xvfb",
+        "FFmpeg"
+      ],
+      "status": "ENGINEERING_QUALIFICATION_ACCEPTED_PUBLICATION_IDENTITY_RECORDED_SEPARATELY",
+      "session": {
+        "id": "20261110-session21",
+        "started_utc": "2026-11-10T11:52:26Z",
+        "normal_deadline_utc": "2026-11-10T16:52:26Z",
+        "acceptance_recorded_utc": "2026-11-10T15:20:24.884258+00:00",
+        "elapsed_minutes_at_this_record": 207.9814043,
+        "canonical_branch": "gpt-6-astra-pro_builtin-engine-owner_rubywebterm_session21-wpt-20261110",
+        "session_still_active": true,
+        "later_optional_candidates_not_included": true
+      },
+      "scope": {
+        "selected_target": "Exactly three unprefixed upstream border-radius parsing/computed-value WPT files,48assertions",
+        "selected_score": 100,
+        "score_denominator": "48/48 registered assertions in those three files, not all border-radius behavior or all WPT",
+        "prefixed_companion": "One separate upstream file,25assertions",
+        "expanded_sample": "Frozen1248-file DOM/CSS diagnostic cohort; all26245 baseline registrations preserved",
+        "url_conformance_work": "Deferred as requested; existing required native URL regressions were retained, not treated as newly completed URL conformance",
+        "standalone_ecmascript": "No new Test262 conformance claim",
+        "all_wpt_claimed": false,
+        "global98_goal_achieved": false
+      },
+      "accepted_release": {
+        "candidate": 2104,
+        "tested_engine_source_commit": "3edec1c75b9e332f16e2e5b0943eb881c3c00e1f",
+        "tested_engine_source_tree": "db46f32170a4ecca76c5d3c82aca369c9fa63cfa",
+        "binary_sha256": "0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9",
+        "binary_bytes": 7756616,
+        "immutable_host_binary": "build/codex-native/lumen-astra-i2104",
+        "recorded_input_count": 748,
+        "recorded_input_digest": "b8b0e73ddfba95353cf9d3dda57437341fad3698258eeebdd3c2978a5f1a17ff",
+        "input_manifest_file_sha256": "fd173faf1a2a5c941bb12e07bd01c6b5f7a193a8828eeff915d5606931e6fbab",
+        "build_state_sha256": "abc5ce076a2ddd5dd11cfe0df7842c2f72d8abc283d3c6f66abdc9a62034de26",
+        "acceptance_record_sha256": "d7e8ffca054b0dcb4de15279575a71c1742c168721d1895e93b30341b0790518",
+        "core_seal_sha256": "7e41f44b5faf042c4e0cdf9234f4b944b8b0e2019301991a0fd9b6d778edf068",
+        "window_seal_sha256": "8b7f09c9cb204e188fb2d67e459b849d00959e7a953f3b675c652a875ea07a1e",
+        "root_visual_sha256": "df5092a4f2e22c8f0db7b38a49270665f8c6597edc505d9ec431ec3491c87966",
+        "public_source_branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2104-20261110",
+        "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2104-20261110",
+        "public_source_commit_recorded_separately": true,
+        "archive_sha256_recorded_separately": true,
+        "source_inventory_sha256": "272f462719025205e8472df3532191620f6e932bebb28cba3119d003618f6f4d",
+        "source_path_count": 815,
+        "historical_public_paths_preserved": 28,
+        "planned_public_tracked_paths": 851,
+        "private_history_included": false
+      },
+      "prior_accepted_checkpoint": {
+        "candidate": 2007,
+        "qualification": "Recorded accepted reliability replay; not a fresh session21 full run",
+        "tested_source_commit": "2de18b314abacd5a027496b715bb28b91d676191",
+        "binary_sha256": "2751690036083f7ba162d8caea6bdbe383f48e183245c828f2f0d58c4d22a586",
+        "complete_files": 813,
+        "selected_files": 1248,
+        "passing_assertions": 23329,
+        "registered_assertions": 26245,
+        "harness_ok": 1238,
+        "file_pass_percent": 65.14423076923077,
+        "assertion_pass_percent": 88.88931224995237,
+        "original_full_run_preserved": {
+          "status": "HOLD",
+          "complete_files": 812,
+          "passing_assertions": 23329,
+          "harness_ok": 1237,
+          "raw_sha256": "e868a979629a6dbe5ed99adb56bd1d494a9b7c0e2ea09a3dc49cc8e5cff3ea26"
+        },
+        "accepted_replay_raw_sha256": "469fd3462044c970502780075fa37299b4bb55256c4bcf66caa020ffd89b58ca",
+        "accepted_replay_independent_receipt_sha256": "e2522a2a4f09c39aee293fc56a0995d03ac92eb7777523b6a777d580919cc8c1",
+        "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2007-20261104",
+        "archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz?checkpoint=2007",
+        "archive_sha256": "5922ba8b1c6da0806f0ab1bde220aac191636f75f59eea145345419df39b7608"
+      },
+      "fresh_pre_edit_radius_baseline": {
+        "main_unprefixed": {
+          "files": 3,
+          "assertions": 48,
+          "lumen_pass": 21,
+          "chromium_pass": 48
+        },
+        "separate_prefixed": {
+          "files": 1,
+          "assertions": 25,
+          "lumen_pass": 20,
+          "chromium_pass": 24
+        },
+        "independent_receipt_sha256": "c305a7e416c63b1c73a77e40b55bb959de8bd6b910cd939d53a6a7a8950d7dad",
+        "authored94": {
+          "lumen_pass": 23,
+          "chromium_pass": 92,
+          "total": 94,
+          "independent_receipt_sha256": "3b55ea6d37f24962356e69a4074515ae9a85eb98d9faa323eed6efaa6362a77b"
+        }
+      },
+      "fresh_chromium_reference": {
+        "browser": "Chromium 150.0.7871.114",
+        "original_full_run": {
+          "selected_files": 1248,
+          "complete_files": 1060,
+          "passing_assertions": 24517,
+          "registered_assertions": 25969,
+          "startup_harness_errors": 3,
+          "independent_receipt_sha256": "7036d7f1fb8a1177ac03739f717a942e80f898f72be5865dcd4fd697f4377b02"
+        },
+        "separate_preregistered_startup_diagnostic": {
+          "files": 3,
+          "recovered_registrations": 95,
+          "passing_assertions": 24,
+          "failing_assertions": 71,
+          "historical_statuses_matched": true,
+          "raw_sha256": "1040995c3640b52490afe407c7093a6a11878482ae77e29f82d78fc239a8758f",
+          "replaces_original_run": false,
+          "creates_clean_full_run": false
+        },
+        "comparison_note": "Original denominators and startup failures remain visible. The separate diagnostic is never silently merged into the original full run."
+      },
+      "results": {
+        "main_unprefixed": {
+          "files": 3,
+          "baseline_passed": 21,
+          "passed": 48,
+          "registered": 48,
+          "chromium_passed": 48,
+          "gained_passes": 27
+        },
+        "prefixed_companion": {
+          "files": 1,
+          "baseline_passed": 20,
+          "passed": 25,
+          "registered": 25,
+          "chromium_passed": 24,
+          "gained_passes": 5
+        },
+        "expanded": {
+          "baseline_accepted_replay": {
+            "files": 1248,
+            "complete_files": 813,
+            "registered_assertions": 26245,
+            "passing_assertions": 23329,
+            "assertion_statuses": {
+              "PASS": 23329,
+              "FAIL": 2888,
+              "TIMEOUT": 7,
+              "NOTRUN": 21
+            },
+            "harness_statuses": {
+              "OK": 1238,
+              "ERROR": 1,
+              "TIMEOUT": 9
+            }
+          },
+          "current_fresh": {
+            "files": 1248,
+            "complete_files": 819,
+            "registered_assertions": 26245,
+            "passing_assertions": 23364,
+            "assertion_statuses": {
+              "PASS": 23364,
+              "FAIL": 2853,
+              "TIMEOUT": 7,
+              "NOTRUN": 21
+            },
+            "harness_statuses": {
+              "OK": 1238,
+              "ERROR": 1,
+              "TIMEOUT": 9
+            }
+          },
+          "raw_sha256": "0eefccd35438d45cda1e395c2715f139444f6646ccfbd933fd0cf9f7eaf5590c",
+          "complete_file_rate_percent": 65.625,
+          "assertion_rate_percent": 89.02267098494951,
+          "gained_assertion_passes": 35,
+          "gained_complete_files": 6,
+          "prior_pass_losses": 0,
+          "registration_losses": 0,
+          "unreviewed_new_registrations": 0,
+          "prior_complete_file_losses": 0,
+          "prior_harness_ok_losses": 0,
+          "group_counts": {
+            "css/css-animations": {
+              "registered": 574,
+              "PASS": 508,
+              "baseline_PASS": 508,
+              "gained_PASS": 0
+            },
+            "css/css-backgrounds": {
+              "registered": 920,
+              "PASS": 731,
+              "baseline_PASS": 699,
+              "gained_PASS": 32
+            },
+            "css/css-sizing": {
+              "registered": 183,
+              "PASS": 140,
+              "baseline_PASS": 140,
+              "gained_PASS": 0
+            },
+            "css/css-syntax": {
+              "registered": 444,
+              "PASS": 396,
+              "baseline_PASS": 396,
+              "gained_PASS": 0
+            },
+            "css/css-transitions": {
+              "registered": 252,
+              "PASS": 231,
+              "baseline_PASS": 231,
+              "gained_PASS": 0
+            },
+            "css/css-values": {
+              "registered": 8492,
+              "PASS": 6653,
+              "baseline_PASS": 6650,
+              "gained_PASS": 3
+            },
+            "css/css-variables": {
+              "registered": 584,
+              "PASS": 449,
+              "baseline_PASS": 449,
+              "gained_PASS": 0
+            },
+            "css/cssom": {
+              "registered": 3931,
+              "PASS": 3527,
+              "baseline_PASS": 3527,
+              "gained_PASS": 0
+            },
+            "dom/nodes": {
+              "registered": 10471,
+              "PASS": 10357,
+              "baseline_PASS": 10357,
+              "gained_PASS": 0
+            },
+            "dom/ranges": {
+              "registered": 394,
+              "PASS": 372,
+              "baseline_PASS": 372,
+              "gained_PASS": 0
+            }
+          },
+          "limits": "A frozen diagnostic sample; this is not a whole-WPT pass rate."
+        },
+        "common_chromium_comparison": {
+          "identity_rule": "Full URL, exact assertion name, zero-based occurrence within URL/name. Every registered identity is retained.",
+          "original_fresh_full": {
+            "common_registered": 25909,
+            "both_PASS": 22496,
+            "both_nonPASS": 830,
+            "Lumen_only_PASS": 622,
+            "Chromium_only_PASS": 1961,
+            "exact_status_pairs": [
+              {
+                "lumen": "FAIL",
+                "chromium": "FAIL",
+                "count": 830
+              },
+              {
+                "lumen": "FAIL",
+                "chromium": "PASS",
+                "count": 1933
+              },
+              {
+                "lumen": "NOTRUN",
+                "chromium": "PASS",
+                "count": 21
+              },
+              {
+                "lumen": "PASS",
+                "chromium": "FAIL",
+                "count": 619
+              },
+              {
+                "lumen": "PASS",
+                "chromium": "NOTRUN",
+                "count": 1
+              },
+              {
+                "lumen": "PASS",
+                "chromium": "PASS",
+                "count": 22496
+              },
+              {
+                "lumen": "PASS",
+                "chromium": "TIMEOUT",
+                "count": 2
+              },
+              {
+                "lumen": "TIMEOUT",
+                "chromium": "PASS",
+                "count": 7
+              }
+            ]
+          },
+          "separate_diagnostic_qualified": {
+            "common_registered": 26004,
+            "both_PASS": 22512,
+            "both_nonPASS": 874,
+            "Lumen_only_PASS": 649,
+            "Chromium_only_PASS": 1969,
+            "exact_status_pairs": [
+              {
+                "lumen": "FAIL",
+                "chromium": "FAIL",
+                "count": 874
+              },
+              {
+                "lumen": "FAIL",
+                "chromium": "PASS",
+                "count": 1941
+              },
+              {
+                "lumen": "NOTRUN",
+                "chromium": "PASS",
+                "count": 21
+              },
+              {
+                "lumen": "PASS",
+                "chromium": "FAIL",
+                "count": 646
+              },
+              {
+                "lumen": "PASS",
+                "chromium": "NOTRUN",
+                "count": 1
+              },
+              {
+                "lumen": "PASS",
+                "chromium": "PASS",
+                "count": 22512
+              },
+              {
+                "lumen": "PASS",
+                "chromium": "TIMEOUT",
+                "count": 2
+              },
+              {
+                "lumen": "TIMEOUT",
+                "chromium": "PASS",
+                "count": 7
+              }
+            ]
+          },
+          "source_matrix_sha256": "e36f163f609584374eb6468d625c5e9ebe51be31fa5002d9a97340e340316a8c",
+          "lumen_passes_on_original_common": 23118,
+          "chromium_passes_on_original_common": 24457,
+          "raw_denominators_not_ranked": true,
+          "limits": [
+            "Browser-specific assertion registrations and denominators differ; only common identities are compared directly.",
+            "The diagnostic-qualified reference is a separately labeled composite of one approved startup replay, never a clean full run.",
+            "Native, authored, rendering, adjacent and optional feature controls are excluded from these1248 counts."
+          ]
+        },
+        "native": {
+          "test_executables_and_js_groups_passed": 222,
+          "selected": 222,
+          "all218prior_test_names_pass": true,
+          "new_tests": 4,
+          "nested_native_subchecks": {
+            "ownership": {
+              "passed": 133,
+              "total": 133
+            },
+            "render_hit": {
+              "passed": 157,
+              "total": 157
+            },
+            "background_types": {
+              "passed": 30,
+              "total": 30
+            },
+            "actual_main_damage_signature": {
+              "passed": 9,
+              "total": 9
+            }
+          },
+          "nested_counts_are_not_additional_wpt_assertions": true,
+          "closure_sha256": "c7c2f089e7ac8563483846e48214d410f930572061807675f174ce3e66b73cf8"
+        },
+        "focused_browser_gates": {
+          "authored_cssom_review_geometry": {
+            "passed": 94,
+            "registered": 94,
+            "required": 93,
+            "retained_original_diagnostic": 1
+          },
+          "upstream_rendering_comparisons": {
+            "passed": 17,
+            "registered": 17,
+            "original_fuzzy_metadata_preserved": true
+          },
+          "adjacent_background_interpolation": {
+            "files": 5,
+            "passed": 770,
+            "registered": 770
+          },
+          "supplemental_math": {
+            "passed": 8,
+            "registered": 8,
+            "authored_after_initial_implementation_frozen_before_execution": true
+          },
+          "fixed_hit_controls": {
+            "passed": 5,
+            "registered": 5
+          },
+          "late_geometry": {
+            "passed": 9,
+            "registered": 9
+          },
+          "explicit_pair_animation": {
+            "passed": 1,
+            "registered": 1
+          },
+          "mixed_arity_animation": {
+            "passed": 0,
+            "registered": 1,
+            "known_limitation_retained": true
+          },
+          "background_controls": {
+            "required_passed": 37,
+            "registered": 40,
+            "retained_observations": 3
+          },
+          "fast_seal_sha256": "2b5d4cdb74c5ef1906451edbcad65d74bbcc5daab934a3b318469ac8862e5c62"
+        },
+        "historical_companion_stages": [
+          {
+            "label": "preserve-object62",
+            "runtime_receipt_sha256": "8b26784137c2755081c690ad509541ee371b893261a6638481fcaea3abee0f26",
+            "receipt_sha256": "b33d069858dc269fda611ea0e49aecdfeec3d1f17929c4b98e6c960faef8db64",
+            "registered": 62,
+            "passed": 62,
+            "prior_pass": 62,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-object_units9",
+            "runtime_receipt_sha256": "c646b731dd998be50e9836bde29fa605b85690b9d74de109ee87d5a99ba1d309",
+            "receipt_sha256": "19e2a41ac661cb17612f5f5c62dd5027600dc1901b764eab94efe6d8dd7d8a3c",
+            "registered": 9,
+            "passed": 9,
+            "prior_pass": 9,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-object_order2",
+            "runtime_receipt_sha256": "6493f28378bc6ffc8af73388405ff714aaf7264c8b45d869760b14dd566e7ac4",
+            "receipt_sha256": "d7266adcc13cadc84560302d560e14ca1aefe1abd8d286a825c842484ce164d4",
+            "registered": 2,
+            "passed": 2,
+            "prior_pass": 2,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-object_empty2",
+            "runtime_receipt_sha256": "396390caa95270397b96580e66b1bc29bee5996595e7d75d48f0af1b68119c62",
+            "receipt_sha256": "a22d97d0e8ae492f6c23f6eb174c68115375e12774321aad3dcf735a7780f6e1",
+            "registered": 2,
+            "passed": 2,
+            "prior_pass": 2,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-object3",
+            "runtime_receipt_sha256": "ac22ca3ff6afc59801b7b641b0d831e31f9d164a90f93f97d70536a2f54c0782",
+            "receipt_sha256": "369f78e698b72798ccfc6ec8f90b248c64910120c4a30820361fea82d04d7370",
+            "raw_sha256": "123e8f00f0870f01795481af004c39b86af28cd9a2b5a25145366d49a5ccdd8e",
+            "registered": 123,
+            "passed": 123,
+            "prior_pass": 123,
+            "files": 3,
+            "complete_files": 3,
+            "harness_ok": 3,
+            "exact_registered_identities": true,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-css26",
+            "runtime_receipt_sha256": "a924a1d194d74a86ce616dba3a6521e0cc17b5fe065aaa6dcc6dc167bf29a57c",
+            "receipt_sha256": "56e4a235cdb3cf02dc1b633dfab3151f81124e0ed90590fb0634cc9ca27cf265",
+            "registered": 26,
+            "passed": 26,
+            "prior_pass": 26,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-transfer109",
+            "runtime_receipt_sha256": "276008e647d8320b30f184ed9f198e837f469f1807cbf83087640918fd6f01da",
+            "receipt_sha256": "fbed569eff99a4746b6d522d123c27c57a492fabf6c59078a9a214bbd2cf53a6",
+            "registered": 109,
+            "passed": 107,
+            "prior_pass": 107,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-transfer109audit",
+            "runtime_receipt_sha256": "31e6995ccac643a7007edd9201930f101695d288876a3cd11afa479221842692",
+            "receipt_sha256": "a01f0d2528c5d6ae9508e0e03bd746009a798adea3dd9196e0da3b5a2bd55d89",
+            "supported_audit": {
+              "accepted": true,
+              "started_utc": "2026-11-10T14:36:51.911035+00:00",
+              "candidate": 2104,
+              "scope": "Exactly106 required staged conversion assertions and retained baseline passes among3 disclosed late-transfer observations;109 total registrations.",
+              "expected_head": "3edec1c75b9e332f16e2e5b0943eb881c3c00e1f",
+              "binary_sha256": "0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9",
+              "build_state_sha256": "abc5ce076a2ddd5dd11cfe0df7842c2f72d8abc283d3c6f66abdc9a62034de26",
+              "source_manifest_digest": "b8b0e73ddfba95353cf9d3dda57437341fad3698258eeebdd3c2978a5f1a17ff",
+              "report": "agent/validation/linux-wpt-20261110-session21/candidate2104-preserve-transfer109-v1/report.json",
+              "report_sha256": "fbed569eff99a4746b6d522d123c27c57a492fabf6c59078a9a214bbd2cf53a6",
+              "acceptance_scope_sha256": "833d64a6a3b757a5881bccb1e485be0b9760f2b6d96d1b747232c47933c06a41",
+              "manifest_sha256": "4e7e4e027f0a89cbd713a5b3a0d5c9df5183deab5f64f955ab246e5a0637078d",
+              "baseline_report_sha256": "3997c988c45acaf3c5f4701f5be77e844984a1ac48a062fa90fe896ce9dce3c4",
+              "registered_assertions": 109,
+              "required_count": 106,
+              "required_passed": 106,
+              "failed_required": [],
+              "lost_observation_passes": [],
+              "lost_baseline_passes": [],
+              "baseline_pass_count": 35,
+              "observations": [
+                {
+                  "name": "late detached entry reports DataCloneError",
+                  "baseline_pass": true,
+                  "candidate_pass": true
+                },
+                {
+                  "name": "late detached entry follows payload serialization",
+                  "baseline_pass": false,
+                  "candidate_pass": false
+                },
+                {
+                  "name": "earlier valid port transferred before late detached failure",
+                  "baseline_pass": false,
+                  "candidate_pass": false
+                }
+              ],
+              "total_passing_assertions": 107,
+              "diagnostic_integrity_valid": true,
+              "finished_utc": "2026-11-10T14:36:51.938053+00:00",
+              "elapsed_seconds": 0.02701598301064223
+            },
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-animation50",
+            "runtime_receipt_sha256": "f73bff9a141ff476bd8ad9f8018a54c9bacdcd39b29fd1d558ac6c39e2faacb7",
+            "receipt_sha256": "79bda6e3d55e0a9be7e900e210eb3950d497bc5cf1fd9bf3a3af76491e127751",
+            "raw_sha256": "55e65aaf5097539a590e491feaa03da694242e4bd24b5930e7aa71a048193a17",
+            "registered": 618,
+            "passed": 552,
+            "prior_pass": 552,
+            "files": 50,
+            "complete_files": 41,
+            "harness_ok": 50,
+            "exact_registered_identities": true,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-animation53",
+            "runtime_receipt_sha256": "eb75e9279143ba439ff619befbfc22adfcbb3ec26348cbce26eadf2e46c0a0e6",
+            "receipt_sha256": "c23a5ae8e4343d43556625d9440ea0d77d2bb04b4f459de5e9c7856d5a120e93",
+            "registered": 53,
+            "passed": 53,
+            "prior_pass": 53,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-reconcile7",
+            "runtime_receipt_sha256": "bb48286792e02201f8aa3974146ef9b22af86a67995b2c7f36bed7d8a1a660d6",
+            "receipt_sha256": "8ca235561c9ba70cd2fa0a1509b4c0f8f263656d710b84887d3da89f06f61256",
+            "registered": 7,
+            "passed": 7,
+            "prior_pass": 7,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-auth80",
+            "runtime_receipt_sha256": "ef9cd1da28a606ad67d3fbebfe81b524ffd9eadb4569548d40e190a9ee100bef",
+            "receipt_sha256": "72aaee6a60e3201969e43fdc2437a13b6ae25642b9c02604d2b823f237b118d0",
+            "registered": 80,
+            "passed": 80,
+            "prior_pass": 80,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-auth19",
+            "runtime_receipt_sha256": "a78eaadc1dfac1da37564344b6f8f1753d7096350115b8384282fc859d44fbb8",
+            "receipt_sha256": "55e598748196fba7c591001b4ad9673fe5595a867a2a9aa4a1e5c0431c5de231",
+            "registered": 19,
+            "passed": 19,
+            "prior_pass": 19,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          },
+          {
+            "label": "preserve-messaging18",
+            "runtime_receipt_sha256": "fe637b060f5f40fc4e472f72fc42f0c6a03de126dcb14bab8616f3a1b43bc455",
+            "receipt_sha256": "fb9857721bffdf9349248faada302437e87497eb0bf19005d122bd461c9fb7e1",
+            "raw_sha256": "f442c8e2d5911cc7e54e50bb2b4e5a3442bbb762db84ad46f9591afa28dd383c",
+            "registered": 39,
+            "passed": 34,
+            "prior_pass": 34,
+            "files": 18,
+            "complete_files": 15,
+            "harness_ok": 18,
+            "exact_registered_identities": true,
+            "required_gate_pass": true,
+            "prior_pass_losses": 0
+          }
+        ],
+        "historical_seal_sha256": "233cea5853f5726a10410a3d385dbb5e8dbc330204b00bbc8977996c7c243ab7",
+        "scope_overlap_note": "Counts describe different overlapping scopes and units; do not add them into one conformance denominator."
+      },
+      "implementation": {
+        "changes": [
+          "Real independent horizontal and vertical radius storage, parsing, computed values and geometry",
+          "Strict whole-value validation and atomic CSSOM shorthand/corner expansion with correct specified serialization",
+          "Elliptical paint and clipping, side-specific insets, shared overlap scaling and actual hit/damage consumers",
+          "Bounded background-position numeric grammar correction",
+          "Radius-local constant math folding after CSS Syntax EOF closure, preserving native computed clamping",
+          "Bounded default 1x1 image-mask repeat repair within the existing background-colour approximation"
+        ],
+        "computed_route": "Computed values continue to come from the actual native engine; no stored-string getter facade.",
+        "source_ownership": "Separate same-model engine and JavaScript agents; independent QA; one Git steward and one monitored heavy lane.",
+        "mask_repeat_scope": "Within the existing background-colour mask approximation, intrinsically sized image masks use one tiled DItem for absent or initial-resolved repeat, repeat, or repeat repeat, so a 1x1 mask covers the intended box. Explicit no-repeat and other authored modes, and fitted contain/cover, retain their previous paths. No per-tile allocation or full CSS Masking conformance is claimed; the original failure and nonuniform-alpha/no-repeat/fitted guards remain preserved."
+      },
+      "held_development_candidates": [
+        {
+          "candidate": 2101,
+          "status": "HOLD \u2014 never accepted or published",
+          "source_commit": "09076811db6625db8d984cf3e78abc14bdd6361e",
+          "binary_sha256": "89b6b8c5c65cb94e9d1f09ad1162c1d05201bc033a9f409c9a723071b434cfc2",
+          "main_radius": {
+            "pass": 48,
+            "total": 48
+          },
+          "prefixed_radius": {
+            "pass": 25,
+            "total": 25
+          },
+          "renderer": {
+            "pass": 17,
+            "total": 17,
+            "original_fuzzy_metadata_preserved": true
+          },
+          "geometry": {
+            "pass": 34,
+            "total": 34
+          },
+          "late_geometry": {
+            "pass": 9,
+            "total": 9
+          },
+          "authored94": {
+            "pass": 91,
+            "total": 94,
+            "remaining_failures": [
+              "native all-after-radius reset",
+              "two constant-calc specified serializations"
+            ]
+          },
+          "native": {
+            "pass": 220,
+            "total": 222,
+            "failed_tests": [
+              "css_border_radius",
+              "css_border_radius_rendering"
+            ]
+          },
+          "background_neighbors": {
+            "files": 5,
+            "pass": 770,
+            "total": 770
+          },
+          "explicit_pair_animation": {
+            "pass": 1,
+            "total": 1
+          },
+          "mixed_arity_animation": {
+            "pass": 0,
+            "total": 1,
+            "preexisting_observation": true
+          },
+          "full1248_run_performed": false,
+          "independent_fast_receipt_sha256": "06436df25d940108af2f19bf9c46534658c7762fb10f9139753f4d3bd0b6b471"
+        },
+        {
+          "candidate": 2102,
+          "status": "HOLD \u2014 native221/222 and independent fixed-hit2/5 versus Chromium5/5; fast diagnostics closed",
+          "source_commit": "280a31557a1d0a8551f9874e6c86b4ea31edb740",
+          "source_tree": "405d74a35bc00cc57c8eca5df0ccc841bb693fcc",
+          "binary_sha256": "2f25b411d906cf405992accc84ff90358ae35ba9bfc1bc5c984bf0f0fba95536",
+          "binary_bytes": 7756528,
+          "build_input_count": 748,
+          "build_input_manifest_sha256": "3820f148d6122b1677c7b949df0cd713a4ac23d1a5be7bd477eb18625f7f6db3",
+          "build_input_digest": "a5e3a70d1d45907aaadb9370b950f4345f7a974ecf25b343d53a1e705d3b5cd6",
+          "before_after_build_inputs_equal": true,
+          "native": {
+            "pass": 221,
+            "total": 222,
+            "remaining_observation": "New fixed-position descendant hit guard failed while paint passed",
+            "independent_closure_sha256": "7d112c0c2efc9cf4f68359ac9d42913fefc934f09819bde023924454cc4c910b",
+            "all218_prior_tests_pass": true,
+            "all222_names_preserved": true
+          },
+          "targeted_fast_results": {
+            "main_radius": {
+              "passed": 48,
+              "total": 48
+            },
+            "prefixed_radius": {
+              "passed": 25,
+              "total": 25
+            },
+            "original_authored": {
+              "passed": 94,
+              "total": 94
+            },
+            "supplemental_math": {
+              "passed": 8,
+              "total": 8,
+              "chromium_passed": 8
+            },
+            "renderer": {
+              "passed": 17,
+              "total": 17,
+              "original_fuzzy_metadata_preserved": true
+            },
+            "late_geometry": {
+              "passed": 9,
+              "total": 9
+            },
+            "explicit_pair_animation": {
+              "passed": 1,
+              "total": 1
+            },
+            "mixed_arity": {
+              "passed": 0,
+              "total": 1,
+              "unchanged_preexisting_observation": true
+            },
+            "background_neighbors": {
+              "passed": 770,
+              "total": 770,
+              "files": 5
+            },
+            "background_numeric": {
+              "required_passed": 37,
+              "required": 37,
+              "retained_observations": 3
+            },
+            "fixed_hit": {
+              "passed": 2,
+              "total": 5,
+              "chromium_passed": 5
+            },
+            "independent_receipt_sha256": "baa76e1190f2d36790dfd09e39a84fdf7e77463e69d13800b6e3ccda78b2ac92"
+          },
+          "targeted_sanitizer_result": {
+            "status": "PASS",
+            "passed": 133,
+            "total": 133,
+            "scope": "style.c and test translation unit only; layout/raster/V8 uninstrumented",
+            "runtime_receipt_sha256": "04240a565e1a5a2f3da74dd8bac521b358d247576b558d32371d7a9660158d25",
+            "sample_count": 1,
+            "cpu_peak_claimed": false
+          },
+          "full1248_run_performed": false,
+          "published": false
+        },
+        {
+          "candidate": 2103,
+          "source_commit": "523e20877da4beb1e9582ef9b839c40b5b315a44",
+          "binary_sha256": "068c250a2ce7389339a520b4c4ed21d1584ef2050d456a94597c3d38b47cb5ab",
+          "status": "HOLD_NATIVE_REGRESSION_INCOMPLETE",
+          "native": {
+            "selected": 222,
+            "observed": 181,
+            "pass": 179,
+            "failures": [
+              {
+                "name": "js_css_affine_rendering",
+                "status": "FAIL_RAW_EXIT",
+                "raw_return_code": 1
+              },
+              {
+                "name": "css_affine_rendering",
+                "status": "FAIL_RAW_EXIT",
+                "raw_return_code": -6
+              }
+            ],
+            "unexecuted_count": 41,
+            "prior218_pass_count": 179,
+            "prior218_unexecuted": [
+              "anon_block_size",
+              "break_spaces",
+              "button_center",
+              "css_calc_size_absolute",
+              "css_calc_size_constraints",
+              "css_calc_size_preferred",
+              "css_containment",
+              "css_fixed_affine_containing_block",
+              "css_if_queries",
+              "css_if_typed_dependencies",
+              "css_if_unregistered",
+              "css_interpolate_size",
+              "css_interpolate_size_cascade",
+              "css_min_size",
+              "css_numeric_dimensions",
+              "css_scale_primitives",
+              "css_stepped_math",
+              "css_stretch",
+              "css_text_paint_owner",
+              "css_text_spacing_computed",
+              "css_transition_scan_once",
+              "css_viewport_units",
+              "flex_alignment",
+              "flex_declaration",
+              "font_units",
+              "grid_absolute",
+              "grid_alignment",
+              "grid_item_width",
+              "grid_repeat_validation",
+              "js_viewport_runtime",
+              "keyboard_editing",
+              "logical_size",
+              "radius_inherit",
+              "starting_style_conditional",
+              "starting_style_nested",
+              "starting_style_reopen",
+              "starting_style_top"
+            ],
+            "all_observed_output_streams_and_groups_clean": true,
+            "reason": "Unchanged required runner stopped after retained css_affine_rendering assertion SIGABRT;41 unexecuted identities are not passes."
+          },
+          "sanitizers": {
+            "style133": {
+              "passed": true,
+              "scope": "style.c and ownership test only; remaining engine/V8 ordinary"
+            },
+            "hit121": {
+              "passed": true,
+              "scope": "block.c and actual rendering/hit test only; use-after-return detection enabled; remaining engine/V8 ordinary"
+            }
+          },
+          "closure_sha256": "0e2de19a1e78db3788a10b4d199db51d15087580574b72ea58e961c0b593291c",
+          "browser_or_full1248_run": false,
+          "qualification": "179 PASS,2 retained affine failures and41 unexecuted. Unexecuted identities are not passes."
+        }
+      ],
+      "remaining_limits_and_reference_exceptions": [
+        "Chromium's original CSSOM removeProperty return-value discrepancy remains visible; the normative authored oracle was not changed to match it.",
+        "The original fractional geometry diagnostic and original WPT fuzzy metadata remain intact.",
+        "Pending-variable shorthand partial mutation provenance remains a broader pre-existing limitation.",
+        "The original one-to-two-component radius animation midpoint remains a separately retained limitation unless a later independently qualified animation change resolves it.",
+        "Three background shorthand size/layer observations remain separate from37 required numeric grammar controls.",
+        "The broad1248 cohort is a selected sample, not the complete WPT corpus; rendering/manual/media/security/worker coverage cannot be inferred from its percentage."
+      ],
+      "sanitizers": {
+        "ownership_style": {
+          "passed_checks": 133,
+          "total_checks": 133,
+          "instrumented_scope": "style.c and ownership test; ASan/UBSan/leak detection",
+          "remaining_engine_and_v8_instrumented": false
+        },
+        "render_hit": {
+          "passed_checks": 157,
+          "total_checks": 157,
+          "instrumented_scope": "block.c and rendering/hit test; ASan/UBSan including stack-use-after-return",
+          "remaining_engine_and_v8_instrumented": false
+        },
+        "single_sample_runs_not_cpu_peak_proof": true
+      },
+      "real_window": {
+        "independent_window_seal_sha256": "8b7f09c9cb204e188fb2d67e459b849d00959e7a953f3b675c652a875ea07a1e",
+        "root_visual_sha256": "df5092a4f2e22c8f0db7b38a49270665f8c6597edc505d9ec431ec3491c87966",
+        "controller_receipt_sha256": "bd10a099274b07d656d72c62b449e46c10bcf0bcd1404cdb78e778953ea1363f",
+        "first_attempt": {
+          "result": "CAPTURE_TRANSPORT_TIMING_FAIL",
+          "receipt_sha256": "75d56c0e6ba367baf0c7a9df206dc71b11e6baef07ebc0925701a7e30c9e41ff",
+          "reason": "The original 1fps one-shot capture took about3.1seconds and failed the frozen before+11.5second completion guard. The first attempt has no accepted pixel verdict; no engine failure verdict was inferred.",
+          "preserved": true,
+          "accepted_pixel_verdict": false
+        },
+        "accepted_attempt": {
+          "transport_only_change": "One-shot x11grab input1fps to30fps;15fps recording, fixture,12second setter,+10/+16 schedule and all original pixel/quiet guards unchanged",
+          "pixel_rows_passed": 10,
+          "pixel_rows_total": 10,
+          "patch_size": [
+            3,
+            3
+          ],
+          "changed_inside_shape_pixels": 1127,
+          "changed_outside_shape_pixels": 0,
+          "before_started_seconds_after_ready": 10.000075069023296,
+          "before_finished_seconds_after_ready": 10.286942229024135,
+          "after_started_seconds_after_ready": 16.00007337797433,
+          "after_finished_seconds_after_ready": 16.189166062977165,
+          "page_mutation_seconds_after_ready": 12.01635010202881,
+          "same_native_window": true,
+          "no_input_after_initial_quiet_cutoff": true,
+          "no_paint_or_layout_request_for_capture": true
+        },
+        "recording_timing": {
+          "page_ready_utc": "2026-11-10T15:10:39.285781+00:00",
+          "recording_command_started_utc": "2026-11-10T15:10:44.287592+00:00",
+          "recording_command_start_seconds_after_page_ready": 5.001811,
+          "page_mutation_marker_seconds_after_ready": 12.01635010202881,
+          "page_mutation_minus_recording_command_start_seconds": 7.0145391020288095,
+          "video_duration_seconds": 25.0,
+          "qualification": "The measured offset timestamps the recording process launch, not a separately instrumented first encoded frame. The page setter is12seconds after READY; the illustrative video begins near page+5seconds, so the8second video frame already shows the changed shape. Pixel proof uses separate strict page-relative raw captures."
+        },
+        "software_rendering": true,
+        "video": {
+          "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_candidate2104_showcase_4x3.mp4",
+          "sha256": "6a35568d63ffbff63b0d25135db6188dc1f03d03e3812e970aa7ea877f9422e0",
+          "width": 1280,
+          "height": 960,
+          "duration_seconds": 25.0,
+          "real_browser_recording": true,
+          "generated_imagery": false,
+          "credited_copy": true,
+          "raw_recording_sha256": "fb7daf5a7ff5ee72e1db81ed9330faca16a8217e36fd528aa9c42d42dd2b09bd"
+        },
+        "images": [
+          {
+            "role": "before",
+            "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_before.png",
+            "sha256": "cba41a229ae31faa9293a9e0ae9c25a32e9bd5c61f6a54eb4fb206b653b6f94c"
+          },
+          {
+            "role": "after",
+            "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_y_only_after.png",
+            "sha256": "ad71cdd4ed8c47fc08ccf5952d8ced4faf452d9cf3b5a9d9a1f7be6a60ba20cc"
+          },
+          {
+            "role": "2second credited frame",
+            "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_showcase_2s.png",
+            "sha256": "6609d0f6f2870936088a8d04160fdb593666cb123d98d3f9c1640b543707cdbf"
+          },
+          {
+            "role": "8second credited frame",
+            "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_showcase_8s.png",
+            "sha256": "3f807ab9e16ff4b11ce466e6538c24fd490876c7a7127b6ac91d7e3f73b5411a"
+          },
+          {
+            "role": "20second credited frame",
+            "file": "lumen_gpt-6-astra-pro_builtin-agents_rubywebterm_showcase_20s.png",
+            "sha256": "f937ebe1149ad94c4fc54746363c56d44bd3f5493cbc8c1fbb6ab6c63d34b48a"
+          }
+        ],
+        "cleanup": {
+          "owned_processes_and_groups_gone": true,
+          "fresh_task_profile_removed": true,
+          "source_binary_icu_unchanged": true,
+          "no_existing_desktop_or_account_action": true
+        },
+        "scope": "Actual linked-app automatic redraw evidence; distinct from17upstream rendering comparisons and9native signature subchecks."
+      },
+      "performance": {
+        "units": "Resource monitor fields are labeled reported MB; no silent conversion toMiB.",
+        "full_sample": {
+          "samples": 1354,
+          "peak_rss_mb": 630.977,
+          "median_tree_cpu_pct": 46.002,
+          "peak_tree_cpu_pct": 222.998,
+          "duration_seconds": 1354.0662281159312,
+          "resource_csv_sha256": "066df0448dd42fcc4c5f3348c84f56a949fa6552b3c1a168d1a69e9b3fa40b3e",
+          "cgroup_csv_sha256": "b64df4cb089c3c16bf8f3ccaec39ad1f9b972b3719500e130c5f069f32214720",
+          "scope": "Process-tree1-second samples can miss subsecond peaks; shared cgroup includes other tasks, so throttling is not attributed solely to Lumen.",
+          "shared_cgroup": {
+            "weighted_cpu_pct": 55.46810675500391,
+            "throttled_period_delta": 0,
+            "quota_usec": 480000,
+            "period_usec": 100000
+          }
+        },
+        "window": {
+          "samples": 36,
+          "duration_seconds": 36.0718394810101,
+          "peak_rss_reported_mb": 643.764,
+          "peak_tree_cpu_percent": 299.834,
+          "shared_weighted_cpu_percent": 48.88808359599363,
+          "additional_throttled_periods": 0,
+          "quota_percent": 480,
+          "sampling_limit": "One-second process samples can miss subsecond peaks; shared cgroup includes other tasks."
+        },
+        "native_hit_probe": {
+          "candidate": 2104,
+          "source_head": "3edec1c75b9e332f16e2e5b0943eb881c3c00e1f",
+          "source_sha256": "8a14b416cdd03af6bed209036737bd164a13981308a2ace0fb5cf4ef24aa0071",
+          "browser_binary_sha256": "0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9",
+          "engine_archive_sha256": "e53cea37003fe375bc029f81f11f63f581a41ad4f4384233cf94f1d3907668db",
+          "flags_sha256": "bef35205d2825e00fd2f92ce6c27710af40187218add917622d5053f02853053",
+          "original_link_recipe_sha256": "61b144a68b2ec6282612357e2eb26c734851316793de3eca8fd792f0c890b901",
+          "started_utc": "2026-11-10T14:28:29.383987+00:00",
+          "scope": "Supplemental actual layout_hit timing/semantics on fixed 5000-node fixtures; not a browser benchmark or score.",
+          "compile_return_code": 0,
+          "link_return_code": 0,
+          "probe_binary_sha256": "4df7ec22c8c983d67c7caa83187dc2bf2463bd3959a0b8dc29a745c44bf5b328",
+          "run_return_code": 0,
+          "measurements": [
+            {
+              "case": "clipped_without_fixed",
+              "ordinary_nodes": 5000,
+              "queries": 300,
+              "warmup": 20,
+              "p50_us": 293.956022,
+              "p95_us": 689.315959,
+              "max_us": 1235.584961,
+              "wall_ms": 102.459849,
+              "process_cpu_ms": 100.306819,
+              "observed_fixed_hits": 0,
+              "expected_fixed_hits": 0
+            },
+            {
+              "case": "same_tree_inside_clip",
+              "ordinary_nodes": 5000,
+              "queries": 300,
+              "warmup": 20,
+              "p50_us": 571.591896,
+              "p95_us": 1113.76401,
+              "max_us": 1867.298037,
+              "wall_ms": 195.712402,
+              "process_cpu_ms": 189.945567,
+              "observed_fixed_hits": 0,
+              "expected_fixed_hits": 0
+            },
+            {
+              "case": "clipped_with_inline_fixed",
+              "ordinary_nodes": 5000,
+              "queries": 300,
+              "warmup": 20,
+              "p50_us": 134.222908,
+              "p95_us": 242.153998,
+              "max_us": 521.801063,
+              "wall_ms": 45.810927,
+              "process_cpu_ms": 44.638412,
+              "observed_fixed_hits": 300,
+              "expected_fixed_hits": 300
+            }
+          ],
+          "measurements_sha256": "d53f1474657d3c0a16dd43a97a6d0890bc4665220c06c3e4c72828f23a1fc23f",
+          "raw_latencies_sha256": "a2be69ae3ea2dadeb196a49a92f4fc1fb34269dddf8c7a5e976b691b321fb77d",
+          "finished_utc": "2026-11-10T14:28:30.357286+00:00",
+          "source_still_pinned": true,
+          "engine_archive_unchanged": true
+        },
+        "notes": [
+          "One-second samples can miss subsecond peaks.",
+          "Shared cgroup includes other tasks; throttling is not attributed solely to this browser.",
+          "The repaired fixed-descendant hit path introduces a real O(n) traversal cost for outside queries on a5000-node tree; this diagnostic is not a general browser performance benchmark."
+        ],
+        "native_hit_comparison": {
+          "scope": "Same actual layout_hit probe, 5000 ordinary nodes,20warmups,300queries; not a general browser benchmark.",
+          "probe_source_sha256": "8a14b416cdd03af6bed209036737bd164a13981308a2ace0fb5cf4ef24aa0071",
+          "held_2102": {
+            "report_sha256": "a69329573513e2d037b72b766ed9fd55a7b6754b0077bbe39a8f0acd57b46d05",
+            "candidate": 2102,
+            "measurements": [
+              {
+                "case": "clipped_without_fixed",
+                "ordinary_nodes": 5000,
+                "queries": 300,
+                "warmup": 20,
+                "p50_us": 0.157976,
+                "p95_us": 0.166008,
+                "max_us": 16.950071,
+                "wall_ms": 0.080143,
+                "process_cpu_ms": 0.064186,
+                "observed_fixed_hits": 0,
+                "expected_fixed_hits": 0
+              },
+              {
+                "case": "same_tree_inside_clip",
+                "ordinary_nodes": 5000,
+                "queries": 300,
+                "warmup": 20,
+                "p50_us": 535.161002,
+                "p95_us": 814.838917,
+                "max_us": 1083.121984,
+                "wall_ms": 173.306681,
+                "process_cpu_ms": 169.418083,
+                "observed_fixed_hits": 0,
+                "expected_fixed_hits": 0
+              },
+              {
+                "case": "clipped_with_inline_fixed",
+                "ordinary_nodes": 5000,
+                "queries": 300,
+                "warmup": 20,
+                "p50_us": 0.19907,
+                "p95_us": 0.230968,
+                "max_us": 0.276952,
+                "wall_ms": 0.073725,
+                "process_cpu_ms": 0.071527,
+                "observed_fixed_hits": 0,
+                "expected_fixed_hits": 300
+              }
+            ]
+          },
+          "accepted_2104": {
+            "report_sha256": "2c49d239e931005baf4ef6d599bd6074a3c1439a6e7996661b740ddf76e93906",
+            "candidate": 2104,
+            "measurements": [
+              {
+                "case": "clipped_without_fixed",
+                "ordinary_nodes": 5000,
+                "queries": 300,
+                "warmup": 20,
+                "p50_us": 293.956022,
+                "p95_us": 689.315959,
+                "max_us": 1235.584961,
+                "wall_ms": 102.459849,
+                "process_cpu_ms": 100.306819,
+                "observed_fixed_hits": 0,
+                "expected_fixed_hits": 0
+              },
+              {
+                "case": "same_tree_inside_clip",
+                "ordinary_nodes": 5000,
+                "queries": 300,
+                "warmup": 20,
+                "p50_us": 571.591896,
+                "p95_us": 1113.76401,
+                "max_us": 1867.298037,
+                "wall_ms": 195.712402,
+                "process_cpu_ms": 189.945567,
+                "observed_fixed_hits": 0,
+                "expected_fixed_hits": 0
+              },
+              {
+                "case": "clipped_with_inline_fixed",
+                "ordinary_nodes": 5000,
+                "queries": 300,
+                "warmup": 20,
+                "p50_us": 134.222908,
+                "p95_us": 242.153998,
+                "max_us": 521.801063,
+                "wall_ms": 45.810927,
+                "process_cpu_ms": 44.638412,
+                "observed_fixed_hits": 300,
+                "expected_fixed_hits": 300
+              }
+            ]
+          },
+          "interpretation": "The old no-fixed outside fast path was correct and much faster. The new escaped-fixed correctness adds a real O(n) traversal cost. Old escaped-fixed0/300 was incorrect; accepted2104 returns300/300. Inside timings are measured separately."
+        }
+      },
+      "delivery": {
+        "pages_base": "https://ecooxai.github.io/lumen/candidate2104/",
+        "report_json_url": "https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.json",
+        "report_markdown_url": "https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_qualification_20261110.md",
+        "comparison_json_url": "https://ecooxai.github.io/lumen/candidate2104/lumen_linux_gpt-6-astra-pro_builtin-agents_rubywebterm_session21_wpt1248_comparison_20261110.json",
+        "source_git_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro_builtin-agents_rubywebterm_linux-source2104-20261110",
+        "live_progress_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz",
+        "public_message_posting": "The plain progress URL is read-only until the user enters the current session message key. No authenticated-post success is claimed.",
+        "posting_expiry": "16:52 UTC on 10 November 2026 \u2014 00:52 on 11 November 2026 (Shanghai time)",
+        "normal_desktop": "The existing display0 browser belongs to a different sibling release and was preserved under the project ownership rule; no profile/account state was inspected.",
+        "manual_run": "Run the immutable accepted candidate with a new isolated project profile and explicit about:blank start URL; exact command is in the readable report.",
+        "icu": {
+          "path": "build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/icudtl.dat",
+          "bytes": 10822000,
+          "sha256": "319501bd0fdf9c9cb9926c0d0fd64ed95961118af700fbb4342981f088e73e8c"
+        },
+        "external_dependencies_in_source_archive": false,
+        "surge": "Existing CLI is unauthenticated; no account or authentication workaround. Existing project GitHubPages is the authorized delivery path.",
+        "fileharbor": "Ordinary API access returned403; no access-control workaround.",
+        "standalone_report_checkpoint": "Managed file-transfer executor remained unavailable after20spaced retries and one later readiness check; the initial saved report remains version0, and current engineering/report checkpoints use the authorized project Git/public-report path.",
+        "publication_identity": "Public export commit, source archive hash, Pages commit and HTTP readback evidence are recorded in a separate release manifest; this report does not claim its own containing commit hash.",
+        "pages_artifact_namespace": "candidate2104/",
+        "manual_profile_isolation": {
+          "mechanism": "Supported XDG_CONFIG_HOME/XDG_DATA_HOME/XDG_CACHE_HOME/XDG_DOWNLOAD_DIR/TMPDIR plus LUMEN_NO_SESSION=1",
+          "home_unchanged": true,
+          "new_project_profile_created_by_user_command": true,
+          "actual_nested_sdl_path_observed": false,
+          "reason": "Owned capture profiles were removed after validation before a nested-path inventory was requested; only the source/API behavior is asserted."
+        }
+      },
+      "optional_follow_on": {
+        "radius_animation": "Deferred at a computed-endpoint isolation boundary; no animation/native resolver changes in2104.",
+        "mutation_observer": "Any later routing-only change is a separate candidate and is excluded from this accepted2104 artifact.",
+        "outerhtml_and_parser_xml": "Not repaired by this checkpoint."
+      },
+      "public_artifact_policy": {
+        "source815_plus_history28_plus_metadata5_plus_reports3": 851,
+        "private_history_profiles_inbox_capabilities_included": false,
+        "previous2007_public_branch_and_archives_preserved": true,
+        "previous234_pages_artifacts_preserved": true,
+        "public_source_is_from_tested_git_blobs_not_mutable_worktree": true,
+        "comparison_json_sha256": "80bef1da9b031b3a13c2d7785a74a31b20d4d4336e2cf25c7394e5fbdc0a4f95",
+        "report_generation_precedes_public_export_commit": true
+      },
+      "sampled_priority_groups": {
+        "scope": "Read-only priority view of exactly25909 common URL/name/occurrence0 identities in original fresh Chromium fullrun and accepted2104. No diagnostic replay merged; engine-only registrations excluded and reported separately in bound comparison. Counts identify sampled gaps, not whole-family completeness or implementation effort.",
+        "common_count": 25909,
+        "totals": {
+          "both_PASS": 22496,
+          "Chromium_only_PASS": 1961,
+          "Lumen_only_PASS": 622,
+          "both_nonPASS": 830
+        },
+        "path_family_groups": [
+          {
+            "family": "/css/css-values",
+            "common_assertions": 8183,
+            "Chromium_only_PASS": 1124,
+            "both_nonPASS": 634,
+            "Lumen_only_PASS": 179,
+            "both_PASS": 6246,
+            "files": 278
+          },
+          {
+            "family": "/css/cssom",
+            "common_assertions": 3922,
+            "Chromium_only_PASS": 340,
+            "both_nonPASS": 55,
+            "Lumen_only_PASS": 38,
+            "both_PASS": 3489,
+            "files": 264
+          },
+          {
+            "family": "/css/css-backgrounds",
+            "common_assertions": 920,
+            "Chromium_only_PASS": 151,
+            "both_nonPASS": 38,
+            "Lumen_only_PASS": 72,
+            "both_PASS": 659,
+            "files": 74
+          },
+          {
+            "family": "/css/css-variables",
+            "common_assertions": 582,
+            "Chromium_only_PASS": 111,
+            "both_nonPASS": 24,
+            "Lumen_only_PASS": 48,
+            "both_PASS": 399,
+            "files": 62
+          },
+          {
+            "family": "/dom/nodes",
+            "common_assertions": 10455,
+            "Chromium_only_PASS": 89,
+            "both_nonPASS": 25,
+            "Lumen_only_PASS": 70,
+            "both_PASS": 10271,
+            "files": 391
+          },
+          {
+            "family": "/css/css-animations",
+            "common_assertions": 574,
+            "Chromium_only_PASS": 61,
+            "both_nonPASS": 5,
+            "Lumen_only_PASS": 1,
+            "both_PASS": 507,
+            "files": 41
+          },
+          {
+            "family": "/css/css-syntax",
+            "common_assertions": 444,
+            "Chromium_only_PASS": 42,
+            "both_nonPASS": 6,
+            "Lumen_only_PASS": 2,
+            "both_PASS": 394,
+            "files": 48
+          },
+          {
+            "family": "/css/css-transitions",
+            "common_assertions": 252,
+            "Chromium_only_PASS": 21,
+            "both_nonPASS": 0,
+            "Lumen_only_PASS": 2,
+            "both_PASS": 229,
+            "files": 18
+          },
+          {
+            "family": "/css/css-sizing",
+            "common_assertions": 183,
+            "Chromium_only_PASS": 15,
+            "both_nonPASS": 28,
+            "Lumen_only_PASS": 24,
+            "both_PASS": 116,
+            "files": 22
+          },
+          {
+            "family": "/dom/ranges",
+            "common_assertions": 394,
+            "Chromium_only_PASS": 7,
+            "both_nonPASS": 15,
+            "Lumen_only_PASS": 186,
+            "both_PASS": 186,
+            "files": 41
+          }
+        ],
+        "priority_cautions": [
+          "Chrome-onlyPASS counts combine true implementation gaps with existing Lumen harness/error/timeout outcomes; inspect actual names/messages before choosing a fix.",
+          "Both-nonPASS can be standards gaps in both engines, unsupported test setup, or harness issues; it is not proof of correct behavior.",
+          "No URL-family work is recommended or executed in this session.",
+          "DOM/MutationObserver complete16/163 has a separately pinned scope; generic dom/nodes counts are broader."
+        ],
+        "correction": {
+          "prior_json_sha256": "a29a453b99723329b47bce42730d00d190aaebbfa697ca123d08a60383a76ab8",
+          "prior_markdown_sha256": "024ed964e5879e0b31cdf44d9ead114eab4b5c9098987a9a2f2c344cb9738808",
+          "cause": "Read-only presentation used lowercase lookup keys for capitalized Chromium_only_PASS/Lumen_only_PASS labels. V1 totals/raw group fields were correct, but sort/display zeroed those two columns. V2 uses exact labels and asserts every column sum equals original25909 matrix. No tests, input rows or comparison outcomes changed."
+        },
+        "independent_source_sha256": "2f661c2d482f6a733185db2cab26ddcc57f27faaed896f53b7e147f71b0ca3d8"
+      },
+      "editorial_revision": {
+        "previous_report_sha256": "bf31b3637eca437c039669a3495b0b13e094ad189fe98d467fde69f7a9e9b0a2",
+        "previous_markdown_sha256": "eb91af4e7830fe5794cf9eb3736d98b4ad92d1e97fe9b93e686f7c964f57757b",
+        "raw_results_and_oracles_changed": false,
+        "changes": [
+          "Explicit about:blank launch",
+          "Measured held2102 and accepted2104 performance side by side",
+          "No accepted pixel verdict for original window attempt",
+          "Bounded mask-repeat scope",
+          "UTC-first posting expiry",
+          "Exact Chromium version"
+        ]
+      }
+    }
+  },
+  "historical_accepted2007_checkpoint": {
+    "candidate": 2007,
+    "qualification": "Recorded accepted reliability replay; not a fresh session21 full run",
+    "tested_source_commit": "2de18b314abacd5a027496b715bb28b91d676191",
+    "binary_sha256": "2751690036083f7ba162d8caea6bdbe383f48e183245c828f2f0d58c4d22a586",
+    "complete_files": 813,
+    "selected_files": 1248,
+    "passing_assertions": 23329,
+    "registered_assertions": 26245,
+    "harness_ok": 1238,
+    "file_pass_percent": 65.14423076923077,
+    "assertion_pass_percent": 88.88931224995237,
+    "original_full_run_preserved": {
+      "status": "HOLD",
+      "complete_files": 812,
+      "passing_assertions": 23329,
+      "harness_ok": 1237,
+      "raw_sha256": "e868a979629a6dbe5ed99adb56bd1d494a9b7c0e2ea09a3dc49cc8e5cff3ea26"
+    },
+    "accepted_replay_raw_sha256": "469fd3462044c970502780075fa37299b4bb55256c4bcf66caa020ffd89b58ca",
+    "accepted_replay_independent_receipt_sha256": "e2522a2a4f09c39aee293fc56a0995d03ac92eb7777523b6a777d580919cc8c1",
+    "public_source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source2007-20261104",
+    "archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz?checkpoint=2007",
+    "archive_sha256": "5922ba8b1c6da0806f0ab1bde220aac191636f75f59eea145345419df39b7608"
+  },
+  "prior_accepted_checkpoint": {
+    "candidate": 2104,
+    "source_commit": "3edec1c75b9e332f16e2e5b0943eb881c3c00e1f",
+    "binary_sha256": "0e7f3d63259731afedafe2fd717394b49e4fe525d34d9c12b1c437dd5e6789d9",
+    "public_source_commit": "54999c2cfe6b159167b89c1b5b98427e9eaf5370",
+    "complete_entries": [
+      819,
+      1248
+    ],
+    "passing_assertions": [
+      23364,
+      26245
+    ],
+    "full_report_preserved_under": "historical_candidate2104"
+  },
+  "retained2104_sampled_priority_groups": {
+    "scope": "Read-only priority view of exactly25909 common URL/name/occurrence0 identities in original fresh Chromium fullrun and accepted2104. No diagnostic replay merged; engine-only registrations excluded and reported separately in bound comparison. Counts identify sampled gaps, not whole-family completeness or implementation effort.",
+    "common_count": 25909,
+    "totals": {
+      "both_PASS": 22496,
+      "Chromium_only_PASS": 1961,
+      "Lumen_only_PASS": 622,
+      "both_nonPASS": 830
+    },
+    "path_family_groups": [
+      {
+        "family": "/css/css-values",
+        "common_assertions": 8183,
+        "Chromium_only_PASS": 1124,
+        "both_nonPASS": 634,
+        "Lumen_only_PASS": 179,
+        "both_PASS": 6246,
+        "files": 278
+      },
+      {
+        "family": "/css/cssom",
+        "common_assertions": 3922,
+        "Chromium_only_PASS": 340,
+        "both_nonPASS": 55,
+        "Lumen_only_PASS": 38,
+        "both_PASS": 3489,
+        "files": 264
+      },
+      {
+        "family": "/css/css-backgrounds",
+        "common_assertions": 920,
+        "Chromium_only_PASS": 151,
+        "both_nonPASS": 38,
+        "Lumen_only_PASS": 72,
+        "both_PASS": 659,
+        "files": 74
+      },
+      {
+        "family": "/css/css-variables",
+        "common_assertions": 582,
+        "Chromium_only_PASS": 111,
+        "both_nonPASS": 24,
+        "Lumen_only_PASS": 48,
+        "both_PASS": 399,
+        "files": 62
+      },
+      {
+        "family": "/dom/nodes",
+        "common_assertions": 10455,
+        "Chromium_only_PASS": 89,
+        "both_nonPASS": 25,
+        "Lumen_only_PASS": 70,
+        "both_PASS": 10271,
+        "files": 391
+      },
+      {
+        "family": "/css/css-animations",
+        "common_assertions": 574,
+        "Chromium_only_PASS": 61,
+        "both_nonPASS": 5,
+        "Lumen_only_PASS": 1,
+        "both_PASS": 507,
+        "files": 41
+      },
+      {
+        "family": "/css/css-syntax",
+        "common_assertions": 444,
+        "Chromium_only_PASS": 42,
+        "both_nonPASS": 6,
+        "Lumen_only_PASS": 2,
+        "both_PASS": 394,
+        "files": 48
+      },
+      {
+        "family": "/css/css-transitions",
+        "common_assertions": 252,
+        "Chromium_only_PASS": 21,
+        "both_nonPASS": 0,
+        "Lumen_only_PASS": 2,
+        "both_PASS": 229,
+        "files": 18
+      },
+      {
+        "family": "/css/css-sizing",
+        "common_assertions": 183,
+        "Chromium_only_PASS": 15,
+        "both_nonPASS": 28,
+        "Lumen_only_PASS": 24,
+        "both_PASS": 116,
+        "files": 22
+      },
+      {
+        "family": "/dom/ranges",
+        "common_assertions": 394,
+        "Chromium_only_PASS": 7,
+        "both_nonPASS": 15,
+        "Lumen_only_PASS": 186,
+        "both_PASS": 186,
+        "files": 41
+      }
+    ],
+    "priority_cautions": [
+      "Chrome-onlyPASS counts combine true implementation gaps with existing Lumen harness/error/timeout outcomes; inspect actual names/messages before choosing a fix.",
+      "Both-nonPASS can be standards gaps in both engines, unsupported test setup, or harness issues; it is not proof of correct behavior.",
+      "No URL-family work is recommended or executed in this session.",
+      "DOM/MutationObserver complete16/163 has a separately pinned scope; generic dom/nodes counts are broader."
+    ],
+    "correction": {
+      "prior_json_sha256": "a29a453b99723329b47bce42730d00d190aaebbfa697ca123d08a60383a76ab8",
+      "prior_markdown_sha256": "024ed964e5879e0b31cdf44d9ead114eab4b5c9098987a9a2f2c344cb9738808",
+      "cause": "Read-only presentation used lowercase lookup keys for capitalized Chromium_only_PASS/Lumen_only_PASS labels. V1 totals/raw group fields were correct, but sort/display zeroed those two columns. V2 uses exact labels and asserts every column sum equals original25909 matrix. No tests, input rows or comparison outcomes changed."
+    },
+    "independent_source_sha256": "2f661c2d482f6a733185db2cab26ddcc57f27faaed896f53b7e147f71b0ca3d8"
+  }
+}
