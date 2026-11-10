@@ -244,6 +244,7 @@ const REALM = Object.freeze({
     },
     swap(ev) { const p = curEvent; curEvent = ev; return p; },
     typeError: m => new TypeError(m),
+    reportException: report,
     blob(u) { const b = objectURLs.get(u); return b ? [new Uint8Array(b._buf), b.type] : null; },   /* a frame loading one of this realm's blob: URLs */
 });
 /* a TypeError of a callback object's realm (WebIDL throws those when calling a user object fails) */
@@ -390,5 +391,13 @@ function notify(type, target, extra) {
 }
 function deliverMutations() {
     moQueued = false;
-    for (const mo of observers.slice()) { mo._targets = mo._targets.filter(x => !x.source); const r = mo.takeRecords(); if (r.length) { try { mo._cb.call(mo, r, mo); } catch (e) { report(e); } } }
+    for (const mo of observers.slice()) {
+        mo._targets = mo._targets.filter(x => !x.source);
+        const r = mo.takeRecords();
+        if (r.length) {
+            let cb;
+            try { cb = mo._cb; cb.call(mo, r, mo); }
+            catch (e) { (N.realmOf(cb) || REALM).reportException(e); }
+        }
+    }
 }
