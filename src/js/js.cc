@@ -31,6 +31,9 @@ extern "C" {
 #include <android/log.h>
 #include <pthread.h>
 #endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 /* Process lifetime: V8 worker threads may still run while static destructors do. */
 static v8::Platform *g_platform;
@@ -1193,8 +1196,20 @@ void js_global_init(const char *argv0) {
 #endif
     }
     const char *icu = getenv("LUMEN_ICU_DATA");
+    std::string bundled;
+#ifdef __APPLE__
+    if (!icu) {
+        char exe[4096]; uint32_t sz = sizeof exe;
+        if (_NSGetExecutablePath(exe, &sz) == 0) {
+            bundled = exe;
+            bundled = bundled.substr(0, bundled.rfind('/')) + "/../Resources/icudtl.dat";
+            if (access(bundled.c_str(), R_OK) == 0) icu = bundled.c_str();
+        }
+    }
+#endif
     if (!icu && access("/opt/homebrew/opt/v8/libexec/icudtl.dat", R_OK) == 0) icu = "/opt/homebrew/opt/v8/libexec/icudtl.dat";
-    v8::V8::InitializeICUDefaultLocation(argv0, icu);
+    if (!v8::V8::InitializeICUDefaultLocation(argv0, icu))
+        fprintf(stderr, "lumen: ICU data not found (%s); Intl APIs will abort\n", icu ? icu : "no icudtl.dat");
     v8::V8::InitializeExternalStartupData(argv0);
     g_platform = v8::platform::NewDefaultPlatform().release();
     g_task_platform = js_task_platform(g_platform).release();
