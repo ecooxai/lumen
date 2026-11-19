@@ -1,5 +1,5 @@
 # Lumen browser (early preview)
-
+by @ecooxai @ecooai @claude @codex
 ## Install on macOS
 
 1. Download `Lumen-0.1.0-preview.dmg` from the [Releases page](https://github.com/ecooxai/lumen/releases).
